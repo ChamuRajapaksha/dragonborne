@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import { loadCharacter } from '../character'
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -6,9 +7,9 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.text(16, 16, 'DragonBorne — boot scene', {
-      fontSize: '20px',
-      color: '#ffffff',
-    })
+    const saved = loadCharacter()
+    if (saved) {
+      this.scene.start('kingdom', { character: saved })
+    }
   }
 }
