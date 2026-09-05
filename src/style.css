@@ -9,3 +9,59 @@ body {
 #app {
   height: 100%;
 }
+
+#character-creation {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#creation-form {
+  background: #2b2b36;
+  color: #e5e5ea;
+  padding: 24px 32px;
+  border-radius: 8px;
+  min-width: 280px;
+}
+
+#creation-form h1 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+#creation-form label {
+  display: block;
+  margin-bottom: 12px;
+}
+
+#creation-form input[type='text'] {
+  display: block;
+  margin-top: 4px;
+  padding: 6px 8px;
+  border: 1px solid #4a4a58;
+  border-radius: 4px;
+  background: #1d1d28;
+  color: #fff;
+}
+
+#creation-form fieldset {
+  border: 1px solid #4a4a58;
+  border-radius: 4px;
+  margin: 0 0 16px;
+  padding: 8px 12px;
+}
+
+.class-option {
+  display: block;
+}
+
+#creation-form button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: #aa3bff;
+  color: #fff;
+  cursor: pointer;
+}

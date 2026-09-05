@@ -1,6 +1,8 @@
 import './style.css'
 import Phaser from 'phaser'
 import BootScene from './scenes/BootScene'
+import { loadCharacter } from './character'
+import { showCreationScreen } from './creationScreen'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -15,3 +17,9 @@ const config: Phaser.Types.Core.GameConfig = {
 }
 
 new Phaser.Game(config)
+
+if (!loadCharacter()) {
+  showCreationScreen(() => {
+    // Kingdom scene (step 5) will pick up from here.
+  })
+}
