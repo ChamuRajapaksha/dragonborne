@@ -36,8 +36,7 @@ steps:
 5. Wire the loop end-to-end: create character → spawn → move → interact → see
    class-appropriate quest → complete it (stub)
 
-Design decisions and scope are documented in the project plan
-(`.agents/plans/Dragonborne_project_plan.md`, local only).
+Design decisions and scope are documented in [`docs/plan.md`](docs/plan.md).
 
 ## Scope notes
 
