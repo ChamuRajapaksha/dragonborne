@@ -2,6 +2,11 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# Local agent scaffolding (not part of the project repo)
+.agents
+AGENTS.md
+skills-lock.json
 .env
 .env.*
 !.env.example
