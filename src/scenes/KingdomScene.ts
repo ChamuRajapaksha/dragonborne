@@ -119,7 +119,8 @@ export default class KingdomScene extends Phaser.Scene {
       inRange &&
       this.characterId &&
       this.characterClassId &&
-      Phaser.Input.Keyboard.JustDown(this.interactKey)
+      Phaser.Input.Keyboard.JustDown(this.interactKey) &&
+      !document.getElementById('quest-popup')
     ) {
       showQuestPopup(this.characterClassId)
     }
