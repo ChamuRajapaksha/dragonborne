@@ -1,9 +1,14 @@
 import Phaser from 'phaser'
+import type { Character } from '../character'
+import { showQuestPopup } from '../questPopup'
 
 const WORLD_WIDTH = 1600
 const WORLD_HEIGHT = 1200
 const PLAYER_SPEED = 200
 const DIAGONAL_FACTOR = 0.7071
+const INTERACT_RANGE = 55
+const NPC_X = 900
+const NPC_Y = 600
 
 interface WasdKeys {
   W: Phaser.Input.Keyboard.Key
@@ -17,13 +22,19 @@ export default class KingdomScene extends Phaser.Scene {
   private playerBody!: Phaser.Physics.Arcade.Body
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
+  private interactKey!: Phaser.Input.Keyboard.Key
+  private interactHint!: Phaser.GameObjects.Text
+  private characterId = ''
+  private characterClassId = ''
   private characterName = ''
 
   constructor() {
     super('kingdom')
   }
 
-  init(data: { character?: { name?: string } }): void {
+  init(data: { character?: Character }): void {
+    this.characterId = data.character?.id ?? ''
+    this.characterClassId = data.character?.classId ?? ''
     this.characterName = data.character?.name ?? ''
   }
 
@@ -56,6 +67,19 @@ export default class KingdomScene extends Phaser.Scene {
 
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
+    this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
+
+    this.add.rectangle(900, 600, 28, 28, 0xccbb55).setStrokeStyle(2, 0x221c0f)
+    const npcLabel = this.add
+      .text(900, 610, 'Questmaster', { color: '#ffd27f', fontSize: '12px' })
+      .setOrigin(0.5, 0)
+    npcLabel.setDepth(1)
+
+    this.interactHint = this.add
+      .text(900, 530, 'Press E', { color: '#ffffff', backgroundColor: '#00000088', fontSize: '12px' })
+      .setOrigin(0.5)
+    this.interactHint.setVisible(false)
+    this.interactHint.setDepth(2)
 
     this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
@@ -85,5 +109,19 @@ export default class KingdomScene extends Phaser.Scene {
     }
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
+
+    const inRange =
+      Phaser.Math.Distance.Between(this.player.x, this.player.y, NPC_X, NPC_Y) <=
+      INTERACT_RANGE
+    this.interactHint.setVisible(inRange)
+
+    if (
+      inRange &&
+      this.characterId &&
+      this.characterClassId &&
+      Phaser.Input.Keyboard.JustDown(this.interactKey)
+    ) {
+      showQuestPopup(this.characterClassId)
+    }
   }
 }
