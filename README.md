@@ -24,24 +24,49 @@ npm run dev
 
 Open the URL Vite prints (usually `http://localhost:5173`) in a browser.
 
+## How to test the vertical slice
+
+1. On first load you're asked to create a character: type a name and pick a class
+   (Warrior / Rogue / Mage). The character is saved to localStorage.
+2. You spawn in the kingdom map. Move with **WASD** or **arrow keys** (collisions with
+   buildings and map edges included).
+3. Walk up to the gold **Questmaster** marker — a "Press E" hint appears — and press
+   **E**.
+4. The quest panel lists only quests available to **your class**. Try each class to see
+   different quests.
+5. Press **Complete (stub)** on a quest to mark it complete; completed state persists.
+6. Reloading the page skips creation and drops you straight back into the kingdom as
+   your saved character. To start over, clear the site's localStorage.
+
 ## Status
 
-Early development — the project is being built as a **vertical slice** in incremental
-steps:
+The v1 vertical slice is **complete**: create character → spawn in kingdom → move →
+interact → see class-appropriate quest → complete it (stub). All placeholder visuals.
 
-1. Project scaffold (Vite + TS + Phaser boot scene) — in progress
-2. Character creation with class selection + save/load
-3. Kingdom scene with player movement
-4. Class-filtered quest interaction
-5. Wire the loop end-to-end: create character → spawn → move → interact → see
-   class-appropriate quest → complete it (stub)
+Design decisions, locked scope, and the step-by-step build plan are documented in
+[`docs/plan.md`](docs/plan.md).
 
-Design decisions and scope are documented in [`docs/plan.md`](docs/plan.md).
-
-## Scope notes
+## Current scope notes
 
 - Placeholder art only (shapes/rectangles) — no final art in this phase.
+- Class and quest systems are **data-driven**: `src/character/classes.ts` and
+  `src/story/quests.ts` are pure data, so new classes/quests are data additions with
+  no hardcoded branches.
 - Explicitly out of scope this phase: multiplayer, combat, inventory,
-  crafting/building, and branching narrative content.
-- Class and quest systems are **data-driven**, so new classes/quests are pure data
-  additions — no hardcoded if/else chains.
+  crafting/building, and branching narrative content. Completing a quest only flips a
+  completion flag.
+
+## Still TBD
+
+Full class list, dice/stat resolution depth, combat system specifics, narrative
+authoring approach, art style, and any backend beyond localStorage.
+
+## Layout
+
+- `src/character/` — `Character`/`CharacterClass` types, class list data, creation,
+  localStorage save/load
+- `src/story/` — `Quest` type, quest data, class-availability filter, completion
+  progress
+- `src/scenes/` — `BootScene` (routes into the game), `KingdomScene` (world +
+  movement + quest interaction)
+- `src/creationScreen.ts`, `src/questPopup.ts` — DOM overlays for creation and quests
