@@ -2,9 +2,6 @@ import './style.css'
 import Phaser from 'phaser'
 import BootScene from './scenes/BootScene'
 import KingdomScene from './scenes/KingdomScene'
-import { loadCharacter } from './character'
-import type { Character } from './character'
-import { showCreationScreen } from './creationScreen'
 
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -25,10 +22,4 @@ const config: Phaser.Types.Core.GameConfig = {
   scene: [BootScene, KingdomScene],
 }
 
-const game = new Phaser.Game(config)
-
-if (!loadCharacter()) {
-  showCreationScreen((character: Character) => {
-    game.scene.start('kingdom', { character })
-  })
-}
+new Phaser.Game(config)
