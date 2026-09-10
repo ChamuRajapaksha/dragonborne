@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import type { Character } from '../character'
+import { getClassById } from '../character'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 
 const WORLD_WIDTH = 1600
@@ -86,12 +87,28 @@ export default class KingdomScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
 
     if (this.characterName) {
+      const classInfo = getClassById(this.characterClassId)
+      const className = classInfo?.name ?? 'Unknown'
+
+      const hudBg = this.add.rectangle(0, 0, 200, 52, 0x000000, 0.5).setOrigin(0, 0)
+      hudBg.setScrollFactor(0).setDepth(10)
+
       this.add
-        .text(16, 16, `Exploring as ${this.characterName}`, {
+        .text(12, 8, this.characterName, {
           color: '#ffffff',
           fontSize: '16px',
+          fontStyle: 'bold',
         })
         .setScrollFactor(0)
+        .setDepth(11)
+
+      this.add
+        .text(12, 30, className, {
+          color: '#aa3bff',
+          fontSize: '12px',
+        })
+        .setScrollFactor(0)
+        .setDepth(11)
     }
   }
 
