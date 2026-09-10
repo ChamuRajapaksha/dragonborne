@@ -1,10 +1,28 @@
-import { getQuestsForClass, completeQuest, isQuestCompleted } from './story'
+import {
+  getQuestsForClass,
+  meetsQuestRequirements,
+  completeQuest,
+  isQuestCompleted,
+} from './story'
+import type { Quest } from './story'
 
 export function closeQuestPopup(): void {
   document.getElementById('quest-popup')?.remove()
 }
 
-export function showQuestPopup(classId: string): void {
+function renderRequirements(q: Quest, stats: Record<string, number>): string {
+  if (!q.requiresStats) return ''
+  const unmet = Object.entries(q.requiresStats)
+    .filter(([stat, min]) => (stats[stat] ?? 0) < (min ?? 0))
+    .map(([stat, min]) => `${stat} ${min}+`)
+  if (unmet.length === 0) return ''
+  return `<span class="quest-requirements">Requires: ${unmet.join(', ')}</span>`
+}
+
+export function showQuestPopup(
+  classId: string,
+  stats: Record<string, number>,
+): void {
   closeQuestPopup()
 
   const overlay = document.createElement('div')
@@ -20,18 +38,24 @@ export function showQuestPopup(classId: string): void {
         ${quests.length === 0
           ? '<p>No quests are offered to your class right now.</p>'
           : quests
-              .map(
-                (q) => `
-          <div class="quest-card ${isQuestCompleted(q.id) ? 'completed' : ''}">
+              .map((q) => {
+                const unlocked = meetsQuestRequirements(q, stats)
+                const completed = isQuestCompleted(q.id)
+                const lockedClass = !unlocked && !completed ? 'locked' : ''
+                return `
+          <div class="quest-card ${completed ? 'completed' : ''} ${lockedClass}">
             <h3>${q.title}</h3>
             <p>${q.description}</p>
+            ${renderRequirements(q, stats)}
             ${
-              isQuestCompleted(q.id)
+              completed
                 ? '<span class="quest-status">Completed</span>'
-                : `<button data-complete="${q.id}">Complete (stub)</button>`
+                : unlocked
+                  ? `<button data-complete="${q.id}">Complete (stub)</button>`
+                  : '<span class="quest-status locked">Locked</span>'
             }
-          </div>`,
-              )
+          </div>`
+              })
               .join('')}
         <button id="quest-close">Close</button>
       </div>

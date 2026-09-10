@@ -29,6 +29,7 @@ export default class KingdomScene extends Phaser.Scene {
   private characterId = ''
   private characterClassId = ''
   private characterName = ''
+  private characterStats: Record<string, number> = {}
 
   constructor() {
     super('kingdom')
@@ -38,6 +39,7 @@ export default class KingdomScene extends Phaser.Scene {
     this.characterId = data.character?.id ?? ''
     this.characterClassId = data.character?.classId ?? ''
     this.characterName = data.character?.name ?? ''
+    this.characterStats = data.character?.stats ?? {}
   }
 
   create(): void {
@@ -145,7 +147,7 @@ export default class KingdomScene extends Phaser.Scene {
       Phaser.Input.Keyboard.JustDown(this.interactKey) &&
       !this.popupOpen
     ) {
-      showQuestPopup(this.characterClassId)
+      showQuestPopup(this.characterClassId, this.characterStats)
       this.popupOpen = true
     }
   }
