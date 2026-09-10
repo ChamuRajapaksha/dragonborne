@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import type { Character } from '../character'
-import { showQuestPopup } from '../questPopup'
+import { showQuestPopup, closeQuestPopup } from '../questPopup'
 
 const WORLD_WIDTH = 1600
 const WORLD_HEIGHT = 1200
@@ -24,6 +24,7 @@ export default class KingdomScene extends Phaser.Scene {
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
   private interactHint!: Phaser.GameObjects.Text
+  private popupOpen = false
   private characterId = ''
   private characterClassId = ''
   private characterName = ''
@@ -115,14 +116,20 @@ export default class KingdomScene extends Phaser.Scene {
       INTERACT_RANGE
     this.interactHint.setVisible(inRange)
 
+    if (this.popupOpen && !inRange) {
+      closeQuestPopup()
+      this.popupOpen = false
+    }
+
     if (
       inRange &&
       this.characterId &&
       this.characterClassId &&
       Phaser.Input.Keyboard.JustDown(this.interactKey) &&
-      !document.getElementById('quest-popup')
+      !this.popupOpen
     ) {
       showQuestPopup(this.characterClassId)
+      this.popupOpen = true
     }
   }
 }

@@ -1,6 +1,12 @@
 import { getQuestsForClass, completeQuest, isQuestCompleted } from './story'
 
+export function closeQuestPopup(): void {
+  document.getElementById('quest-popup')?.remove()
+}
+
 export function showQuestPopup(classId: string): void {
+  closeQuestPopup()
+
   const overlay = document.createElement('div')
   overlay.id = 'quest-popup'
   document.body.appendChild(overlay)
