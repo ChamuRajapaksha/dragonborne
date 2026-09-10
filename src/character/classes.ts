@@ -16,6 +16,21 @@ const classData = [
     name: 'Mage',
     stats: { strength: 2, agility: 3, intellect: 5 },
   },
+  {
+    id: 'cleric',
+    name: 'Cleric',
+    stats: { strength: 3, agility: 2, intellect: 5 },
+  },
+  {
+    id: 'ranger',
+    name: 'Ranger',
+    stats: { strength: 4, agility: 5, intellect: 1 },
+  },
+  {
+    id: 'bard',
+    name: 'Bard',
+    stats: { strength: 3, agility: 3, intellect: 4 },
+  },
 ] as const satisfies readonly CharacterClass[]
 
 export const CLASSES: readonly CharacterClass[] = classData

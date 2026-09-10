@@ -32,11 +32,42 @@ const questData = [
     requiresStats: { intellect: 4 },
   },
   {
+    id: 'silent-bell',
+    title: 'Sanctum of the Silent Bell',
+    description:
+      'The temple bell has not rung in a week, and pilgrims grow restless. Bless the sanctum and restore its toll.',
+    availableToClasses: ['cleric'],
+    requiresStats: { intellect: 4 },
+  },
+  {
+    id: 'thornwood-briars',
+    title: 'Briars of the Thornwood',
+    description:
+      'The thornwood has crept onto the northern road. Carve a safe route through the briars for the travelling merchants.',
+    availableToClasses: ['ranger'],
+    requiresStats: { agility: 4 },
+  },
+  {
+    id: 'bards-contest',
+    title: 'The Song Contest',
+    description:
+      'The alehouse hosts a contest of verse, and the prize is a favour from the guildmaster. Out- rhyme every rival in the square.',
+    availableToClasses: ['bard'],
+    requiresStats: { intellect: 3 },
+  },
+  {
     id: 'the-midnight-fair',
     title: 'The Midnight Fair',
     description:
       'The kingdom gathers for the Midnight Fair. Pitch in where you are needed and keep the celebration from unraveling.',
-    availableToClasses: ['warrior', 'rogue', 'mage'],
+    availableToClasses: [
+      'warrior',
+      'rogue',
+      'mage',
+      'cleric',
+      'ranger',
+      'bard',
+    ],
   },
 ] as const satisfies readonly Quest[]
 
