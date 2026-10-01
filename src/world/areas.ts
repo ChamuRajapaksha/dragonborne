@@ -1,3 +1,4 @@
+import Phaser from 'phaser'
 import type { TileLegendEntry } from './tileset'
 import { TILE_BY_CHAR, TILE_SIZE } from './tileset'
 
@@ -225,4 +226,25 @@ export const FOREST: AreaDefinition = {
       'A stranger waits by the ring, watching to see what kind of traveller you are.',
     ],
   },
+}
+
+export const AREAS: Readonly<Record<string, AreaDefinition>> = {
+  forest: FOREST,
+  village: VILLAGE,
+}
+
+export function getAreaById(areaId: string): AreaDefinition {
+  const area = AREAS[areaId]
+  if (!area) throw new Error(`Unknown area '${areaId}'`)
+  return area
+}
+
+export function getAreaSize(area: AreaDefinition): Phaser.Geom.Rectangle {
+  const width = (area.map[0]?.length ?? 0) * TILE_SIZE
+  const height = area.map.length * TILE_SIZE
+  return new Phaser.Geom.Rectangle(0, 0, width, height)
+}
+
+export function getAreaSpawn(area: AreaDefinition): { x: number; y: number } {
+  return tileToWorld(area.defaultSpawn)
 }
