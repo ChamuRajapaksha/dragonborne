@@ -2,9 +2,10 @@ import Phaser from 'phaser'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
+import { getAreaById, getAreaSpawn } from '../world/areas'
+import { buildTerrain } from '../world/buildArea'
 
-const WORLD_WIDTH = 1600
-const WORLD_HEIGHT = 1200
+const CURRENT_AREA_ID = 'village'
 const PLAYER_SPEED = 200
 const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
@@ -43,10 +44,10 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.cameras.main.setBackgroundColor('#2c3e2c')
-    this.physics.world.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
+    const area = getAreaById(CURRENT_AREA_ID)
+    const spawn = getAreaSpawn(area)
 
-    this.add.rectangle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, WORLD_WIDTH, WORLD_HEIGHT, 0x3a5a3a)
+    const terrain = buildTerrain(this, area)
 
     const buildings: Phaser.GameObjects.Rectangle[] = []
     const addBuilding = (x: number, y: number, w: number, h: number, color: number) => {
@@ -62,11 +63,12 @@ export default class WorldScene extends Phaser.Scene {
     addBuilding(1380, 900, 110, 70, 0x7a6446)
     addBuilding(940, 340, 70, 60, 0x5d4a30)
 
-    this.player = this.add.rectangle(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 32, 32, 0x22cc66)
+    this.player = this.add.rectangle(spawn.x, spawn.y, 32, 32, 0x22cc66)
     this.physics.add.existing(this.player)
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body
     this.playerBody.setCollideWorldBounds(true)
 
+    this.physics.add.collider(this.player, terrain)
     this.physics.add.collider(this.player, buildings)
 
     this.cursors = this.input.keyboard!.createCursorKeys()
@@ -85,7 +87,6 @@ export default class WorldScene extends Phaser.Scene {
     this.interactHint.setVisible(false)
     this.interactHint.setDepth(2)
 
-    this.cameras.main.setBounds(0, 0, WORLD_WIDTH, WORLD_HEIGHT)
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
 
     if (this.characterName) {

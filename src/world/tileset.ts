@@ -38,7 +38,9 @@ export const COLLIDING_TILE_INDEXES: readonly number[] = TILE_LEGEND.filter(
 
 const SHEET_COLUMNS = 4
 
-const colorString = (color: number): string => `#${color.toString(16).padStart(6, '0')}`
+export function toCssColor(color: number): string {
+  return `#${color.toString(16).padStart(6, '0')}`
+}
 
 export function ensureTileset(scene: Phaser.Scene): void {
   if (scene.textures.exists(TILESET_KEY)) return
@@ -57,10 +59,10 @@ export function ensureTileset(scene: Phaser.Scene): void {
     const originX = (tile.index % SHEET_COLUMNS) * TILE_SIZE
     const originY = Math.floor(tile.index / SHEET_COLUMNS) * TILE_SIZE
 
-    ctx.fillStyle = colorString(tile.base)
+    ctx.fillStyle = toCssColor(tile.base)
     ctx.fillRect(originX, originY, TILE_SIZE, TILE_SIZE)
 
-    ctx.fillStyle = colorString(tile.detail)
+    ctx.fillStyle = toCssColor(tile.detail)
     ctx.fillRect(originX + 2, originY + 2, TILE_SIZE - 4, TILE_SIZE - 8)
     ctx.fillRect(originX + 5, originY + TILE_SIZE - 5, TILE_SIZE - 10, 3)
   }
