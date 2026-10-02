@@ -38,7 +38,6 @@ export function buildTerrain(
     throw new Error(`Could not create terrain layer for area '${area.id}'`)
   }
 
-  scene.add.existing(layer)
   layer.setCollision([...COLLIDING_TILE_INDEXES], true, true)
 
   const size = getAreaSize(area)

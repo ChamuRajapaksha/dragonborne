@@ -49,27 +49,12 @@ export default class WorldScene extends Phaser.Scene {
 
     const terrain = buildTerrain(this, area)
 
-    const buildings: Phaser.GameObjects.Rectangle[] = []
-    const addBuilding = (x: number, y: number, w: number, h: number, color: number) => {
-      const building = this.add.rectangle(x, y, w, h, color).setStrokeStyle(2, 0x1c2a1c)
-      this.physics.add.existing(building, true)
-      buildings.push(building)
-    }
-
-    addBuilding(800, 600, 160, 90, 0x8a6f4d)
-    addBuilding(320, 320, 90, 70, 0x6f5a3d)
-    addBuilding(1280, 280, 110, 70, 0x6f5a3d)
-    addBuilding(260, 940, 90, 70, 0x7a6446)
-    addBuilding(1380, 900, 110, 70, 0x7a6446)
-    addBuilding(940, 340, 70, 60, 0x5d4a30)
-
     this.player = this.add.rectangle(spawn.x, spawn.y, 32, 32, 0x22cc66)
     this.physics.add.existing(this.player)
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body
     this.playerBody.setCollideWorldBounds(true)
 
     this.physics.add.collider(this.player, terrain)
-    this.physics.add.collider(this.player, buildings)
 
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
