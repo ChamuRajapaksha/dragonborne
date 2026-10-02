@@ -1,10 +1,10 @@
 import {
-  getQuestsForClass,
+  getQuestsForNpc,
   meetsQuestRequirements,
   completeQuest,
   isQuestCompleted,
 } from './story'
-import type { Quest } from './story'
+import type { NpcDefinition, Quest } from './story'
 
 export function closeQuestPopup(): void {
   document.getElementById('quest-popup')?.remove()
@@ -20,6 +20,7 @@ function renderRequirements(q: Quest, stats: Record<string, number>): string {
 }
 
 export function showQuestPopup(
+  npc: NpcDefinition,
   classId: string,
   stats: Record<string, number>,
 ): void {
@@ -30,13 +31,15 @@ export function showQuestPopup(
   document.body.appendChild(overlay)
 
   const render = () => {
-    const quests = getQuestsForClass(classId)
+    const quests = getQuestsForNpc(npc.id, classId)
 
     overlay.innerHTML = `
       <div class="quest-panel">
-        <h2>Quests available for you</h2>
+        <p class="quest-npc-role">${npc.role}</p>
+        <h2>${npc.name}</h2>
+        <p class="quest-npc-greeting">${npc.greeting}</p>
         ${quests.length === 0
-          ? '<p>No quests are offered to your class right now.</p>'
+          ? '<p>Nothing here for someone of your class.</p>'
           : quests
               .map((q) => {
                 const unlocked = meetsQuestRequirements(q, stats)

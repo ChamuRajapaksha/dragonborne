@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
+import { getNpcById } from '../story'
 import { getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaNpcMarker } from '../world/buildArea'
 import { buildMarkers, buildTerrain } from '../world/buildArea'
@@ -113,23 +114,24 @@ export default class WorldScene extends Phaser.Scene {
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
 
     const nearest = this.findNearestNpc()
+    const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
-    this.interactHint.setVisible(nearest !== null)
+    this.interactHint.setVisible(nearestNpc !== undefined)
     if (nearest) this.interactHint.setPosition(nearest.x, nearest.y - 30)
 
-    if (this.popupOpen && !nearest) {
+    if (this.popupOpen && !nearestNpc) {
       closeQuestPopup()
       this.popupOpen = false
     }
 
     if (
-      nearest &&
+      nearestNpc &&
       this.characterId &&
       this.characterClassId &&
       Phaser.Input.Keyboard.JustDown(this.interactKey) &&
       !this.popupOpen
     ) {
-      showQuestPopup(this.characterClassId, this.characterStats)
+      showQuestPopup(nearestNpc, this.characterClassId, this.characterStats)
       this.popupOpen = true
     }
   }
