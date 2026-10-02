@@ -3,14 +3,13 @@ import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { getAreaById, getAreaSpawn } from '../world/areas'
-import { buildTerrain } from '../world/buildArea'
+import type { AreaNpcMarker } from '../world/buildArea'
+import { buildMarkers, buildTerrain } from '../world/buildArea'
 
 const CURRENT_AREA_ID = 'village'
 const PLAYER_SPEED = 200
 const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
-const NPC_X = 900
-const NPC_Y = 600
 
 interface WasdKeys {
   W: Phaser.Input.Keyboard.Key
@@ -26,6 +25,7 @@ export default class WorldScene extends Phaser.Scene {
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
   private interactHint!: Phaser.GameObjects.Text
+  private npcMarkers: AreaNpcMarker[] = []
   private popupOpen = false
   private characterId = ''
   private characterClassId = ''
@@ -60,17 +60,13 @@ export default class WorldScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
 
-    this.add.rectangle(900, 600, 28, 28, 0xccbb55).setStrokeStyle(2, 0x221c0f)
-    const npcLabel = this.add
-      .text(900, 610, 'Questmaster', { color: '#ffd27f', fontSize: '12px' })
-      .setOrigin(0.5, 0)
-    npcLabel.setDepth(1)
+    this.npcMarkers = buildMarkers(this, area)
 
     this.interactHint = this.add
-      .text(900, 530, 'Press E', { color: '#ffffff', backgroundColor: '#00000088', fontSize: '12px' })
+      .text(0, 0, 'Press E', { color: '#ffffff', backgroundColor: '#00000088', fontSize: '12px' })
       .setOrigin(0.5)
     this.interactHint.setVisible(false)
-    this.interactHint.setDepth(2)
+    this.interactHint.setDepth(3)
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
 
@@ -116,18 +112,18 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
 
-    const inRange =
-      Phaser.Math.Distance.Between(this.player.x, this.player.y, NPC_X, NPC_Y) <=
-      INTERACT_RANGE
-    this.interactHint.setVisible(inRange)
+    const nearest = this.findNearestNpc()
 
-    if (this.popupOpen && !inRange) {
+    this.interactHint.setVisible(nearest !== null)
+    if (nearest) this.interactHint.setPosition(nearest.x, nearest.y - 30)
+
+    if (this.popupOpen && !nearest) {
       closeQuestPopup()
       this.popupOpen = false
     }
 
     if (
-      inRange &&
+      nearest &&
       this.characterId &&
       this.characterClassId &&
       Phaser.Input.Keyboard.JustDown(this.interactKey) &&
@@ -136,5 +132,25 @@ export default class WorldScene extends Phaser.Scene {
       showQuestPopup(this.characterClassId, this.characterStats)
       this.popupOpen = true
     }
+  }
+
+  private findNearestNpc(): AreaNpcMarker | null {
+    let nearest: AreaNpcMarker | null = null
+    let nearestDistance = INTERACT_RANGE
+
+    for (const marker of this.npcMarkers) {
+      const distance = Phaser.Math.Distance.Between(
+        this.player.x,
+        this.player.y,
+        marker.x,
+        marker.y,
+      )
+      if (distance <= nearestDistance) {
+        nearest = marker
+        nearestDistance = distance
+      }
+    }
+
+    return nearest
   }
 }

@@ -1,6 +1,7 @@
 import type Phaser from 'phaser'
 import type { AreaDefinition } from './areas'
-import { getAreaSize, parseAreaMap } from './areas'
+import { getAreaSize, parseAreaMap, tileToWorld } from './areas'
+import { getNpcById } from '../story'
 import {
   COLLIDING_TILE_INDEXES,
   TILESET_KEY,
@@ -10,6 +11,13 @@ import {
 } from './tileset'
 
 export const TERRAIN_TILESET_NAME = 'terrain'
+
+export interface AreaNpcMarker {
+  npcId: string
+  name: string
+  x: number
+  y: number
+}
 
 export function buildTerrain(
   scene: Phaser.Scene,
@@ -46,4 +54,32 @@ export function buildTerrain(
   scene.cameras.main.setBounds(0, 0, size.width, size.height)
 
   return layer
+}
+
+export function buildMarkers(
+  scene: Phaser.Scene,
+  area: AreaDefinition,
+): AreaNpcMarker[] {
+  return area.npcs.flatMap((placement) => {
+    const npc = getNpcById(placement.npcId)
+    if (!npc) {
+      throw new Error(
+        `Area '${area.id}' places unknown npc '${placement.npcId}' at ${placement.x},${placement.y}`,
+      )
+    }
+
+    const { x, y } = tileToWorld(placement)
+
+    scene.add
+      .rectangle(x, y, 28, 28, 0xccbb55)
+      .setStrokeStyle(2, 0x221c0f)
+      .setDepth(1)
+
+    scene.add
+      .text(x, y + 14, npc.name, { color: '#ffd27f', fontSize: '12px' })
+      .setOrigin(0.5, 0)
+      .setDepth(2)
+
+    return [{ npcId: npc.id, name: npc.name, x, y }]
+  })
 }
