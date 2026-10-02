@@ -1,3 +1,5 @@
 export type { Quest } from './quests'
 export { QUESTS, getQuestsForClass, meetsQuestRequirements } from './quests'
+export type { NpcDefinition } from './npcs'
+export { NPCS, getNpcById } from './npcs'
 export { getCompletedQuestIds, isQuestCompleted, completeQuest } from './questProgress'
