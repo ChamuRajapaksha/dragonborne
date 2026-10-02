@@ -11,16 +11,16 @@ export default class BootScene extends Phaser.Scene {
   create(): void {
     const saved = loadCharacter()
     if (saved) {
-      this.gotoKingdom(saved)
+      this.gotoWorld(saved)
       return
     }
 
     showCreationScreen((character) => {
-      this.gotoKingdom(character)
+      this.gotoWorld(character)
     })
   }
 
-  private gotoKingdom(character: Character): void {
-    this.scene.start('kingdom', { character })
+  private gotoWorld(character: Character): void {
+    this.scene.start('world', { character })
   }
 }

@@ -18,7 +18,7 @@ interface WasdKeys {
   D: Phaser.Input.Keyboard.Key
 }
 
-export default class KingdomScene extends Phaser.Scene {
+export default class WorldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle
   private playerBody!: Phaser.Physics.Arcade.Body
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
@@ -32,7 +32,7 @@ export default class KingdomScene extends Phaser.Scene {
   private characterStats: Record<string, number> = {}
 
   constructor() {
-    super('kingdom')
+    super('world')
   }
 
   init(data: { character?: Character }): void {
