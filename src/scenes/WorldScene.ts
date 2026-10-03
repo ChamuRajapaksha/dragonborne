@@ -8,7 +8,7 @@ import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
-import { loadProgress, setProgressFlag } from '../world/progress'
+import { loadProgress, saveProgress, setProgressFlag } from '../world/progress'
 
 const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
@@ -16,6 +16,8 @@ const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
 const PORTAL_RANGE = 26
 const NPC_INTERACT_HINT = 'Press E'
+const IDLE_SAVE_SECONDS = 1.5
+const UNSAVED_POINT = Number.NaN
 
 function introFlagKey(areaId: string): string {
   return `intro:${areaId}`
@@ -54,6 +56,8 @@ export default class WorldScene extends Phaser.Scene {
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
   private spawnPx: { x: number; y: number } | null = null
+  private idleSeconds = 0
+  private savedPoint: { x: number; y: number } = { x: UNSAVED_POINT, y: UNSAVED_POINT }
 
   constructor() {
     super('world')
@@ -68,6 +72,8 @@ export default class WorldScene extends Phaser.Scene {
     this.portalMarkers = []
     this.popupOpen = false
     this.introCardOpen = false
+    this.idleSeconds = 0
+    this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
   }
 
   create(): void {
@@ -127,6 +133,10 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     this.maybeShowIntroCard(area)
+
+    this.events.once('shutdown', () => {
+      this.saveCurrentProgress()
+    })
   }
 
   private maybeShowIntroCard(area: AreaDefinition): void {
@@ -144,7 +154,7 @@ export default class WorldScene extends Phaser.Scene {
     })
   }
 
-  update(): void {
+  update(_time: number, delta: number): void {
     let vx = 0
     let vy = 0
 
@@ -160,6 +170,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
+    this.trackIdleSave(delta)
 
     const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()
@@ -197,7 +208,35 @@ export default class WorldScene extends Phaser.Scene {
     this.interactHint.setVisible(true)
   }
 
+  private trackIdleSave(delta: number): void {
+    if (this.playerBody.speed > 0) {
+      this.idleSeconds = 0
+      return
+    }
+
+    this.idleSeconds += delta / 1000
+    if (this.idleSeconds >= IDLE_SAVE_SECONDS) {
+      this.idleSeconds = 0
+      this.saveCurrentProgress()
+    }
+  }
+
+  private saveCurrentProgress(): void {
+    const x = Math.round(this.playerPoint.x)
+    const y = Math.round(this.playerPoint.y)
+    if (x === this.savedPoint.x && y === this.savedPoint.y) return
+
+    this.savedPoint = { x, y }
+    saveProgress({
+      areaId: this.areaId,
+      x,
+      y,
+      flags: loadProgress()?.flags ?? {},
+    })
+  }
+
   private usePortal(portal: AreaPortalMarker): void {
+    this.saveCurrentProgress()
     this.scene.restart({
       character: this.character,
       areaId: portal.toAreaId,
