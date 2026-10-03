@@ -6,17 +6,24 @@ import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
-import type { AreaNpcMarker } from '../world/buildArea'
-import { buildMarkers, buildTerrain } from '../world/buildArea'
+import type { AreaNpcMarker, AreaPortalMarker } from '../world/buildArea'
+import { buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { loadProgress, setProgressFlag } from '../world/progress'
 
 const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
 const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
+const PORTAL_RANGE = 26
+const NPC_INTERACT_HINT = 'Press E'
 
 function introFlagKey(areaId: string): string {
   return `intro:${areaId}`
+}
+
+function resolveAreaId(requestedAreaId?: string): string {
+  const candidate = requestedAreaId ?? loadProgress()?.areaId ?? ''
+  return candidate in AREAS ? candidate : NEW_CHARACTER_AREA_ID
 }
 
 interface WasdKeys {
@@ -26,35 +33,48 @@ interface WasdKeys {
   D: Phaser.Input.Keyboard.Key
 }
 
+interface WorldSceneData {
+  character?: Character
+  areaId?: string
+  spawnPx?: { x: number; y: number }
+}
+
 export default class WorldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle
   private playerBody!: Phaser.Physics.Arcade.Body
+  private playerPoint: { x: number; y: number } = { x: 0, y: 0 }
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
   private interactHint!: Phaser.GameObjects.Text
   private npcMarkers: AreaNpcMarker[] = []
+  private portalMarkers: AreaPortalMarker[] = []
   private popupOpen = false
   private introCardOpen = false
-  private characterId = ''
-  private characterClassId = ''
-  private characterName = ''
-  private characterStats: Record<string, number> = {}
+  private character: Character | undefined = undefined
+  private areaId = NEW_CHARACTER_AREA_ID
+  private spawnPx: { x: number; y: number } | null = null
 
   constructor() {
     super('world')
   }
 
-  init(data: { character?: Character }): void {
-    this.characterId = data.character?.id ?? ''
-    this.characterClassId = data.character?.classId ?? ''
-    this.characterName = data.character?.name ?? ''
-    this.characterStats = data.character?.stats ?? {}
+  init(data: WorldSceneData): void {
+    this.character = data.character
+    this.areaId = resolveAreaId(data.areaId)
+    this.spawnPx = data.spawnPx ?? null
+    this.playerPoint = { x: 0, y: 0 }
+    this.npcMarkers = []
+    this.portalMarkers = []
+    this.popupOpen = false
+    this.introCardOpen = false
   }
 
   create(): void {
-    const area = this.resolveArea()
-    const spawn = getAreaSpawn(area)
+    const area = getAreaById(this.areaId)
+    const spawn = this.spawnPx ?? getAreaSpawn(area)
+
+    this.playerPoint = { x: spawn.x, y: spawn.y }
 
     const terrain = buildTerrain(this, area)
 
@@ -70,24 +90,26 @@ export default class WorldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
 
     this.npcMarkers = buildMarkers(this, area)
+    this.portalMarkers = buildPortals(this, area)
 
     this.interactHint = this.add
-      .text(0, 0, 'Press E', { color: '#ffffff', backgroundColor: '#00000088', fontSize: '12px' })
+      .text(0, 0, NPC_INTERACT_HINT, { color: '#ffffff', backgroundColor: '#00000088', fontSize: '12px' })
       .setOrigin(0.5)
     this.interactHint.setVisible(false)
     this.interactHint.setDepth(3)
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
 
-    if (this.characterName) {
-      const classInfo = getClassById(this.characterClassId)
+    const characterName = this.character?.name ?? ''
+    if (characterName) {
+      const classInfo = getClassById(this.character?.classId ?? '')
       const className = classInfo?.name ?? 'Unknown'
 
       const hudBg = this.add.rectangle(0, 0, 200, 52, 0x000000, 0.5).setOrigin(0, 0)
       hudBg.setScrollFactor(0).setDepth(10)
 
       this.add
-        .text(12, 8, this.characterName, {
+        .text(12, 8, characterName, {
           color: '#ffffff',
           fontSize: '16px',
           fontStyle: 'bold',
@@ -122,12 +144,6 @@ export default class WorldScene extends Phaser.Scene {
     })
   }
 
-  private resolveArea(): AreaDefinition {
-    const savedAreaId = loadProgress()?.areaId ?? ''
-    if (savedAreaId && savedAreaId in AREAS) return getAreaById(savedAreaId)
-    return getAreaById(NEW_CHARACTER_AREA_ID)
-  }
-
   update(): void {
     let vx = 0
     let vy = 0
@@ -143,28 +159,70 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
+    this.playerPoint = { x: this.player.x, y: this.player.y }
 
+    const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
-    this.interactHint.setVisible(nearestNpc !== undefined)
-    if (nearest) this.interactHint.setPosition(nearest.x, nearest.y - 30)
+    const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
+
+    if (portal && interactPressed && !this.popupOpen) {
+      this.usePortal(portal)
+      return
+    }
+
+    if (portal) {
+      this.showInteractHint(`Press E \u2192 ${portal.toAreaName}`, portal.x, portal.y - 30)
+    } else if (nearest) {
+      this.showInteractHint(NPC_INTERACT_HINT, nearest.x, nearest.y - 30)
+    } else {
+      this.interactHint.setVisible(false)
+    }
 
     if (this.popupOpen && !this.introCardOpen && !nearestNpc) {
       closeQuestPopup()
       this.popupOpen = false
     }
 
-    if (
-      nearestNpc &&
-      this.characterId &&
-      this.characterClassId &&
-      Phaser.Input.Keyboard.JustDown(this.interactKey) &&
-      !this.popupOpen
-    ) {
-      showQuestPopup(nearestNpc, this.characterClassId, this.characterStats)
+    if (nearestNpc && this.character && interactPressed && !this.popupOpen) {
+      showQuestPopup(nearestNpc, this.character.classId, this.character.stats)
       this.popupOpen = true
     }
+  }
+
+  private showInteractHint(text: string, x: number, y: number): void {
+    if (this.interactHint.text !== text) this.interactHint.setText(text)
+    this.interactHint.setPosition(x, y)
+    this.interactHint.setVisible(true)
+  }
+
+  private usePortal(portal: AreaPortalMarker): void {
+    this.scene.restart({
+      character: this.character,
+      areaId: portal.toAreaId,
+      spawnPx: portal.toSpawnPx,
+    })
+  }
+
+  private findPortalUnderfoot(): AreaPortalMarker | null {
+    let nearest: AreaPortalMarker | null = null
+    let nearestDistance = PORTAL_RANGE
+
+    for (const marker of this.portalMarkers) {
+      const distance = Phaser.Math.Distance.Between(
+        this.playerPoint.x,
+        this.playerPoint.y,
+        marker.x,
+        marker.y,
+      )
+      if (distance <= nearestDistance) {
+        nearest = marker
+        nearestDistance = distance
+      }
+    }
+
+    return nearest
   }
 
   private findNearestNpc(): AreaNpcMarker | null {
@@ -173,8 +231,8 @@ export default class WorldScene extends Phaser.Scene {
 
     for (const marker of this.npcMarkers) {
       const distance = Phaser.Math.Distance.Between(
-        this.player.x,
-        this.player.y,
+        this.playerPoint.x,
+        this.playerPoint.y,
         marker.x,
         marker.y,
       )

@@ -1,6 +1,6 @@
 import type Phaser from 'phaser'
 import type { AreaDefinition } from './areas'
-import { getAreaSize, parseAreaMap, tileToWorld } from './areas'
+import { getAreaById, getAreaSize, parseAreaMap, tileToWorld } from './areas'
 import { getNpcById } from '../story'
 import {
   COLLIDING_TILE_INDEXES,
@@ -15,6 +15,15 @@ export const TERRAIN_TILESET_NAME = 'terrain'
 export interface AreaNpcMarker {
   npcId: string
   name: string
+  x: number
+  y: number
+}
+
+export interface AreaPortalMarker {
+  toAreaId: string
+  toAreaName: string
+  toSpawnPx: { x: number; y: number }
+  label: string
   x: number
   y: number
 }
@@ -81,5 +90,35 @@ export function buildMarkers(
       .setDepth(2)
 
     return [{ npcId: npc.id, name: npc.name, x, y }]
+  })
+}
+
+export function buildPortals(
+  scene: Phaser.Scene,
+  area: AreaDefinition,
+): AreaPortalMarker[] {
+  return area.portals.map((portal) => {
+    const destination = getAreaById(portal.toAreaId)
+
+    const { x, y } = tileToWorld(portal)
+
+    scene.add
+      .rectangle(x, y, 32, 32, 0x7a4fd6, 0.4)
+      .setStrokeStyle(2, 0xd9c6ff)
+      .setDepth(1)
+
+    scene.add
+      .text(x, y + 16, portal.label, { color: '#d9c6ff', fontSize: '12px' })
+      .setOrigin(0.5, 0)
+      .setDepth(2)
+
+    return {
+      toAreaId: destination.id,
+      toAreaName: destination.name,
+      toSpawnPx: tileToWorld(portal.toSpawn),
+      label: portal.label,
+      x,
+      y,
+    }
   })
 }
