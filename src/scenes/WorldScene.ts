@@ -3,11 +3,13 @@ import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { getNpcById } from '../story'
-import { getAreaById, getAreaSpawn } from '../world/areas'
+import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
+import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker } from '../world/buildArea'
 import { buildMarkers, buildTerrain } from '../world/buildArea'
+import { loadProgress } from '../world/progress'
 
-const CURRENT_AREA_ID = 'village'
+const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
 const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
@@ -45,7 +47,7 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   create(): void {
-    const area = getAreaById(CURRENT_AREA_ID)
+    const area = this.resolveArea()
     const spawn = getAreaSpawn(area)
 
     const terrain = buildTerrain(this, area)
@@ -95,6 +97,12 @@ export default class WorldScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(11)
     }
+  }
+
+  private resolveArea(): AreaDefinition {
+    const savedAreaId = loadProgress()?.areaId ?? ''
+    if (savedAreaId && savedAreaId in AREAS) return getAreaById(savedAreaId)
+    return getAreaById(NEW_CHARACTER_AREA_ID)
   }
 
   update(): void {
