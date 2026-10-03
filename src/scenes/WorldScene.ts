@@ -1,18 +1,23 @@
 import Phaser from 'phaser'
 import type { Character } from '../character'
 import { getClassById } from '../character'
+import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker } from '../world/buildArea'
 import { buildMarkers, buildTerrain } from '../world/buildArea'
-import { loadProgress } from '../world/progress'
+import { loadProgress, setProgressFlag } from '../world/progress'
 
 const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
 const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
+
+function introFlagKey(areaId: string): string {
+  return `intro:${areaId}`
+}
 
 interface WasdKeys {
   W: Phaser.Input.Keyboard.Key
@@ -30,6 +35,7 @@ export default class WorldScene extends Phaser.Scene {
   private interactHint!: Phaser.GameObjects.Text
   private npcMarkers: AreaNpcMarker[] = []
   private popupOpen = false
+  private introCardOpen = false
   private characterId = ''
   private characterClassId = ''
   private characterName = ''
@@ -97,6 +103,23 @@ export default class WorldScene extends Phaser.Scene {
         .setScrollFactor(0)
         .setDepth(11)
     }
+
+    this.maybeShowIntroCard(area)
+  }
+
+  private maybeShowIntroCard(area: AreaDefinition): void {
+    const intro = area.intro
+    if (!intro) return
+    if (loadProgress()?.flags[introFlagKey(area.id)]) return
+
+    this.popupOpen = true
+    this.introCardOpen = true
+
+    showIntroCard(intro, () => {
+      this.introCardOpen = false
+      this.popupOpen = false
+      setProgressFlag(introFlagKey(area.id), true)
+    })
   }
 
   private resolveArea(): AreaDefinition {
@@ -127,7 +150,7 @@ export default class WorldScene extends Phaser.Scene {
     this.interactHint.setVisible(nearestNpc !== undefined)
     if (nearest) this.interactHint.setPosition(nearest.x, nearest.y - 30)
 
-    if (this.popupOpen && !nearestNpc) {
+    if (this.popupOpen && !this.introCardOpen && !nearestNpc) {
       closeQuestPopup()
       this.popupOpen = false
     }
