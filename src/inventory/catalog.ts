@@ -1,4 +1,4 @@
-import type { ItemDefinition } from './types'
+import type { ItemDefinition, ItemKind } from './types'
 
 const itemData = [
   {
@@ -194,3 +194,11 @@ const itemData = [
 ] as const satisfies readonly ItemDefinition[]
 
 export const ITEMS: readonly ItemDefinition[] = itemData
+
+export function getItemById(itemId: string): ItemDefinition | undefined {
+  return ITEMS.find((item) => item.id === itemId)
+}
+
+export function getItemsByKind(kind: ItemKind): ItemDefinition[] {
+  return ITEMS.filter((item) => item.kind === kind)
+}
