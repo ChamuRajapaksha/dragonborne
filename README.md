@@ -59,7 +59,9 @@ complete them (stub). Area, position, and intro-card state all survive a reload.
 placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
-[`docs/plan.md`](docs/plan.md).
+[`docs/plan.md`](docs/plan.md). The 22-commit plan that produced the current forest/village
+world — tile legend, ASCII maps, NPC-gated quests, portals, position persistence, HUD —
+lives locally (and untracked, like `.agents/` itself) at `.agents/plans/first_plan.md`.
 
 ## Current scope notes
 
