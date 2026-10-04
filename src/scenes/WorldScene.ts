@@ -9,6 +9,7 @@ import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { loadProgress, saveProgress, setProgressFlag } from '../world/progress'
+import { TILE_SIZE } from '../world/tileset'
 
 const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
@@ -18,9 +19,42 @@ const PORTAL_RANGE = 26
 const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
+const HUD_PANEL_WIDTH = 300
+const HUD_PANEL_HEIGHT = 86
+const HUD_BACKGROUND_COLOR = 0x000000
+const HUD_BACKGROUND_ALPHA = 0.5
+const HUD_PANEL_DEPTH = 10
+const HUD_TEXT_DEPTH = 11
+const HUD_NAME_STYLE = { color: '#ffffff', fontSize: '16px', fontStyle: 'bold' } as const
+const HUD_CLASS_STYLE = { color: '#aa3bff', fontSize: '12px' } as const
+const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
+const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
+const COMPASS_POINTS = [
+  'east',
+  'south-east',
+  'south',
+  'south-west',
+  'west',
+  'north-west',
+  'north',
+  'north-east',
+] as const
+const COMPASS_SEGMENTS = COMPASS_POINTS.length
 
 function introFlagKey(areaId: string): string {
   return `intro:${areaId}`
+}
+
+function compassDirection(dx: number, dy: number): string {
+  const octant = Math.round(Math.atan2(dy, dx) / (Math.PI / (COMPASS_SEGMENTS / 2)))
+  const index = ((octant % COMPASS_SEGMENTS) + COMPASS_SEGMENTS) % COMPASS_SEGMENTS
+  return COMPASS_POINTS[index] ?? 'east'
+}
+
+interface Waypoint {
+  label: string
+  x: number
+  y: number
 }
 
 function resolveAreaId(requestedAreaId?: string): string {
@@ -49,6 +83,8 @@ export default class WorldScene extends Phaser.Scene {
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
   private interactHint!: Phaser.GameObjects.Text
+  private waypointHint!: Phaser.GameObjects.Text
+  private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
   private popupOpen = false
@@ -70,6 +106,7 @@ export default class WorldScene extends Phaser.Scene {
     this.playerPoint = { x: 0, y: 0 }
     this.npcMarkers = []
     this.portalMarkers = []
+    this.waypoint = null
     this.popupOpen = false
     this.introCardOpen = false
     this.idleSeconds = 0
@@ -97,6 +134,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.npcMarkers = buildMarkers(this, area)
     this.portalMarkers = buildPortals(this, area)
+    this.waypoint = this.resolveWaypoint(area)
 
     this.interactHint = this.add
       .text(0, 0, NPC_INTERACT_HINT, { color: '#ffffff', backgroundColor: '#00000088', fontSize: '12px' })
@@ -106,37 +144,77 @@ export default class WorldScene extends Phaser.Scene {
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
 
-    const characterName = this.character?.name ?? ''
-    if (characterName) {
-      const classInfo = getClassById(this.character?.classId ?? '')
-      const className = classInfo?.name ?? 'Unknown'
-
-      const hudBg = this.add.rectangle(0, 0, 200, 52, 0x000000, 0.5).setOrigin(0, 0)
-      hudBg.setScrollFactor(0).setDepth(10)
-
-      this.add
-        .text(12, 8, characterName, {
-          color: '#ffffff',
-          fontSize: '16px',
-          fontStyle: 'bold',
-        })
-        .setScrollFactor(0)
-        .setDepth(11)
-
-      this.add
-        .text(12, 30, className, {
-          color: '#aa3bff',
-          fontSize: '12px',
-        })
-        .setScrollFactor(0)
-        .setDepth(11)
-    }
+    this.buildHud(area)
 
     this.maybeShowIntroCard(area)
 
     this.events.once('shutdown', () => {
       this.saveCurrentProgress()
     })
+  }
+
+  private buildHud(area: AreaDefinition): void {
+    this.add
+      .rectangle(0, 0, HUD_PANEL_WIDTH, HUD_PANEL_HEIGHT, HUD_BACKGROUND_COLOR, HUD_BACKGROUND_ALPHA)
+      .setOrigin(0, 0)
+      .setScrollFactor(0)
+      .setDepth(HUD_PANEL_DEPTH)
+
+    let row = 10
+    const addRow = (
+      content: string,
+      style: Phaser.Types.GameObjects.Text.TextStyle,
+    ): Phaser.GameObjects.Text => {
+      const line = this.add
+        .text(12, row, content, style)
+        .setScrollFactor(0)
+        .setDepth(HUD_TEXT_DEPTH)
+      row += 20
+      return line
+    }
+
+    const characterName = this.character?.name ?? ''
+    if (characterName) {
+      addRow(characterName, HUD_NAME_STYLE)
+      addRow(getClassById(this.character?.classId ?? '')?.name ?? 'Unknown', HUD_CLASS_STYLE)
+    }
+
+    addRow(area.name, HUD_AREA_STYLE)
+
+    this.waypointHint = addRow('', HUD_HINT_STYLE)
+    this.refreshWaypointHint()
+  }
+
+  private resolveWaypoint(area: AreaDefinition): Waypoint | null {
+    const targetAreaId = area.waypointAreaId
+    if (!targetAreaId) return null
+
+    const portal = this.portalMarkers.find((marker) => marker.toAreaId === targetAreaId)
+    if (!portal) return null
+
+    return { label: portal.toAreaName, x: portal.x, y: portal.y }
+  }
+
+  private refreshWaypointHint(): void {
+    const waypoint = this.waypoint
+    if (!waypoint) {
+      this.waypointHint.setVisible(false)
+      return
+    }
+
+    const dx = waypoint.x - this.playerPoint.x
+    const dy = waypoint.y - this.playerPoint.y
+    const tiles = Math.round(
+      Phaser.Math.Distance.Between(this.playerPoint.x, this.playerPoint.y, waypoint.x, waypoint.y) /
+        TILE_SIZE,
+    )
+    const text =
+      tiles <= 1
+        ? `${waypoint.label} is right here`
+        : `${waypoint.label}: ${compassDirection(dx, dy)}, ${tiles} tiles`
+
+    if (this.waypointHint.text !== text) this.waypointHint.setText(text)
+    this.waypointHint.setVisible(true)
   }
 
   private maybeShowIntroCard(area: AreaDefinition): void {
@@ -171,6 +249,7 @@ export default class WorldScene extends Phaser.Scene {
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.trackIdleSave(delta)
+    this.refreshWaypointHint()
 
     const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()

@@ -76,6 +76,8 @@ export interface AreaDefinition {
   npcs: readonly AreaNpcPlacement[]
   portals: readonly Portal[]
   intro?: AreaIntro
+  /** Area the HUD waypoint hint points at; must be the destination of one of `portals`. */
+  waypointAreaId?: string
 }
 
 const FOREST_MAP = [
@@ -209,6 +211,7 @@ export const FOREST: AreaDefinition = {
   map: FOREST_MAP,
   defaultSpawn: { x: 11, y: 24 },
   npcs: [{ npcId: 'forest-guide', x: 16, y: 22 }],
+  waypointAreaId: 'village',
   portals: [
     {
       x: 62,
