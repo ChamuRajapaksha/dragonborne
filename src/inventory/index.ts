@@ -11,6 +11,7 @@ export { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
 export { ITEMS, getItemById, getItemsByKind } from './catalog'
 export type {
   AddItemResult,
+  EquipResult,
   ItemContainer,
   RemoveItemResult,
   SlotRef,
@@ -19,8 +20,10 @@ export {
   addItem,
   countItem,
   createEmptyInventory,
+  equipFromSlot,
   moveStack,
   remainingCapacity,
   removeItem,
   splitStack,
+  unequipToSlot,
 } from './logic'

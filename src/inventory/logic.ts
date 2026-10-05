@@ -228,6 +228,67 @@ export function countItem(
   )
 }
 
+function setEquipment(
+  state: InventoryState,
+  slot: EquipSlot,
+  stack: ItemStack | null,
+): InventoryState {
+  return {
+    ...state,
+    equipment: { ...state.equipment, [slot]: stack },
+  }
+}
+
+export interface EquipResult {
+  state: InventoryState
+  /** False when nothing changed — see `reason`. */
+  ok: boolean
+  reason?: 'empty-slot' | 'not-equippable' | 'inventory-full' | 'nothing-equipped'
+  /** The item that came out of the gear slot, if a previous one was replaced. */
+  displaced: ItemStack | null
+}
+
+/**
+ * Moves the stack at `ref` into the gear slot its item declares. The stack leaves
+ * the container, so the slot it vacated is used for whatever was equipped before —
+ * which makes replacing a piece of gear impossible to fail.
+ */
+export function equipFromSlot(state: InventoryState, ref: SlotRef): EquipResult {
+  const stack = readSlot(state, ref)
+  if (!stack) return { state, ok: false, reason: 'empty-slot', displaced: null }
+
+  const item = getItemById(stack.itemId)
+  if (!item?.equipSlot) {
+    return { state, ok: false, reason: 'not-equippable', displaced: null }
+  }
+
+  const previous = state.equipment[item.equipSlot]
+  const withGear = setEquipment(writeSlot(state, ref, null), item.equipSlot, stack)
+
+  if (!previous) return { state: withGear, ok: true, displaced: null }
+
+  const refilled = writeSlot(withGear, ref, previous)
+  return { state: refilled, ok: true, displaced: previous }
+}
+
+/**
+ * Moves the gear in `slot` back into the lowest free carryable slot. On a full
+ * inventory the item stays equipped and `ok` is false — nothing is ever dropped.
+ */
+export function unequipToSlot(
+  state: InventoryState,
+  slot: EquipSlot,
+  container: ItemContainer = 'slots',
+): EquipResult {
+  const stack = state.equipment[slot]
+  if (!stack) return { state, ok: false, reason: 'nothing-equipped', displaced: null }
+
+  const result = addItem(state, stack.itemId, stack.quantity, container)
+  if (result.remainder > 0) return { state, ok: false, reason: 'inventory-full', displaced: null }
+
+  return { state: setEquipment(result.state, slot, null), ok: true, displaced: stack }
+}
+
 /** Capacity left for `itemId` in one container, respecting per-item stack limits. */
 export function remainingCapacity(
   state: InventoryState,
