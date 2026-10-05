@@ -2,6 +2,15 @@ import { getItemById } from './catalog'
 import type { EquipSlot, InventoryState, ItemStack } from './types'
 import { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
 
+/** Lowest-indexed empty slot in a container, or `null` when there is none. */
+export function firstFreeSlot(
+  state: InventoryState,
+  container: ItemContainer = 'slots',
+): SlotRef | null {
+  const index = readContainer(state, container).findIndex((stack) => !stack)
+  return index < 0 ? null : { container, index }
+}
+
 export function createEmptyInventory(): InventoryState {
   const equipment = Object.fromEntries(
     EQUIP_SLOTS.map((slot) => [slot, null]),

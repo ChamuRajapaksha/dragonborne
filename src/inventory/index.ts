@@ -22,9 +22,16 @@ export {
   createEmptyInventory,
   effectiveStats,
   equipFromSlot,
+  firstFreeSlot,
   moveStack,
   remainingCapacity,
   removeItem,
   splitStack,
   unequipToSlot,
 } from './logic'
+export {
+  clearInventory,
+  loadInventory,
+  migrateInventory,
+  saveInventory,
+} from './storage'
