@@ -1,4 +1,5 @@
 import type { InventoryState } from './inventory'
+import { paintItemIcons } from './itemIcon'
 
 const PANEL_ID = 'inventory-panel'
 
@@ -99,6 +100,7 @@ export function showInventoryPanel(state: InventoryState): void {
   const overlay = document.createElement('div')
   overlay.id = PANEL_ID
   overlay.innerHTML = panelContent(state)
+  paintItemIcons(overlay)
   document.body.appendChild(overlay)
 
   overlay.querySelector('#inventory-close')?.addEventListener('click', () => {
@@ -111,6 +113,7 @@ export function renderInventoryPanel(state: InventoryState): void {
   const overlay = document.getElementById(PANEL_ID)
   if (!overlay) return
   overlay.innerHTML = panelContent(state)
+  paintItemIcons(overlay)
   overlay.querySelector('#inventory-close')?.addEventListener('click', () => {
     closeInventoryPanel()
   })
