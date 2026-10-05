@@ -220,3 +220,108 @@ body {
   color: #fff;
   cursor: pointer;
 }
+
+#inventory-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.inv-panel {
+  background: #2b2b36;
+  color: #e5e5ea;
+  padding: 20px 24px;
+  border-radius: 8px;
+  min-width: 380px;
+}
+
+.inv-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+}
+
+.inv-section-label {
+  margin: 14px 0 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b8b8c4;
+}
+
+.inv-equip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #4a4a58;
+}
+
+.inv-equip-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  border: 1px solid #4a4a58;
+  border-radius: 6px;
+  background: #1d1d28;
+}
+
+.inv-equip-label {
+  position: absolute;
+  bottom: 3px;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8a96;
+}
+
+.inv-grid {
+  display: grid;
+  grid-template-columns: repeat(9, 44px);
+  gap: 6px;
+}
+
+.inv-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  border: 1px solid #4a4a58;
+  border-radius: 4px;
+  background: #1d1d28;
+}
+
+.inv-slot-empty {
+  background: #23232d;
+  border-style: dashed;
+  border-color: #3a3a46;
+}
+
+.inv-slot-glyph {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.inv-slot-count {
+  position: absolute;
+  right: 3px;
+  bottom: 1px;
+  font-size: 11px;
+  color: #ffd27f;
+}
+
+.inv-panel button {
+  display: block;
+  margin: 18px 0 0 auto;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #4a4a58;
+  color: #fff;
+  cursor: pointer;
+}
