@@ -1,7 +1,21 @@
-import type { InventoryState } from './inventory'
+import type { EquipSlot, InventoryState, SlotRef } from './inventory'
+import {
+  equipFromSlot,
+  getItemById,
+  moveStack,
+  splitStack,
+  subscribeInventory,
+  unequipToSlot,
+  updateInventory,
+} from './inventory'
 import { paintItemIcons } from './itemIcon'
 
 const PANEL_ID = 'inventory-panel'
+
+/** Slot the pointer is dragging from, while a drag is in flight. */
+let dragSource: SlotRef | null = null
+
+let unsubscribe: (() => void) | null = null
 
 export function isInventoryPanelOpen(): boolean {
   return document.getElementById(PANEL_ID) !== null
@@ -9,6 +23,9 @@ export function isInventoryPanelOpen(): boolean {
 
 export function closeInventoryPanel(): void {
   document.getElementById(PANEL_ID)?.remove()
+  unsubscribe?.()
+  unsubscribe = null
+  dragSource = null
 }
 
 const EQUIP_SLOT_LABELS = {
@@ -90,6 +107,115 @@ function panelContent(state: InventoryState): string {
   `
 }
 
+function readSlotRef(element: Element): SlotRef | null {
+  const container = element.getAttribute('data-container')
+  const index = Number(element.getAttribute('data-index'))
+  if ((container !== 'slots' && container !== 'hotbar') || !Number.isInteger(index)) return null
+  return { container, index }
+}
+
+/**
+ * Drag and drop, bound by delegation on the overlay so it survives the innerHTML
+ * rewrite in `renderInventoryPanel`.
+ *
+ * Every drop routes through `updateInventory`, which persists and notifies — so the
+ * panel redraws from the store rather than from a local guess, and the no-duplication
+ * invariant is enforced by `moveStack`/`equipFromSlot` rather than by the DOM.
+ */
+function bindDragAndDrop(overlay: HTMLElement): void {
+  overlay.addEventListener('dragstart', (event) => {
+    const target = (event.target as Element).closest('[data-container]')
+    const ref = target ? readSlotRef(target) : null
+    if (!ref) return
+
+    dragSource = ref
+    event.dataTransfer?.setData('text/plain', `${ref.container}:${ref.index}`)
+    if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+    target?.classList.add('inv-slot-dragging')
+  })
+
+  overlay.addEventListener('dragend', () => {
+    dragSource = null
+    overlay.querySelectorAll('.inv-slot-dragging').forEach((node) => {
+      node.classList.remove('inv-slot-dragging')
+    })
+  })
+
+  overlay.addEventListener('dragover', (event) => {
+    if (!dragSource) return
+    const target = (event.target as Element).closest(
+      '[data-container], [data-equip]',
+    )
+    if (!target) return
+    event.preventDefault()
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+    target.classList.add('inv-slot-dragover')
+  })
+
+  overlay.addEventListener('dragleave', (event) => {
+    const target = (event.target as Element).closest(
+      '[data-container], [data-equip]',
+    )
+    target?.classList.remove('inv-slot-dragover')
+  })
+
+  overlay.addEventListener('drop', (event) => {
+    const target = (event.target as Element).closest(
+      '[data-container], [data-equip]',
+    )
+    if (!target || !dragSource) return
+    event.preventDefault()
+    target.classList.remove('inv-slot-dragover')
+
+    const from = dragSource
+    dragSource = null
+
+    const equipSlot = target.getAttribute('data-equip') as EquipSlot | null
+    if (equipSlot) {
+      // `equipFromSlot` picks the gear slot from the item itself, so the drop is only
+      // honoured when the dragged item really belongs in the slot under the pointer.
+      // Whatever was already worn returns to the slot the dragged stack came from.
+      updateInventory((current) => {
+        const source = current[from.container][from.index]
+        const item = source ? getItemById(source.itemId) : undefined
+        if (!item || item.equipSlot !== equipSlot) return current
+        return equipFromSlot(current, from).state
+      })
+      return
+    }
+
+    const to = readSlotRef(target)
+    if (!to) return
+    updateInventory((current) => moveStack(current, from, to))
+  })
+
+  // Right-click splits a stack in half; the split-off half takes the lowest free
+  // slot, which is `splitStack`'s job.
+  overlay.addEventListener('contextmenu', (event) => {
+    const target = (event.target as Element).closest('[data-container]')
+    const ref = target ? readSlotRef(target) : null
+    if (!ref) return
+    event.preventDefault()
+    updateInventory((current) => splitStack(current, ref, 1))
+  })
+
+  // Double-clicking a stack wears it, and double-clicking a gear slot takes it off.
+  overlay.addEventListener('dblclick', (event) => {
+    const target = (event.target as Element).closest('[data-container], [data-equip]')
+    if (!target) return
+
+    const equipSlot = target.getAttribute('data-equip') as EquipSlot | null
+    if (equipSlot) {
+      updateInventory((current) => unequipToSlot(current, equipSlot).state)
+      return
+    }
+
+    const ref = readSlotRef(target)
+    if (!ref) return
+    updateInventory((current) => equipFromSlot(current, ref).state)
+  })
+}
+
 /**
  * Opens the panel if it is closed. Idempotent — calling it twice does not stack
  * overlays.
@@ -102,6 +228,12 @@ export function showInventoryPanel(state: InventoryState): void {
   overlay.innerHTML = panelContent(state)
   paintItemIcons(overlay)
   document.body.appendChild(overlay)
+
+  bindDragAndDrop(overlay)
+
+  unsubscribe = subscribeInventory((next) => {
+    renderInventoryPanel(next)
+  })
 
   overlay.querySelector('#inventory-close')?.addEventListener('click', () => {
     closeInventoryPanel()

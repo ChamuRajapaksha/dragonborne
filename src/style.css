@@ -381,3 +381,12 @@ body {
   border-color: #aa3bff;
   box-shadow: 0 0 0 1px #aa3bff;
 }
+
+.inv-slot-dragging {
+  opacity: 0.4;
+}
+
+.inv-slot,
+.hotbar-slot {
+  cursor: grab;
+}
