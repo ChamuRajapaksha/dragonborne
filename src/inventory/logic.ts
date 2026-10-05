@@ -121,6 +121,101 @@ export function removeItem(
   }
 }
 
+/** Addresses one of the 36 carryable slots: 9 hotbar + 27 grid. */
+export interface SlotRef {
+  container: ItemContainer
+  index: number
+}
+
+function readSlot(state: InventoryState, ref: SlotRef): ItemStack | null {
+  return readContainer(state, ref.container)[ref.index] ?? null
+}
+
+function writeSlot(
+  state: InventoryState,
+  ref: SlotRef,
+  stack: ItemStack | null,
+): InventoryState {
+  const contents = readContainer(state, ref.container).slice()
+  contents[ref.index] = stack
+  return writeContainer(state, ref.container, contents)
+}
+
+function isSameSlot(a: SlotRef, b: SlotRef): boolean {
+  return a.container === b.container && a.index === b.index
+}
+
+function isInRange(state: InventoryState, ref: SlotRef): boolean {
+  const contents = readContainer(state, ref.container)
+  return ref.index >= 0 && ref.index < contents.length
+}
+
+/**
+ * Moves or swaps the stack at `from` into `to`. Both may live in different
+ * containers, so a hotbar slot can be dropped into the grid and back.
+ *
+ * Merging rules, in order:
+ * - empty target — the stack moves whole;
+ * - same item and the target has room — the stacks merge;
+ * - otherwise — the two slots swap, so nothing is ever lost or duplicated.
+ *
+ * Returns `state` unchanged for an empty source or an out-of-range index.
+ */
+export function moveStack(
+  state: InventoryState,
+  from: SlotRef,
+  to: SlotRef,
+): InventoryState {
+  if (isSameSlot(from, to)) return state
+
+  const source = readSlot(state, from)
+  const target = readSlot(state, to)
+  if (!source || !isInRange(state, to)) return state
+
+  const freed = writeSlot(state, from, null)
+  if (!target) return writeSlot(freed, to, source)
+
+  const item = getItemById(source.itemId)
+  const room = item ? item.maxStack - target.quantity : 0
+
+  if (
+    item &&
+    source.itemId === target.itemId &&
+    source.quantity <= room
+  ) {
+    const merged: ItemStack = {
+      itemId: source.itemId,
+      quantity: target.quantity + source.quantity,
+    }
+    return writeSlot(freed, to, merged)
+  }
+
+  return writeSlot(writeSlot(freed, to, source), from, target)
+}
+
+/**
+ * Splits `amount` off the stack at `ref` into the lowest free slot of the same
+ * container. Returns `state` unchanged when there is nothing to split or no room.
+ */
+export function splitStack(
+  state: InventoryState,
+  ref: SlotRef,
+  amount: number,
+): InventoryState {
+  const source = readSlot(state, ref)
+  if (!source || amount <= 0 || amount >= source.quantity) return state
+
+  const contents = readContainer(state, ref.container)
+  const freeIndex = contents.findIndex((stack, index) => !stack && index !== ref.index)
+  if (freeIndex < 0) return state
+
+  return writeSlot(
+    writeSlot(state, ref, { itemId: source.itemId, quantity: source.quantity - amount }),
+    { container: ref.container, index: freeIndex },
+    { itemId: source.itemId, quantity: amount },
+  )
+}
+
 /** Total of `itemId` held in one container. */
 export function countItem(
   state: InventoryState,

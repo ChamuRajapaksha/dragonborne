@@ -9,11 +9,18 @@ export type {
 } from './types'
 export { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
 export { ITEMS, getItemById, getItemsByKind } from './catalog'
-export type { AddItemResult, ItemContainer, RemoveItemResult } from './logic'
+export type {
+  AddItemResult,
+  ItemContainer,
+  RemoveItemResult,
+  SlotRef,
+} from './logic'
 export {
   addItem,
   countItem,
   createEmptyInventory,
+  moveStack,
   remainingCapacity,
   removeItem,
+  splitStack,
 } from './logic'
