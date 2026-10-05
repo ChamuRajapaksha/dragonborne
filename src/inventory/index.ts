@@ -35,3 +35,11 @@ export {
   migrateInventory,
   saveInventory,
 } from './storage'
+export {
+  getInventory,
+  hydrateInventory,
+  resetInventory,
+  setInventory,
+  subscribeInventory,
+  updateInventory,
+} from './store'
