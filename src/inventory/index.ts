@@ -20,6 +20,7 @@ export {
   addItem,
   countItem,
   createEmptyInventory,
+  effectiveStats,
   equipFromSlot,
   moveStack,
   remainingCapacity,

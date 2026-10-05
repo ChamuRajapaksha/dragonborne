@@ -216,6 +216,31 @@ export function splitStack(
   )
 }
 
+/**
+ * Base class stats plus the bonuses of everything worn. Returns a fresh object —
+ * `character.stats` is never mutated, so quest gating can call this freely.
+ *
+ * Stats that only gear provides (`vitality`, `guard`) appear here even though no
+ * class declares them.
+ */
+export function effectiveStats(
+  stats: Record<string, number>,
+  state: InventoryState,
+): Record<string, number> {
+  const merged: Record<string, number> = { ...stats }
+
+  for (const stack of Object.values(state.equipment)) {
+    if (!stack) continue
+    const item = getItemById(stack.itemId)
+    if (!item?.statBonuses) continue
+    for (const [stat, bonus] of Object.entries(item.statBonuses)) {
+      merged[stat] = (merged[stat] ?? 0) + (bonus ?? 0)
+    }
+  }
+
+  return merged
+}
+
 /** Total of `itemId` held in one container. */
 export function countItem(
   state: InventoryState,
