@@ -4,7 +4,8 @@ import { getClassById } from '../character'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
-import { getInventory, subscribeInventory, updateInventory } from '../inventory'
+import { getItemById, getInventory, subscribeInventory, updateInventory } from '../inventory'
+import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
@@ -23,7 +24,7 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 86
+const HUD_PANEL_HEIGHT = 110
 const HUD_BACKGROUND_COLOR = 0x000000
 const HUD_BACKGROUND_ALPHA = 0.5
 const HUD_PANEL_DEPTH = 10
@@ -32,6 +33,7 @@ const HUD_NAME_STYLE = { color: '#ffffff', fontSize: '16px', fontStyle: 'bold' }
 const HUD_CLASS_STYLE = { color: '#aa3bff', fontSize: '12px' } as const
 const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
+const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const COMPASS_POINTS = [
   'east',
   'south-east',
@@ -89,6 +91,7 @@ export default class WorldScene extends Phaser.Scene {
   private hotbarKeys: Phaser.Input.Keyboard.Key[] = []
   private interactHint!: Phaser.GameObjects.Text
   private waypointHint!: Phaser.GameObjects.Text
+  private hudSelectedItem!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
@@ -170,7 +173,10 @@ export default class WorldScene extends Phaser.Scene {
     this.buildHud(area)
 
     mountHotbar(getInventory())
-    this.unsubscribeInventory = subscribeInventory((state) => renderHotbar(state))
+    this.unsubscribeInventory = subscribeInventory((state) => {
+      renderHotbar(state)
+      this.refreshSelectedHud(state)
+    })
 
     this.maybeShowIntroCard(area)
 
@@ -212,6 +218,20 @@ export default class WorldScene extends Phaser.Scene {
 
     this.waypointHint = addRow('', HUD_HINT_STYLE)
     this.refreshWaypointHint()
+
+    this.hudSelectedItem = addRow('', HUD_SELECTED_STYLE)
+    this.refreshSelectedHud(getInventory())
+  }
+
+  private refreshSelectedHud(state: InventoryState): void {
+    const stack = state.hotbar[state.selectedHotbarSlot]
+    const item = stack ? getItemById(stack.itemId) : undefined
+    const text =
+      !stack || !item
+        ? 'Selected: nothing'
+        : `Selected: ${item.name}${stack.quantity > 1 ? ` \u00d7 ${stack.quantity}` : ''}`
+
+    if (this.hudSelectedItem.text !== text) this.hudSelectedItem.setText(text)
   }
 
   private resolveWaypoint(area: AreaDefinition): Waypoint | null {
