@@ -334,6 +334,12 @@ export default class WorldScene extends Phaser.Scene {
       this.showInteractHint(`Press E \u2192 ${portal.toAreaName}`, portal.x, portal.y - 30)
     } else if (nearest) {
       this.showInteractHint(NPC_INTERACT_HINT, nearest.x, nearest.y - 30)
+    } else if (nearestItem) {
+      const label =
+        nearestItem.quantity > 1
+          ? `${nearestItem.name} \u00d7 ${nearestItem.quantity}`
+          : nearestItem.name
+      this.showInteractHint(`Press E \u2192 ${label}`, nearestItem.x, nearestItem.y - 30)
     } else {
       this.interactHint.setVisible(false)
     }
