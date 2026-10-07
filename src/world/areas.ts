@@ -213,6 +213,13 @@ export const VILLAGE: AreaDefinition = {
       label: 'To the Thornwood',
     },
   ],
+  items: [
+    { itemId: 'iron-ore', x: 38, y: 10, quantity: 5 },
+    { itemId: 'bog-reed', x: 7, y: 16, quantity: 3 },
+    { itemId: 'coil-rope', x: 17, y: 19 },
+    { itemId: 'rough-hides', x: 40, y: 39, quantity: 2 },
+    { itemId: 'leather-cap', x: 15, y: 35, onceFlag: true },
+  ],
 }
 
 export const FOREST: AreaDefinition = {
@@ -231,6 +238,14 @@ export const FOREST: AreaDefinition = {
       toSpawn: { x: 4, y: 37 },
       label: 'To Emberhold',
     },
+  ],
+  items: [
+    { itemId: 'torch', x: 7, y: 24 },
+    { itemId: 'heath-herb', x: 13, y: 27, quantity: 3 },
+    { itemId: 'oak-kindling', x: 26, y: 17, quantity: 5 },
+    { itemId: 'rough-hides', x: 45, y: 8 },
+    { itemId: 'emberglass', x: 6, y: 16, onceFlag: true },
+    { itemId: 'worn-dagger', x: 57, y: 26, onceFlag: true },
   ],
   intro: {
     title: 'The Thornwood',
