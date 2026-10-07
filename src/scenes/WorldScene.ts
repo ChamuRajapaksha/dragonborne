@@ -3,6 +3,7 @@ import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
+import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
 import { getInventory, subscribeInventory, updateInventory } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { getNpcById } from '../story'
@@ -84,6 +85,7 @@ export default class WorldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
+  private inventoryKey!: Phaser.Input.Keyboard.Key
   private hotbarKeys: Phaser.Input.Keyboard.Key[] = []
   private interactHint!: Phaser.GameObjects.Text
   private waypointHint!: Phaser.GameObjects.Text
@@ -92,6 +94,7 @@ export default class WorldScene extends Phaser.Scene {
   private portalMarkers: AreaPortalMarker[] = []
   private popupOpen = false
   private introCardOpen = false
+  private inventoryOpen = false
   private unsubscribeInventory: (() => void) | null = null
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
@@ -114,6 +117,7 @@ export default class WorldScene extends Phaser.Scene {
     this.waypoint = null
     this.popupOpen = false
     this.introCardOpen = false
+    this.inventoryOpen = false
     this.unsubscribeInventory = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
@@ -137,6 +141,7 @@ export default class WorldScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
+    this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I)
 
     this.hotbarKeys = [
       Phaser.Input.Keyboard.KeyCodes.ONE,
@@ -272,6 +277,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
+    this.syncInventoryFlag()
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
@@ -281,6 +287,11 @@ export default class WorldScene extends Phaser.Scene {
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
+    const inventoryPressed = Phaser.Input.Keyboard.JustDown(this.inventoryKey)
+
+    if (inventoryPressed && (this.inventoryOpen || (!this.popupOpen && !this.introCardOpen))) {
+      this.toggleInventory()
+    }
 
     if (portal && interactPressed && !this.popupOpen) {
       this.usePortal(portal)
@@ -304,6 +315,29 @@ export default class WorldScene extends Phaser.Scene {
       showQuestPopup(nearestNpc, this.character.classId, this.character.stats)
       this.popupOpen = true
     }
+  }
+
+  /**
+   * The panel's Close button removes its DOM without asking the scene, so the flag
+   * is reconciled against the DOM before anything reads it.
+   */
+  private syncInventoryFlag(): void {
+    if (!this.inventoryOpen || isInventoryPanelOpen()) return
+    this.inventoryOpen = false
+    this.popupOpen = false
+  }
+
+  private toggleInventory(): void {
+    closeInventoryPanel()
+    if (this.inventoryOpen) {
+      this.inventoryOpen = false
+      this.popupOpen = false
+      return
+    }
+
+    showInventoryPanel(getInventory())
+    this.inventoryOpen = true
+    this.popupOpen = true
   }
 
   /** `1`–`9` select the matching hotbar slot; the store notifies the hotbar. */
