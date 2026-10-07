@@ -3,7 +3,7 @@ import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
-import { getInventory, subscribeInventory } from '../inventory'
+import { getInventory, subscribeInventory, updateInventory } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
@@ -84,6 +84,7 @@ export default class WorldScene extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
+  private hotbarKeys: Phaser.Input.Keyboard.Key[] = []
   private interactHint!: Phaser.GameObjects.Text
   private waypointHint!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
@@ -109,6 +110,7 @@ export default class WorldScene extends Phaser.Scene {
     this.playerPoint = { x: 0, y: 0 }
     this.npcMarkers = []
     this.portalMarkers = []
+    this.hotbarKeys = []
     this.waypoint = null
     this.popupOpen = false
     this.introCardOpen = false
@@ -135,6 +137,18 @@ export default class WorldScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
+
+    this.hotbarKeys = [
+      Phaser.Input.Keyboard.KeyCodes.ONE,
+      Phaser.Input.Keyboard.KeyCodes.TWO,
+      Phaser.Input.Keyboard.KeyCodes.THREE,
+      Phaser.Input.Keyboard.KeyCodes.FOUR,
+      Phaser.Input.Keyboard.KeyCodes.FIVE,
+      Phaser.Input.Keyboard.KeyCodes.SIX,
+      Phaser.Input.Keyboard.KeyCodes.SEVEN,
+      Phaser.Input.Keyboard.KeyCodes.EIGHT,
+      Phaser.Input.Keyboard.KeyCodes.NINE,
+    ].map((code) => this.input.keyboard!.addKey(code))
 
     this.npcMarkers = buildMarkers(this, area)
     this.portalMarkers = buildPortals(this, area)
@@ -258,6 +272,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
+    this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
 
@@ -289,6 +304,15 @@ export default class WorldScene extends Phaser.Scene {
       showQuestPopup(nearestNpc, this.character.classId, this.character.stats)
       this.popupOpen = true
     }
+  }
+
+  /** `1`–`9` select the matching hotbar slot; the store notifies the hotbar. */
+  private selectHotbarSlotFromKeys(): void {
+    this.hotbarKeys.forEach((key, index) => {
+      if (!Phaser.Input.Keyboard.JustDown(key)) return
+      if (getInventory().selectedHotbarSlot === index) return
+      updateInventory((current) => ({ ...current, selectedHotbarSlot: index }))
+    })
   }
 
   private showInteractHint(text: string, x: number, y: number): void {
