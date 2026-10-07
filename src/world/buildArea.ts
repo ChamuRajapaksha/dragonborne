@@ -2,6 +2,7 @@ import type Phaser from 'phaser'
 import type { AreaDefinition } from './areas'
 import { getAreaById, getAreaSize, parseAreaMap, tileToWorld } from './areas'
 import { getNpcById } from '../story'
+import { getItemById } from '../inventory'
 import {
   COLLIDING_TILE_INDEXES,
   TILESET_KEY,
@@ -26,6 +27,17 @@ export interface AreaPortalMarker {
   label: string
   x: number
   y: number
+}
+
+export interface AreaItemMarker {
+  itemId: string
+  name: string
+  /** Units still lying on the ground; decremented by partial pickups. */
+  quantity: number
+  x: number // px
+  y: number // px
+  /** The rendered placeholder, so a pickup can take it off the map. */
+  object: Phaser.GameObjects.Rectangle
 }
 
 export function buildTerrain(
@@ -119,6 +131,41 @@ export function buildPortals(
       label: portal.label,
       x,
       y,
+    }
+  })
+}
+
+/**
+ * Renders every item lying in the area as a one-tile placeholder in the item's
+ * own colour. Unknown item ids throw at `create()` time, same philosophy as an
+ * unknown npc id in `buildMarkers`.
+ */
+export function buildItems(
+  scene: Phaser.Scene,
+  area: AreaDefinition,
+): AreaItemMarker[] {
+  return (area.items ?? []).map((placement) => {
+    const item = getItemById(placement.itemId)
+    if (!item) {
+      throw new Error(
+        `Area '${area.id}' places unknown item '${placement.itemId}' at ${placement.x},${placement.y}`,
+      )
+    }
+
+    const { x, y } = tileToWorld(placement)
+
+    const object = scene.add
+      .rectangle(x, y, 16, 16, item.icon.color)
+      .setStrokeStyle(2, 0x221c0f)
+      .setDepth(1)
+
+    return {
+      itemId: item.id,
+      name: item.name,
+      quantity: placement.quantity ?? 1,
+      x,
+      y,
+      object,
     }
   })
 }

@@ -10,8 +10,8 @@ import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
-import type { AreaNpcMarker, AreaPortalMarker } from '../world/buildArea'
-import { buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
+import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
+import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { loadProgress, saveProgress, setProgressFlag } from '../world/progress'
 import { TILE_SIZE } from '../world/tileset'
 
@@ -95,6 +95,8 @@ export default class WorldScene extends Phaser.Scene {
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
+  /** Items lying in the area, kept live so pickups can remove them. */
+  itemMarkers: AreaItemMarker[] = []
   private popupOpen = false
   private introCardOpen = false
   private inventoryOpen = false
@@ -116,6 +118,7 @@ export default class WorldScene extends Phaser.Scene {
     this.playerPoint = { x: 0, y: 0 }
     this.npcMarkers = []
     this.portalMarkers = []
+    this.itemMarkers = []
     this.hotbarKeys = []
     this.waypoint = null
     this.popupOpen = false
@@ -160,6 +163,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.npcMarkers = buildMarkers(this, area)
     this.portalMarkers = buildPortals(this, area)
+    this.itemMarkers = buildItems(this, area)
     this.waypoint = this.resolveWaypoint(area)
 
     this.interactHint = this.add
