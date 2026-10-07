@@ -7,6 +7,7 @@ import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '.
 import { addItem, getItemById, getInventory, subscribeInventory, updateInventory } from '../inventory'
 import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
+import { showToast } from '../toast'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
@@ -359,6 +360,7 @@ export default class WorldScene extends Phaser.Scene {
    */
   private pickupItem(marker: AreaItemMarker): void {
     let gained = 0
+    let remainder = 0
 
     updateInventory((current) => {
       const intoHotbar = addItem(current, marker.itemId, marker.quantity, 'hotbar')
@@ -367,9 +369,11 @@ export default class WorldScene extends Phaser.Scene {
           ? addItem(intoHotbar.state, marker.itemId, intoHotbar.remainder, 'slots')
           : intoHotbar
       gained = marker.quantity - result.remainder
+      remainder = result.remainder
       return result.state
     })
 
+    if (remainder > 0) showToast('Your pack is full')
     if (gained <= 0) return
 
     marker.quantity -= gained
