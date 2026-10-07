@@ -312,7 +312,9 @@ export default class WorldScene extends Phaser.Scene {
       this.interactHint.setVisible(false)
     }
 
-    if (this.popupOpen && !this.introCardOpen && !nearestNpc) {
+    // The inventory sets `popupOpen` too, but walk-away must never dismiss it —
+    // only the I key or the panel's own Close button does.
+    if (this.popupOpen && !this.introCardOpen && !this.inventoryOpen && !nearestNpc) {
       closeQuestPopup()
       this.popupOpen = false
     }
