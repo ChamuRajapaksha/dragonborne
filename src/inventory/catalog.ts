@@ -1,4 +1,4 @@
-import type { ItemDefinition, ItemKind } from './types'
+import type { ItemDefinition, ItemKind, ItemStack } from './types'
 
 const itemData = [
   {
@@ -194,6 +194,15 @@ const itemData = [
 ] as const satisfies readonly ItemDefinition[]
 
 export const ITEMS: readonly ItemDefinition[] = itemData
+
+/** What every new character starts with: the traveller's kit, hotbar first. */
+export const STARTING_ITEMS: readonly ItemStack[] = [
+  { itemId: 'torch', quantity: 1 },
+  { itemId: 'waterskin', quantity: 1 },
+  { itemId: 'bedroll', quantity: 1 },
+  { itemId: 'coil-rope', quantity: 1 },
+  { itemId: 'heath-herb', quantity: 5 },
+]
 
 export function getItemById(itemId: string): ItemDefinition | undefined {
   return ITEMS.find((item) => item.id === itemId)
