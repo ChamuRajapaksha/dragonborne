@@ -23,6 +23,7 @@ export {
   effectiveStats,
   equipFromSlot,
   firstFreeSlot,
+  grantStartingKit,
   moveStack,
   remainingCapacity,
   removeItem,

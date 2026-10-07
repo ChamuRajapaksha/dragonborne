@@ -1,4 +1,4 @@
-import { getItemById } from './catalog'
+import { getItemById, STARTING_ITEMS } from './catalog'
 import type { EquipSlot, InventoryState, ItemStack } from './types'
 import { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
 
@@ -27,6 +27,27 @@ export function createEmptyInventory(): InventoryState {
 
 /** Which stack array an operation applies to. Equipment is not a container. */
 export type ItemContainer = 'slots' | 'hotbar'
+
+/**
+ * Fills the hotbar with the starting kit, overflowing into the pack. Pure — the
+ * kit is a parameter so tests can supply their own.
+ */
+export function grantStartingKit(
+  state: InventoryState,
+  kit: readonly ItemStack[] = STARTING_ITEMS,
+): InventoryState {
+  let next = state
+
+  for (const entry of kit) {
+    const intoHotbar = addItem(next, entry.itemId, entry.quantity, 'hotbar')
+    next = intoHotbar.state
+    if (intoHotbar.remainder > 0) {
+      next = addItem(next, entry.itemId, intoHotbar.remainder, 'slots').state
+    }
+  }
+
+  return next
+}
 
 function readContainer(state: InventoryState, container: ItemContainer): (ItemStack | null)[] {
   return container === 'hotbar' ? state.hotbar : state.slots
