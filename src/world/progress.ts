@@ -50,6 +50,14 @@ export function getProgressFlag(flag: string): boolean {
   return loadProgress()?.flags[flag] === true
 }
 
+/**
+ * Flag key for a one-time pickup, keyed by area, item and tile so two placements
+ * of the same item never share a flag. Mirrors `introFlagKey` in `WorldScene`.
+ */
+export function pickupFlagKey(areaId: string, itemId: string, x: number, y: number): string {
+  return `pickup:${areaId}:${itemId}:${x},${y}`
+}
+
 export function clearProgress(): void {
   localStorage.removeItem(STORAGE_KEY)
 }

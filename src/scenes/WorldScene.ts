@@ -373,8 +373,10 @@ export default class WorldScene extends Phaser.Scene {
     if (gained <= 0) return
 
     marker.quantity -= gained
+    // Partial pickup: the rest stays on the ground and the flag stays unset.
     if (marker.quantity > 0) return
 
+    if (marker.flagKey) setProgressFlag(marker.flagKey)
     marker.object.destroy()
     this.itemMarkers = this.itemMarkers.filter((entry) => entry !== marker)
   }

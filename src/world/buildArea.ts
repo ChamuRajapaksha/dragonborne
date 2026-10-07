@@ -3,6 +3,7 @@ import type { AreaDefinition } from './areas'
 import { getAreaById, getAreaSize, parseAreaMap, tileToWorld } from './areas'
 import { getNpcById } from '../story'
 import { getItemById } from '../inventory'
+import { getProgressFlag, pickupFlagKey } from './progress'
 import {
   COLLIDING_TILE_INDEXES,
   TILESET_KEY,
@@ -38,6 +39,8 @@ export interface AreaItemMarker {
   y: number // px
   /** The rendered placeholder, so a pickup can take it off the map. */
   object: Phaser.GameObjects.Rectangle
+  /** Progress flag to record once the stack is fully collected; null = respawns. */
+  flagKey: string | null
 }
 
 export function buildTerrain(
@@ -144,13 +147,18 @@ export function buildItems(
   scene: Phaser.Scene,
   area: AreaDefinition,
 ): AreaItemMarker[] {
-  return (area.items ?? []).map((placement) => {
+  return (area.items ?? []).flatMap((placement) => {
     const item = getItemById(placement.itemId)
     if (!item) {
       throw new Error(
         `Area '${area.id}' places unknown item '${placement.itemId}' at ${placement.x},${placement.y}`,
       )
     }
+
+    const flagKey = placement.onceFlag
+      ? pickupFlagKey(area.id, placement.itemId, placement.x, placement.y)
+      : null
+    if (flagKey && getProgressFlag(flagKey)) return []
 
     const { x, y } = tileToWorld(placement)
 
@@ -166,6 +174,7 @@ export function buildItems(
       x,
       y,
       object,
+      flagKey,
     }
   })
 }
