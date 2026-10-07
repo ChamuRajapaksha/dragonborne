@@ -4,7 +4,7 @@ import { getClassById } from '../character'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
-import { getItemById, getInventory, subscribeInventory, updateInventory } from '../inventory'
+import { addItem, getItemById, getInventory, subscribeInventory, updateInventory } from '../inventory'
 import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { getNpcById } from '../story'
@@ -96,7 +96,7 @@ export default class WorldScene extends Phaser.Scene {
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
   /** Items lying in the area, kept live so pickups can remove them. */
-  itemMarkers: AreaItemMarker[] = []
+  private itemMarkers: AreaItemMarker[] = []
   private popupOpen = false
   private introCardOpen = false
   private inventoryOpen = false
@@ -314,6 +314,7 @@ export default class WorldScene extends Phaser.Scene {
 
     const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()
+    const nearestItem = this.findNearestItem()
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
@@ -346,7 +347,36 @@ export default class WorldScene extends Phaser.Scene {
     if (nearestNpc && this.character && interactPressed && !this.popupOpen) {
       showQuestPopup(nearestNpc, this.character.classId, this.character.stats)
       this.popupOpen = true
+    } else if (nearestItem && interactPressed && !this.popupOpen) {
+      this.pickupItem(nearestItem)
     }
+  }
+
+  /**
+   * Picks the stack up into the hotbar first so the result is visible without
+   * opening the panel, then into the pack. Whatever does not fit stays on the
+   * ground — the marker keeps the remainder.
+   */
+  private pickupItem(marker: AreaItemMarker): void {
+    let gained = 0
+
+    updateInventory((current) => {
+      const intoHotbar = addItem(current, marker.itemId, marker.quantity, 'hotbar')
+      const result =
+        intoHotbar.remainder > 0
+          ? addItem(intoHotbar.state, marker.itemId, intoHotbar.remainder, 'slots')
+          : intoHotbar
+      gained = marker.quantity - result.remainder
+      return result.state
+    })
+
+    if (gained <= 0) return
+
+    marker.quantity -= gained
+    if (marker.quantity > 0) return
+
+    marker.object.destroy()
+    this.itemMarkers = this.itemMarkers.filter((entry) => entry !== marker)
   }
 
   /**
@@ -448,6 +478,26 @@ export default class WorldScene extends Phaser.Scene {
     let nearestDistance = INTERACT_RANGE
 
     for (const marker of this.npcMarkers) {
+      const distance = Phaser.Math.Distance.Between(
+        this.playerPoint.x,
+        this.playerPoint.y,
+        marker.x,
+        marker.y,
+      )
+      if (distance <= nearestDistance) {
+        nearest = marker
+        nearestDistance = distance
+      }
+    }
+
+    return nearest
+  }
+
+  private findNearestItem(): AreaItemMarker | null {
+    let nearest: AreaItemMarker | null = null
+    let nearestDistance = INTERACT_RANGE
+
+    for (const marker of this.itemMarkers) {
       const distance = Phaser.Math.Distance.Between(
         this.playerPoint.x,
         this.playerPoint.y,
