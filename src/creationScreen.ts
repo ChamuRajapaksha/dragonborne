@@ -1,5 +1,6 @@
 import { CLASSES, createCharacter, saveCharacter } from './character'
 import type { Character } from './character'
+import { resetInventory } from './inventory'
 
 export function showCreationScreen(onCreated: (character: Character) => void): void {
   const overlay = document.createElement('div')
@@ -42,6 +43,7 @@ export function showCreationScreen(onCreated: (character: Character) => void): v
     if (!character) return
 
     saveCharacter(character)
+    resetInventory()
     overlay.remove()
     onCreated(character)
   })
