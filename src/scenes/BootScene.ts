@@ -2,6 +2,7 @@ import Phaser from 'phaser'
 import { loadCharacter } from '../character'
 import type { Character } from '../character'
 import { showCreationScreen } from '../creationScreen'
+import { hydrateInventory } from '../inventory'
 import { AREAS } from '../world/areas'
 import { loadProgress } from '../world/progress'
 
@@ -11,6 +12,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    hydrateInventory()
     const saved = loadCharacter()
     if (saved) {
       this.gotoWorld(saved)
