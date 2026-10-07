@@ -62,6 +62,15 @@ export interface AreaNpcPlacement {
   y: number
 }
 
+export interface AreaItemPlacement {
+  itemId: string
+  x: number // tile coords
+  y: number
+  quantity?: number // default 1
+  /** One-time pickup: hidden for good once its progress flag has been set. */
+  onceFlag?: boolean
+}
+
 export interface AreaIntro {
   title: string
   body: readonly string[]
@@ -75,6 +84,8 @@ export interface AreaDefinition {
   defaultSpawn: { x: number; y: number }
   npcs: readonly AreaNpcPlacement[]
   portals: readonly Portal[]
+  /** Items lying on the ground; respawn on re-entry unless `onceFlag` is set. */
+  items?: readonly AreaItemPlacement[]
   intro?: AreaIntro
   /** Area the HUD waypoint hint points at; must be the destination of one of `portals`. */
   waypointAreaId?: string
