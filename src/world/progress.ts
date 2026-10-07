@@ -45,6 +45,11 @@ export function setProgressFlag(flag: string, value = true): void {
   saveProgress(progress)
 }
 
+/** True only when the flag exists and is `true`; missing or corrupt saves read as false. */
+export function getProgressFlag(flag: string): boolean {
+  return loadProgress()?.flags[flag] === true
+}
+
 export function clearProgress(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
