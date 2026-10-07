@@ -3,6 +3,8 @@ import type { Character } from '../character'
 import { getClassById } from '../character'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
+import { getInventory, subscribeInventory } from '../inventory'
+import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
@@ -89,6 +91,7 @@ export default class WorldScene extends Phaser.Scene {
   private portalMarkers: AreaPortalMarker[] = []
   private popupOpen = false
   private introCardOpen = false
+  private unsubscribeInventory: (() => void) | null = null
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
   private spawnPx: { x: number; y: number } | null = null
@@ -109,6 +112,7 @@ export default class WorldScene extends Phaser.Scene {
     this.waypoint = null
     this.popupOpen = false
     this.introCardOpen = false
+    this.unsubscribeInventory = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
   }
@@ -146,10 +150,16 @@ export default class WorldScene extends Phaser.Scene {
 
     this.buildHud(area)
 
+    mountHotbar(getInventory())
+    this.unsubscribeInventory = subscribeInventory((state) => renderHotbar(state))
+
     this.maybeShowIntroCard(area)
 
     this.events.once('shutdown', () => {
       this.saveCurrentProgress()
+      this.unsubscribeInventory?.()
+      this.unsubscribeInventory = null
+      destroyHotbar()
     })
   }
 
