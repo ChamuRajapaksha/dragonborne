@@ -262,6 +262,8 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    this.syncInventoryFlag()
+
     let vx = 0
     let vy = 0
 
@@ -270,6 +272,11 @@ export default class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1
     if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1
 
+    if (this.inventoryOpen) {
+      vx = 0
+      vy = 0
+    }
+
     if (vx !== 0 && vy !== 0) {
       vx *= DIAGONAL_FACTOR
       vy *= DIAGONAL_FACTOR
@@ -277,7 +284,6 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
-    this.syncInventoryFlag()
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
