@@ -14,6 +14,7 @@ the quests and storylines you uncover depend on the class of character you creat
 - **Phaser 4** — WebGL-rendered 2D game engine (not Phaser 3)
 - **TypeScript** — all source code
 - **Vite** — build tooling / dev server
+- **Vitest** — unit tests for the pure inventory logic
 - **localStorage** — persistence (no backend)
 
 ## How to run locally
@@ -23,7 +24,8 @@ npm install
 npm run dev
 ```
 
-Open the URL Vite prints (usually `http://localhost:5173`) in a browser.
+Open the URL Vite prints (usually `http://localhost:5173`) in a browser. `npm test` runs
+the Vitest suite.
 
 ## How to test the vertical slice
 
@@ -40,43 +42,63 @@ Open the URL Vite prints (usually `http://localhost:5173`) in a browser.
    quests, filtered to **your class**. A Warrior sees different work from a Mage; create a
    second character to compare. The Stranger in the forest gives every class the same first
    errand: *The Road to Emberhold*.
-6. Press **Complete (stub)** on a quest to mark it complete; completed state persists. Quests
-   with unmet stat requirements are listed but locked.
-7. **Reload** the page: you come back in the area and at the coordinates you left, and the
+6. Press **Complete (stub)** on a quest to mark it complete: it pays the quest's item
+   rewards into your pack (a toast confirms what arrived) and the completed state persists.
+   Quests with unmet stat requirements are listed but locked — bonuses from equipped gear
+   count toward them.
+7. Your **hotbar** runs along the bottom of the screen; press **1**–**9** to select a slot
+   and the HUD names the selected item. Press **I** to open the pack: drag stacks between
+   the hotbar and the 27 pack slots, right-click a stack to split a single unit off, and
+   double-click a piece of gear to wear it (double-click the gear slot to take it off).
+8. Items lie in the world as small coloured tiles — walk up to one and press **E** to pick
+   it up (an item-name hint appears when you are close). Pickups respawn when you leave and
+   re-enter the area, except the few flagged as one-time. If your pack is full the item
+   stays on the ground rather than being consumed.
+9. **Reload** the page: you come back in the area and at the coordinates you left, and the
    intro card does not reappear. Walk back west through the village portal to return to the
    Thornwood.
-8. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
-   `localStorage.removeItem('dragonborne.character')` sends you back to character creation;
-   `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
-   area, position, and intro-card flags, so the next load drops you back on the fire ring
-   in the Thornwood with the intro card showing again. Clearing both is a full restart.
+10. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
+    `localStorage.removeItem('dragonborne.character')` sends you back to character creation;
+    `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
+    area, position, and intro-card flags, so the next load drops you back on the fire ring
+    in the Thornwood with the intro card showing again. `localStorage.removeItem('dragonborne.inventory')`
+    and `localStorage.removeItem('dragonborne.quests.completed')` reset your gear and quest
+    progress. Clearing all of them is a full restart.
 
 ## Status
 
-The forest → village vertical slice is **complete**: create character → wake in the forest →
-walk the track → portal into Emberhold → talk to three NPCs → take class-appropriate quests →
-complete them (stub). Area, position, and intro-card state all survive a reload. All
-placeholder visuals.
+The forest → village vertical slice **and** the inventory plan are **complete**: create
+character → wake in the forest → walk the track → portal into Emberhold → talk to NPCs →
+take class-appropriate quests → complete them for item rewards. You start with a
+traveller's kit, pick items up off the ground, drag stacks around a 9-slot hotbar and a
+27-slot pack, wear gear in four equipment slots, and its stat bonuses feed into your
+character — enough to unlock stat-gated quests. Area, position, flags, inventory, and
+completed quests all survive a reload. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
-[`docs/plan.md`](docs/plan.md). The 22-commit plan that produced the current forest/village
-world — tile legend, ASCII maps, NPC-gated quests, portals, position persistence, HUD —
-lives locally (and untracked, like `.agents/` itself) at `.agents/plans/first_plan.md`.
+[`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
+forest/village world (`first_plan.md`) and the 41-commit inventory/equipment/pickups plan
+(`second_plan.md`) — live locally (and untracked, like `.agents/` itself) at
+`.agents/plans/`.
 
 ## Current scope notes
 
 - Placeholder art only (shapes/rectangles) — no final art in this phase.
 - Two areas (`forest`, `village`), each a 64 × 48 ASCII map in `src/world/areas.ts`, rendered
   as a collidable tilemap and linked by portals. Adding an area is a data addition.
-- Class and quest systems are **data-driven**: `src/character/classes.ts`,
-  `src/story/quests.ts`, and `src/story/npcs.ts` are pure data. Quest availability is a
-  filter (`getQuestsForNpc(npcId, classId)`), so new classes/quests are data additions with
-  no hardcoded branches.
+- Class, quest and item systems are **data-driven**: `src/character/classes.ts`,
+  `src/story/quests.ts`, `src/story/npcs.ts`, and `src/inventory/catalog.ts` are pure data.
+  Quest availability is a filter (`getQuestsForNpc(npcId, classId)`) and quest rewards are
+  data (`rewards: [{ itemId, quantity }]`), so new classes, quests, and items are data
+  additions with no hardcoded branches.
+- Inventory is in scope by explicit sign-off: a 9-slot hotbar, a 27-slot pack, four
+  equipment slots with stat bonuses, world pickups (walk up + **E**), and quest item
+  rewards. **Still out of scope:** crafting, combat, and mining/breaking world objects.
 - Persistence is localStorage only: `dragonborne.character` for the character,
-  `dragonborne.progress` for area, position, and flags.
-- Explicitly out of scope this phase: multiplayer, combat, inventory,
-  crafting/building, and branching narrative content. Completing a quest only flips a
-  completion flag.
+  `dragonborne.progress` for area, position, and flags, `dragonborne.inventory` for the
+  inventory (versioned schema), and `dragonborne.quests.completed` for quest state.
+- Explicitly out of scope: multiplayer, combat, crafting/building/mining, and branching
+  narrative content.
 
 ## Still TBD
 
@@ -87,12 +109,16 @@ authoring approach, art style, and any backend beyond localStorage.
 
 - `src/character/` — `Character`/`CharacterClass` types, class list data, creation,
   localStorage save/load
-- `src/story/` — `Quest` and `NpcDefinition` types, quest/npc data, class-availability and
-  per-NPC filters, completion progress
+- `src/story/` — `Quest`/`NpcDefinition` types, quest/npc data (including item rewards),
+  class-availability and per-NPC filters, completion progress
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `areas.ts` (area
-  definitions, ASCII map parsing), `buildArea.ts` (terrain + markers + portals),
-  `progress.ts` (world position/flag save-load)
+  definitions, ASCII map parsing, NPC/portal/item placements), `buildArea.ts` (terrain +
+  markers + portals + pickups), `progress.ts` (world position/flag save-load)
+- `src/inventory/` — item types and catalog, pure inventory logic (add/move/split/equip,
+  effective stats), versioned storage, and the subscribing store singleton
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress), `WorldScene`
-  (movement, NPCs, portals, HUD)
+  (movement, NPCs, portals, pickups, HUD)
 - `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts` — DOM overlays for
   character creation, quests, and area intro text
+- `src/hotbar.ts`, `src/inventoryPanel.ts`, `src/itemIcon.ts`, `src/toast.ts` — DOM
+  overlays for the hotbar, the pack panel, item glyphs, and transient messages
