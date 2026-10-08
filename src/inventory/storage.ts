@@ -1,4 +1,5 @@
 import { getItemById } from './catalog'
+import { addItem } from './logic'
 import type { EquipSlot, InventoryState, ItemStack } from './types'
 import { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
 
@@ -65,6 +66,27 @@ function readSelectedSlot(value: unknown): number {
 }
 
 /**
+ * A held cursor is meaningless without the panel, so a save loaded with one parks it
+ * back into the pack. Slots fill first, then the hotbar; only when both are full does
+ * it stay held — never dropped.
+ */
+function parkCursor(state: InventoryState): InventoryState {
+  const cursor = state.cursor
+  if (!cursor) return state
+
+  const intoSlots = addItem(state, cursor.itemId, cursor.quantity, 'slots')
+  if (intoSlots.remainder === 0) return { ...intoSlots.state, cursor: null }
+
+  const intoHotbar = addItem(intoSlots.state, cursor.itemId, intoSlots.remainder, 'hotbar')
+  if (intoHotbar.remainder === 0) return { ...intoHotbar.state, cursor: null }
+
+  return {
+    ...intoHotbar.state,
+    cursor: { itemId: cursor.itemId, quantity: intoHotbar.remainder },
+  }
+}
+
+/**
  * Brings a parsed save up to the current schema, repairing anything malformed:
  * unknown item ids and bad lengths become `null`, gear in the wrong slot is
  * discarded, and a hotbar selection out of range resets to 0.
@@ -79,7 +101,7 @@ export function migrateInventory(parsed: unknown): InventoryState | null {
   const version = parsed.version
   if (typeof version !== 'number' || version > CURRENT_VERSION) return null
 
-  return {
+  const state: InventoryState = {
     version: CURRENT_VERSION,
     slots: readSlotArray(parsed.slots, INVENTORY_SLOT_COUNT),
     hotbar: readSlotArray(parsed.hotbar, HOTBAR_SLOT_COUNT),
@@ -87,6 +109,8 @@ export function migrateInventory(parsed: unknown): InventoryState | null {
     selectedHotbarSlot: readSelectedSlot(parsed.selectedHotbarSlot),
     cursor: readStack(parsed.cursor),
   }
+
+  return parkCursor(state)
 }
 
 export function loadInventory(): InventoryState | null {
