@@ -4,7 +4,35 @@ import {
   completeQuest,
   isQuestCompleted,
 } from './story'
-import type { NpcDefinition, Quest } from './story'
+import type { ItemReward, NpcDefinition, Quest } from './story'
+import { addItem, getItemById, updateInventory } from './inventory'
+import { showToast } from './toast'
+
+/**
+ * Pays a quest's rewards into the pack. Runs only on first completion, so each
+ * reward is granted exactly once. Anything that does not fit is reported rather
+ * than silently dropped — the reward itself is already spent.
+ */
+function grantQuestRewards(rewards: readonly ItemReward[]): void {
+  const granted: string[] = []
+  let shortfall = 0
+
+  updateInventory((current) => {
+    let next = current
+
+    for (const reward of rewards) {
+      const result = addItem(next, reward.itemId, reward.quantity ?? 1)
+      next = result.state
+      shortfall += result.remainder
+      if (result.added > 0) granted.push(getItemById(reward.itemId)?.name ?? reward.itemId)
+    }
+
+    return next
+  })
+
+  if (granted.length > 0) showToast(`Received: ${granted.join(', ')}`)
+  if (shortfall > 0) showToast('Your pack is full')
+}
 
 export function closeQuestPopup(): void {
   document.getElementById('quest-popup')?.remove()
@@ -68,7 +96,10 @@ export function showQuestPopup(
       .querySelectorAll<HTMLButtonElement>('[data-complete]')
       .forEach((button) => {
         button.addEventListener('click', () => {
-          completeQuest(button.dataset.complete!)
+          const questId = button.dataset.complete!
+          const quest = quests.find((entry) => entry.id === questId)
+          const firstCompletion = completeQuest(questId)
+          if (firstCompletion && quest?.rewards?.length) grantQuestRewards(quest.rewards)
           render()
         })
       })

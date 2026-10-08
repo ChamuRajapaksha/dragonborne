@@ -16,10 +16,15 @@ export function isQuestCompleted(questId: string): boolean {
   return getCompletedQuestIds().includes(questId)
 }
 
-export function completeQuest(questId: string): void {
+/**
+ * Marks a quest complete. Returns `true` only on the first completion, so callers
+ * that must fire exactly once (item rewards) can use the result as the gate.
+ */
+export function completeQuest(questId: string): boolean {
   const completed = getCompletedQuestIds()
-  if (!completed.includes(questId)) {
-    completed.push(questId)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(completed))
-  }
+  if (completed.includes(questId)) return false
+
+  completed.push(questId)
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(completed))
+  return true
 }
