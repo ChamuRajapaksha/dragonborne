@@ -290,6 +290,51 @@ export function placeCursor(state: InventoryState, ref: SlotRef): InventoryState
 }
 
 /**
+ * Lifts half the stack at `ref` into the cursor, rounded up and never less than one,
+ * leaving the rest behind. A single item moves whole. A no-op while already holding.
+ */
+export function pickUpHalf(state: InventoryState, ref: SlotRef): InventoryState {
+  if (state.cursor) return state
+
+  const stack = readSlot(state, ref)
+  if (!stack) return state
+
+  const amount = Math.max(1, Math.ceil(stack.quantity / 2))
+  const left = stack.quantity - amount
+
+  return {
+    ...writeSlot(state, ref, left > 0 ? { itemId: stack.itemId, quantity: left } : null),
+    cursor: { itemId: stack.itemId, quantity: amount },
+  }
+}
+
+/**
+ * Places a single unit of the cursor stack into `ref`. Refuses a target that holds a
+ * different item or has reached its `maxStack`; the cursor is left untouched.
+ */
+export function placeOne(state: InventoryState, ref: SlotRef): InventoryState {
+  const cursor = state.cursor
+  if (!cursor || !isInRange(state, ref)) return state
+
+  const target = readSlot(state, ref)
+  if (target && target.itemId !== cursor.itemId) return state
+
+  const item = getItemById(cursor.itemId)
+  if (!item) return state
+  if (target && target.quantity >= item.maxStack) return state
+
+  const remainder = cursor.quantity - 1
+  const placed: ItemStack = target
+    ? { itemId: cursor.itemId, quantity: target.quantity + 1 }
+    : { itemId: cursor.itemId, quantity: 1 }
+
+  return {
+    ...writeSlot(state, ref, placed),
+    cursor: remainder > 0 ? { itemId: cursor.itemId, quantity: remainder } : null,
+  }
+}
+
+/**
  * Base class stats plus the bonuses of everything worn. Returns a fresh object —
  * `character.stats` is never mutated, so quest gating can call this freely.
  *
