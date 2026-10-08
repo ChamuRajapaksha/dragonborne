@@ -248,6 +248,19 @@ export function splitStack(
 }
 
 /**
+ * Lifts the whole stack at `ref` into the cursor, emptying the slot. A no-op when the
+ * cursor already holds something — the pointer carries one stack at a time.
+ */
+export function pickUpSlot(state: InventoryState, ref: SlotRef): InventoryState {
+  if (state.cursor) return state
+
+  const stack = readSlot(state, ref)
+  if (!stack) return state
+
+  return { ...writeSlot(state, ref, null), cursor: { ...stack } }
+}
+
+/**
  * Base class stats plus the bonuses of everything worn. Returns a fresh object —
  * `character.stats` is never mutated, so quest gating can call this freely.
  *
