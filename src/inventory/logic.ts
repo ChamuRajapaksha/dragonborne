@@ -419,7 +419,7 @@ export interface EquipResult {
   state: InventoryState
   /** False when nothing changed — see `reason`. */
   ok: boolean
-  reason?: 'empty-slot' | 'not-equippable' | 'inventory-full' | 'nothing-equipped'
+  reason?: 'empty-slot' | 'not-equippable' | 'inventory-full' | 'nothing-equipped' | 'wrong-slot'
   /** The item that came out of the gear slot, if a previous one was replaced. */
   displaced: ItemStack | null
 }
@@ -463,6 +463,41 @@ export function unequipToSlot(
   if (result.remainder > 0) return { state, ok: false, reason: 'inventory-full', displaced: null }
 
   return { state: setEquipment(result.state, slot, null), ok: true, displaced: stack }
+}
+
+/**
+ * Moves worn gear from `from` into the carryable slot `to`. An empty target takes it;
+ * a target whose item declares the same gear slot swaps places; anything else refuses,
+ * so a piece of gear can never land on an unrelated stack.
+ */
+export function moveGearToSlot(
+  state: InventoryState,
+  from: EquipSlot,
+  to: SlotRef,
+): EquipResult {
+  const gear = state.equipment[from]
+  if (!gear) return { state, ok: false, reason: 'nothing-equipped', displaced: null }
+  if (!isInRange(state, to)) return { state, ok: false, reason: 'empty-slot', displaced: null }
+
+  const target = readSlot(state, to)
+  if (!target) {
+    return {
+      state: setEquipment(writeSlot(state, to, gear), from, null),
+      ok: true,
+      displaced: null,
+    }
+  }
+
+  const targetItem = getItemById(target.itemId)
+  if (targetItem?.equipSlot !== from) {
+    return { state, ok: false, reason: 'wrong-slot', displaced: null }
+  }
+
+  return {
+    state: setEquipment(writeSlot(state, to, gear), from, target),
+    ok: true,
+    displaced: target,
+  }
 }
 
 /** Capacity left for `itemId` in one container, respecting per-item stack limits. */
