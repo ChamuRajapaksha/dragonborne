@@ -17,11 +17,12 @@ export function createEmptyInventory(): InventoryState {
   ) as Record<EquipSlot, null>
 
   return {
-    version: 1,
+    version: 2,
     slots: Array<ItemStack | null>(INVENTORY_SLOT_COUNT).fill(null),
     hotbar: Array<ItemStack | null>(HOTBAR_SLOT_COUNT).fill(null),
     equipment,
     selectedHotbarSlot: 0,
+    cursor: null,
   }
 }
 

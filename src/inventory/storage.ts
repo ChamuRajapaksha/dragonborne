@@ -4,7 +4,7 @@ import { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
 
 const STORAGE_KEY = 'dragonborne.inventory'
 
-const CURRENT_VERSION = 1
+const CURRENT_VERSION = 2
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -71,7 +71,7 @@ function readSelectedSlot(value: unknown): number {
  *
  * Returns `null` only when the payload cannot be recognised at all. A version from
  * the future is rejected rather than guessed at; anything older than the current
- * version has no migration steps yet and is read as v1.
+ * version is read forward — v1 saves have no cursor, so theirs reads as `null`.
  */
 export function migrateInventory(parsed: unknown): InventoryState | null {
   if (!isRecord(parsed)) return null
@@ -85,6 +85,7 @@ export function migrateInventory(parsed: unknown): InventoryState | null {
     hotbar: readSlotArray(parsed.hotbar, HOTBAR_SLOT_COUNT),
     equipment: readEquipment(parsed.equipment),
     selectedHotbarSlot: readSelectedSlot(parsed.selectedHotbarSlot),
+    cursor: readStack(parsed.cursor),
   }
 }
 

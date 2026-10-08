@@ -34,9 +34,11 @@ export interface ItemStack {
 }
 
 export interface InventoryState {
-  version: 1
+  version: 2
   slots: (ItemStack | null)[]
   hotbar: (ItemStack | null)[]
   equipment: Record<EquipSlot, ItemStack | null>
   selectedHotbarSlot: number
+  /** Stack held by the pointer while the inventory panel is open. */
+  cursor: ItemStack | null
 }
