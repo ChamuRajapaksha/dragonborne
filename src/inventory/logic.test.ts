@@ -6,7 +6,12 @@ import {
   effectiveStats,
   equipFromSlot,
   moveStack,
+  pickUpHalf,
+  pickUpSlot,
+  placeCursor,
+  placeOne,
   removeItem,
+  returnCursor,
   splitStack,
   unequipToSlot,
 } from './logic'
@@ -29,6 +34,10 @@ function fillGrid(state: InventoryState, itemId: string, quantity: number): Inve
     next = addItem(next, itemId, quantity).state
   }
   return next
+}
+
+function withCursor(state: InventoryState, stack: ItemStack | null): InventoryState {
+  return { ...state, cursor: stack }
 }
 
 describe('addItem', () => {
@@ -275,5 +284,160 @@ describe('countItem', () => {
 
     expect(countItem(state, 'heath-herb')).toBe(30)
     expect(countItem(state, 'heath-herb', 'hotbar')).toBe(5)
+  })
+})
+
+describe('pickUpSlot', () => {
+  it('lifts the whole stack into the cursor and empties the slot', () => {
+    const state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 12 })
+    const held = pickUpSlot(state, grid(0))
+
+    expect(held.slots[0]).toBeNull()
+    expect(held.cursor).toEqual({ itemId: 'iron-ore', quantity: 12 })
+    expect(state.slots[0]).toEqual({ itemId: 'iron-ore', quantity: 12 })
+  })
+
+  it('is a no-op when the cursor already holds a stack', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'torch', quantity: 1 })
+    state = withGridStack(state, 1, { itemId: 'iron-ore', quantity: 2 })
+
+    const held = pickUpSlot(state, grid(0))
+    expect(pickUpSlot(held, grid(1))).toEqual(held)
+  })
+
+  it('ignores an empty slot', () => {
+    const empty = createEmptyInventory()
+    expect(pickUpSlot(empty, grid(0))).toEqual(empty)
+  })
+})
+
+describe('pickUpHalf', () => {
+  it('takes half rounded up and leaves the rest', () => {
+    const state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 9 })
+    const held = pickUpHalf(state, grid(0))
+
+    expect(held.cursor).toEqual({ itemId: 'iron-ore', quantity: 5 })
+    expect(held.slots[0]).toEqual({ itemId: 'iron-ore', quantity: 4 })
+  })
+
+  it('moves a single-item stack whole', () => {
+    const state = withGridStack(createEmptyInventory(), 0, { itemId: 'torch', quantity: 1 })
+    const held = pickUpHalf(state, grid(0))
+
+    expect(held.slots[0]).toBeNull()
+    expect(held.cursor).toEqual({ itemId: 'torch', quantity: 1 })
+  })
+})
+
+describe('placeCursor', () => {
+  it('drops the whole stack into an empty slot', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'torch', quantity: 1 })
+    state = pickUpSlot(state, grid(0))
+    const placed = placeCursor(state, grid(5))
+
+    expect(placed.cursor).toBeNull()
+    expect(placed.slots[5]).toEqual({ itemId: 'torch', quantity: 1 })
+  })
+
+  it('tops a same-item target up to maxStack and keeps the remainder held', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'heath-herb', quantity: 60 })
+    state = withGridStack(state, 1, { itemId: 'heath-herb', quantity: 50 })
+    state = pickUpSlot(state, grid(0))
+    const placed = placeCursor(state, grid(1))
+
+    expect(placed.slots[1]).toEqual({ itemId: 'heath-herb', quantity: 99 })
+    expect(placed.cursor).toEqual({ itemId: 'heath-herb', quantity: 11 })
+  })
+
+  it('swaps with a different item without duplicating either', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'torch', quantity: 1 })
+    state = withGridStack(state, 2, { itemId: 'iron-ore', quantity: 7 })
+    state = pickUpSlot(state, grid(0))
+    const placed = placeCursor(state, grid(2))
+
+    expect(placed.slots[2]).toEqual({ itemId: 'torch', quantity: 1 })
+    expect(placed.cursor).toEqual({ itemId: 'iron-ore', quantity: 7 })
+  })
+
+  it('is a no-op when the target is a full stack of the same item', () => {
+    const state = withCursor(
+      withGridStack(createEmptyInventory(), 1, { itemId: 'iron-ore', quantity: 99 }),
+      { itemId: 'iron-ore', quantity: 5 },
+    )
+
+    expect(placeCursor(state, grid(1))).toEqual(state)
+  })
+})
+
+describe('placeOne', () => {
+  it('places a single unit and keeps the rest held', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 8 })
+    state = pickUpSlot(state, grid(0))
+    const placed = placeOne(state, grid(3))
+
+    expect(placed.slots[3]).toEqual({ itemId: 'iron-ore', quantity: 1 })
+    expect(placed.cursor).toEqual({ itemId: 'iron-ore', quantity: 7 })
+  })
+
+  it('refuses a full or mismatched target', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 5 })
+    state = withGridStack(state, 1, { itemId: 'iron-ore', quantity: 99 })
+    state = withGridStack(state, 2, { itemId: 'torch', quantity: 1 })
+    const held = pickUpSlot(state, grid(0))
+
+    expect(placeOne(held, grid(1))).toEqual(held)
+    expect(placeOne(held, grid(2))).toEqual(held)
+  })
+})
+
+describe('returnCursor', () => {
+  it('returns the stack to the lowest free pack slot', () => {
+    const state = withCursor(createEmptyInventory(), { itemId: 'torch', quantity: 1 })
+    const returned = returnCursor(state)
+
+    expect(returned.cursor).toBeNull()
+    expect(returned.slots[0]).toEqual({ itemId: 'torch', quantity: 1 })
+  })
+
+  it('prefers the pack over the hotbar', () => {
+    const state = withCursor(
+      addItem(createEmptyInventory(), 'torch', 1, 'hotbar').state,
+      { itemId: 'iron-ore', quantity: 5 },
+    )
+    const returned = returnCursor(state)
+
+    expect(returned.cursor).toBeNull()
+    expect(returned.slots[0]).toEqual({ itemId: 'iron-ore', quantity: 5 })
+    expect(returned.hotbar[0]).toEqual({ itemId: 'torch', quantity: 1 })
+  })
+
+  it('falls back to the hotbar when the pack is full', () => {
+    const state = withCursor(
+      fillGrid(createEmptyInventory(), 'iron-ore', 99),
+      { itemId: 'heath-herb', quantity: 5 },
+    )
+    const returned = returnCursor(state)
+
+    expect(returned.cursor).toBeNull()
+    expect(returned.hotbar[0]).toEqual({ itemId: 'heath-herb', quantity: 5 })
+  })
+
+  it("falls back to the item's own empty gear slot when everything is full", () => {
+    let state = fillGrid(createEmptyInventory(), 'iron-ore', 99)
+    state = addItem(state, 'iron-ore', 99 * state.hotbar.length, 'hotbar').state
+    state = withCursor(state, { itemId: 'leather-cap', quantity: 1 })
+    const returned = returnCursor(state)
+
+    expect(returned.cursor).toBeNull()
+    expect(returned.equipment.head).toEqual({ itemId: 'leather-cap', quantity: 1 })
+  })
+
+  it('keeps the stack held when pack, hotbar and gear are all occupied', () => {
+    let state = fillGrid(createEmptyInventory(), 'iron-ore', 99)
+    state = addItem(state, 'iron-ore', 99 * state.hotbar.length, 'hotbar').state
+    state = withCursor(state, { itemId: 'heath-herb', quantity: 5 })
+    const returned = returnCursor(state)
+
+    expect(returned.cursor).toEqual({ itemId: 'heath-herb', quantity: 5 })
   })
 })
