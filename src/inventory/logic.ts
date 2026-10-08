@@ -335,6 +335,39 @@ export function placeOne(state: InventoryState, ref: SlotRef): InventoryState {
 }
 
 /**
+ * Puts the cursor stack away when the panel closes: pack first, then hotbar, then the
+ * item's own gear slot if it is empty. If all are full the stack simply stays held —
+ * it is never dropped, and reopening the panel recovers it.
+ */
+export function returnCursor(state: InventoryState): InventoryState {
+  const cursor = state.cursor
+  if (!cursor) return state
+
+  const intoSlots = addItem(state, cursor.itemId, cursor.quantity, 'slots')
+  if (intoSlots.remainder === 0) return { ...intoSlots.state, cursor: null }
+
+  const intoHotbar = addItem(intoSlots.state, cursor.itemId, intoSlots.remainder, 'hotbar')
+  if (intoHotbar.remainder === 0) return { ...intoHotbar.state, cursor: null }
+
+  const item = getItemById(cursor.itemId)
+  const equipSlot = item?.equipSlot
+  if (equipSlot && !intoHotbar.state.equipment[equipSlot]) {
+    return {
+      ...setEquipment(intoHotbar.state, equipSlot, {
+        itemId: cursor.itemId,
+        quantity: intoHotbar.remainder,
+      }),
+      cursor: null,
+    }
+  }
+
+  return {
+    ...intoHotbar.state,
+    cursor: { itemId: cursor.itemId, quantity: intoHotbar.remainder },
+  }
+}
+
+/**
  * Base class stats plus the bonuses of everything worn. Returns a fresh object —
  * `character.stats` is never mutated, so quest gating can call this freely.
  *
