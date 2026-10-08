@@ -4,7 +4,14 @@ import { getClassById } from '../character'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
-import { addItem, getItemById, getInventory, subscribeInventory, updateInventory } from '../inventory'
+import {
+  addItem,
+  effectiveStats,
+  getItemById,
+  getInventory,
+  subscribeInventory,
+  updateInventory,
+} from '../inventory'
 import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
@@ -352,7 +359,13 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     if (nearestNpc && this.character && interactPressed && !this.popupOpen) {
-      showQuestPopup(nearestNpc, this.character.classId, this.character.stats)
+      // Gear must be able to unlock stat-gated quests — the popup never shows
+      // while the inventory is open, so this snapshot cannot go stale.
+      showQuestPopup(
+        nearestNpc,
+        this.character.classId,
+        effectiveStats(this.character.stats, getInventory()),
+      )
       this.popupOpen = true
     } else if (nearestItem && interactPressed && !this.popupOpen) {
       this.pickupItem(nearestItem)
