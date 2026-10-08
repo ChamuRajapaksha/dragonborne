@@ -80,8 +80,13 @@ This is the only loop to build in this phase. No inventory/crafting, no combat, 
 ### 5.5 Explicitly not in scope this phase
 - Multiplayer (no networking code at all)
 - Combat system
-- Inventory/crafting/building
+- Crafting, building, mining — no sign-off, and none planned
 - Full branching narrative content — one or two placeholder quests per class is enough
+
+**Signed off after v0.2:** inventory and equipment are **in scope** — a 9-slot hotbar, a
+27-slot pack, four gear slots feeding stat bonuses, world pickups and quest item rewards,
+all persisted in localStorage (see the README). That sign-off covers inventory only; it
+does not extend to crafting, combat or mining.
 
 ---
 
@@ -174,5 +179,6 @@ type Quest = {
 - Keep class/quest data structured (not hardcoded if/else chains) so adding classes and quests later is just data changes.
 - Use placeholder art (rectangles, circles, basic shapes) — do not spend time on final visuals.
 - Flag back if "Terraria-like" is expected to include crafting/building/mining — current scope assumes it does not.
-- Do not add multiplayer, combat, or inventory systems in this phase without explicit sign-off.
+- Do not add multiplayer or combat systems in this phase without explicit sign-off.
+- Inventory/equipment/world pickups **have** explicit sign-off and are implemented (see §5.5); crafting, building and mining do not.
 - **Phaser version:** this project uses Phaser 4, not Phaser 3. Phaser 4 has a rebuilt WebGL renderer and a cleaner logic/rendering separation compared to Phaser 3 — use the project's Phaser 4 skill for engine-specific conventions rather than defaulting to older Phaser 3 patterns you may know from training data. If a Phaser 3 vs 4 API difference matters for a given step, flag it rather than guessing.
