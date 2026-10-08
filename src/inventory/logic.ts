@@ -261,6 +261,35 @@ export function pickUpSlot(state: InventoryState, ref: SlotRef): InventoryState 
 }
 
 /**
+ * Drops the cursor stack into `ref`. An empty target takes the whole stack; a same-item
+ * target tops up to `maxStack` and keeps any remainder held; anything else swaps, so
+ * the item that was in the slot takes the cursor's place. Nothing is ever duplicated.
+ */
+export function placeCursor(state: InventoryState, ref: SlotRef): InventoryState {
+  const cursor = state.cursor
+  if (!cursor || !isInRange(state, ref)) return state
+
+  const target = readSlot(state, ref)
+  if (!target) return { ...writeSlot(state, ref, { ...cursor }), cursor: null }
+
+  if (target.itemId !== cursor.itemId) {
+    return { ...writeSlot(state, ref, { ...cursor }), cursor: { ...target } }
+  }
+
+  const item = getItemById(target.itemId)
+  const room = item ? item.maxStack - target.quantity : 0
+  if (room <= 0) return state
+
+  const moved = Math.min(room, cursor.quantity)
+  const remainder = cursor.quantity - moved
+
+  return {
+    ...writeSlot(state, ref, { itemId: target.itemId, quantity: target.quantity + moved }),
+    cursor: remainder > 0 ? { itemId: cursor.itemId, quantity: remainder } : null,
+  }
+}
+
+/**
  * Base class stats plus the bonuses of everything worn. Returns a fresh object —
  * `character.stats` is never mutated, so quest gating can call this freely.
  *
