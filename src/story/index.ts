@@ -1,4 +1,4 @@
-export type { Quest } from './quests'
+export type { ItemReward, Quest } from './quests'
 export { QUESTS, getQuestsForClass, getQuestsForNpc, meetsQuestRequirements } from './quests'
 export type { NpcDefinition } from './npcs'
 export { NPCS, getNpcById } from './npcs'

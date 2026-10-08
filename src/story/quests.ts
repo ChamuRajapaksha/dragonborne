@@ -5,6 +5,14 @@ export interface Quest {
   availableToClasses: string[]
   npcId: string
   requiresStats?: Partial<Record<string, number>>
+  /** Granted once, on first completion. Pure data — ids resolve via the item catalog. */
+  rewards?: readonly ItemReward[]
+}
+
+/** One entry of a quest's payout. `quantity` defaults to 1. */
+export interface ItemReward {
+  itemId: string
+  quantity?: number
 }
 
 const ALL_CLASSES = ['warrior', 'rogue', 'mage', 'cleric', 'ranger', 'bard']
@@ -17,6 +25,7 @@ const questData = [
       'The stranger will not say who cast you into the woods, only that smoke rises east along the old track. Walk it before the light goes.',
     availableToClasses: ALL_CLASSES,
     npcId: 'forest-guide',
+    rewards: [{ itemId: 'heath-herb', quantity: 3 }],
   },
   {
     id: 'guard-the-bridge',
@@ -26,6 +35,7 @@ const questData = [
     availableToClasses: ['warrior'],
     npcId: 'village-smith',
     requiresStats: { strength: 4 },
+    rewards: [{ itemId: 'leather-cap' }],
   },
   {
     id: 'smugglers-basin',
@@ -35,6 +45,7 @@ const questData = [
     availableToClasses: ['rogue'],
     npcId: 'village-smith',
     requiresStats: { agility: 4 },
+    rewards: [{ itemId: 'bog-reed', quantity: 5 }],
   },
   {
     id: 'thornwood-briars',
@@ -44,6 +55,7 @@ const questData = [
     availableToClasses: ['ranger'],
     npcId: 'village-smith',
     requiresStats: { agility: 4 },
+    rewards: [{ itemId: 'oak-kindling', quantity: 5 }],
   },
   {
     id: 'archivists-trove',
@@ -53,6 +65,7 @@ const questData = [
     availableToClasses: ['mage'],
     npcId: 'village-archivist',
     requiresStats: { intellect: 4 },
+    rewards: [{ itemId: 'emberglass' }],
   },
   {
     id: 'silent-bell',
@@ -62,6 +75,7 @@ const questData = [
     availableToClasses: ['cleric'],
     npcId: 'village-archivist',
     requiresStats: { intellect: 4 },
+    rewards: [{ itemId: 'flanged-mace' }],
   },
   {
     id: 'bards-contest',
@@ -71,6 +85,7 @@ const questData = [
     availableToClasses: ['bard'],
     npcId: 'village-host',
     requiresStats: { intellect: 3 },
+    rewards: [{ itemId: 'heath-herb', quantity: 5 }],
   },
   {
     id: 'the-midnight-fair',
@@ -79,6 +94,7 @@ const questData = [
       'The kingdom gathers for the Midnight Fair. Pitch in where you are needed and keep the celebration from unraveling.',
     availableToClasses: ALL_CLASSES,
     npcId: 'village-host',
+    rewards: [{ itemId: 'emberglass', quantity: 2 }],
   },
 ] as const satisfies readonly Quest[]
 
