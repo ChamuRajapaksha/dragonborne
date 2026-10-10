@@ -384,6 +384,11 @@ export function showInventoryPanel(state: InventoryState): void {
 
 /** Rewrites the panel's slots in place. No-op when the panel is closed. */
 export function renderInventoryPanel(state: InventoryState): void {
+  // A live native drag holds a reference to a DOM node; rewriting the panel's
+  // innerHTML would detach it and the drag would die mid-flight. Slot-selection
+  // changes (the 1–9 keys still fire while the panel is open) must wait for dragend.
+  if (dragSource) return
+
   const overlay = document.getElementById(PANEL_ID)
   if (!overlay) return
   overlay.innerHTML = panelContent(state)
