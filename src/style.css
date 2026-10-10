@@ -409,8 +409,7 @@ body {
   pointer-events: none;
 }
 
-.inv-slot,
-.hotbar-slot {
+.inv-slot {
   cursor: grab;
 }
 
