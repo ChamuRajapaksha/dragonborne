@@ -391,6 +391,24 @@ body {
   box-shadow: 0 0 0 1px #ffd27f;
 }
 
+/*
+ * The stack riding the pointer. `pointer-events: none` is load-bearing: without it the
+ * cursor would sit under the pointer and swallow every click meant for a slot.
+ */
+.inv-cursor {
+  position: fixed;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border: 1px solid #aa3bff;
+  border-radius: 4px;
+  background: rgba(29, 29, 40, 0.85);
+  pointer-events: none;
+}
+
 .inv-slot,
 .hotbar-slot {
   cursor: grab;
