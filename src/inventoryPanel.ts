@@ -6,10 +6,10 @@ import {
   moveGearToSlot,
   moveStack,
   pickUpGear,
+  pickUpHalf,
   pickUpSlot,
   placeCursor,
   returnCursor,
-  splitStack,
   subscribeInventory,
   updateInventory,
 } from './inventory'
@@ -293,7 +293,8 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     )
   })
 
-  // Right-clicking behaves like left-clicking on gear, and splits a stack in the pack.
+  // Right-clicking behaves like left-clicking on gear, and lifts half a stack in the
+  // pack. (With a full hand it places one unit — see the next step's handler.)
   overlay.addEventListener('contextmenu', (event) => {
     const element = event.target as Element
 
@@ -308,7 +309,7 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     const ref = target ? readSlotRef(target) : null
     if (!ref) return
     event.preventDefault()
-    updateInventory((current) => splitStack(current, ref, 1))
+    updateInventory((current) => (current.cursor ? current : pickUpHalf(current, ref)))
   })
 }
 
