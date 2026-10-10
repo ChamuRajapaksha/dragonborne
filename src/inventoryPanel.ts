@@ -2,6 +2,7 @@ import type { EquipSlot, InventoryState, SlotRef } from './inventory'
 import {
   equipCursor,
   equipFromSlot,
+  getInventory,
   getItemById,
   moveGearToSlot,
   moveStack,
@@ -176,6 +177,13 @@ function readSlotRef(element: Element): SlotRef | null {
  */
 function bindDragAndDrop(overlay: HTMLElement): void {
   overlay.addEventListener('dragstart', (event) => {
+    // A held stack and a drag are two ways to move an item; letting both run at once
+    // makes the drop destination ambiguous. The pointer carries one thing at a time.
+    if (getInventory().cursor) {
+      event.preventDefault()
+      return
+    }
+
     const element = event.target as Element
 
     const gearTarget = element.closest('[data-equip]')
