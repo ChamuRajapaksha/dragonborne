@@ -4,6 +4,7 @@ import {
   getItemById,
   moveGearToSlot,
   moveStack,
+  pickUpSlot,
   returnCursor,
   splitStack,
   subscribeInventory,
@@ -249,6 +250,16 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     }
 
     updateInventory((current) => moveStack(current, from.ref, to))
+  })
+
+  // Left-clicking a slot lifts its whole stack onto the pointer when the hands are
+  // empty. Placing it back is a later click.
+  overlay.addEventListener('click', (event) => {
+    const target = (event.target as Element).closest('[data-container]')
+    const ref = target ? readSlotRef(target) : null
+    if (!ref) return
+
+    updateInventory((current) => (current.cursor ? current : pickUpSlot(current, ref)))
   })
 
   // Right-click splits a stack in half; the split-off half takes the lowest free
