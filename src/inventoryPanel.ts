@@ -3,6 +3,7 @@ import {
   equipFromSlot,
   getItemById,
   moveStack,
+  returnCursor,
   splitStack,
   subscribeInventory,
   unequipToSlot,
@@ -22,10 +23,16 @@ export function isInventoryPanelOpen(): boolean {
 }
 
 export function closeInventoryPanel(): void {
+  const wasOpen = isInventoryPanelOpen()
+
   document.getElementById(PANEL_ID)?.remove()
   unsubscribe?.()
   unsubscribe = null
   dragSource = null
+
+  // Park whatever the pointer was carrying. Runs after the panel is gone so the
+  // store update reaches the hotbar and HUD without redrawing a removed panel.
+  if (wasOpen) updateInventory(returnCursor)
 }
 
 const EQUIP_SLOT_LABELS = {
