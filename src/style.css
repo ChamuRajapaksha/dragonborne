@@ -386,6 +386,11 @@ body {
   opacity: 0.4;
 }
 
+.inv-slot-hover {
+  border-color: #ffd27f;
+  box-shadow: 0 0 0 1px #ffd27f;
+}
+
 .inv-slot,
 .hotbar-slot {
   cursor: grab;

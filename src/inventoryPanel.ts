@@ -231,6 +231,23 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     target?.classList.remove('inv-slot-dragover')
   })
 
+  // While a stack rides the pointer, outline whatever slot it is over so the player
+  // can see where a click would put it. `relatedTarget` guards against the flicker
+  // that a bare mouseout causes when moving onto a slot's own children.
+  overlay.addEventListener('mouseover', (event) => {
+    if (!getInventory().cursor) return
+    const target = (event.target as Element).closest('[data-container], [data-equip]')
+    target?.classList.add('inv-slot-hover')
+  })
+
+  overlay.addEventListener('mouseout', (event) => {
+    const target = (event.target as Element).closest('[data-container], [data-equip]')
+    if (!target) return
+    const related = event.relatedTarget as Node | null
+    if (related && target.contains(related)) return
+    target.classList.remove('inv-slot-hover')
+  })
+
   overlay.addEventListener('drop', (event) => {
     const target = (event.target as Element).closest(
       '[data-container], [data-equip]',
