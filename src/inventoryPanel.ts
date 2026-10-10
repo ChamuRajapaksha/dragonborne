@@ -2,6 +2,7 @@ import type { EquipSlot, InventoryState, SlotRef } from './inventory'
 import {
   equipFromSlot,
   getItemById,
+  moveGearToSlot,
   moveStack,
   returnCursor,
   splitStack,
@@ -13,8 +14,12 @@ import { paintItemIcons } from './itemIcon'
 
 const PANEL_ID = 'inventory-panel'
 
-/** Slot the pointer is dragging from, while a drag is in flight. */
-let dragSource: SlotRef | null = null
+/** What the pointer is dragging, while a drag is in flight. */
+type DragSource =
+  | { kind: 'slot'; ref: SlotRef }
+  | { kind: 'gear'; slot: EquipSlot }
+
+let dragSource: DragSource | null = null
 
 let unsubscribe: (() => void) | null = null
 
@@ -76,7 +81,7 @@ function equipSlotMarkup(
   }
 
   return `
-    <div class="inv-equip-slot" data-equip="${slot}" aria-label="${label}">
+    <div class="inv-equip-slot" draggable="true" data-equip="${slot}" aria-label="${label}">
       <span class="inv-slot-glyph" data-item-id="${stack.itemId}"></span>
       <span class="inv-equip-label">${label}</span>
     </div>`
@@ -147,11 +152,23 @@ function readSlotRef(element: Element): SlotRef | null {
  */
 function bindDragAndDrop(overlay: HTMLElement): void {
   overlay.addEventListener('dragstart', (event) => {
-    const target = (event.target as Element).closest('[data-container]')
+    const element = event.target as Element
+
+    const gearTarget = element.closest('[data-equip]')
+    if (gearTarget) {
+      const slot = gearTarget.getAttribute('data-equip') as EquipSlot
+      dragSource = { kind: 'gear', slot }
+      event.dataTransfer?.setData('text/plain', `gear:${slot}`)
+      if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
+      gearTarget.classList.add('inv-slot-dragging')
+      return
+    }
+
+    const target = element.closest('[data-container]')
     const ref = target ? readSlotRef(target) : null
     if (!ref) return
 
-    dragSource = ref
+    dragSource = { kind: 'slot', ref }
     event.dataTransfer?.setData('text/plain', `${ref.container}:${ref.index}`)
     if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move'
     target?.classList.add('inv-slot-dragging')
@@ -195,21 +212,28 @@ function bindDragAndDrop(overlay: HTMLElement): void {
 
     const equipSlot = target.getAttribute('data-equip') as EquipSlot | null
     if (equipSlot) {
-      // `equipFromSlot` picks the gear slot from the item itself, so the drop is only
-      // honoured when the dragged item really belongs in the slot under the pointer.
-      // Whatever was already worn returns to the slot the dragged stack came from.
+      // Worn gear cannot be dropped onto another gear slot; only carryable slots feed
+      // the gear slots, and `equipFromSlot` picks the slot from the item itself.
+      if (from.kind === 'gear') return
+
       updateInventory((current) => {
-        const source = current[from.container][from.index]
+        const source = current[from.ref.container][from.ref.index]
         const item = source ? getItemById(source.itemId) : undefined
         if (!item || item.equipSlot !== equipSlot) return current
-        return equipFromSlot(current, from).state
+        return equipFromSlot(current, from.ref).state
       })
       return
     }
 
     const to = readSlotRef(target)
     if (!to) return
-    updateInventory((current) => moveStack(current, from, to))
+
+    if (from.kind === 'gear') {
+      updateInventory((current) => moveGearToSlot(current, from.slot, to).state)
+      return
+    }
+
+    updateInventory((current) => moveStack(current, from.ref, to))
   })
 
   // Right-click splits a stack in half; the split-off half takes the lowest free
