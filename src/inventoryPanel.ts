@@ -55,7 +55,7 @@ function slotMarkup(
   }
 
   return `
-    <div class="inv-slot" data-container="${container}" data-index="${index}" aria-label="${label}">
+    <div class="inv-slot" draggable="true" data-container="${container}" data-index="${index}" aria-label="${label}">
       <span class="inv-slot-glyph" data-item-id="${stack.itemId}"></span>
       <span class="inv-slot-count">${stack.quantity}</span>
     </div>`
