@@ -9,6 +9,7 @@ import {
   pickUpHalf,
   pickUpSlot,
   placeCursor,
+  placeOne,
   returnCursor,
   subscribeInventory,
   updateInventory,
@@ -293,8 +294,8 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     )
   })
 
-  // Right-clicking behaves like left-clicking on gear, and lifts half a stack in the
-  // pack. (With a full hand it places one unit — see the next step's handler.)
+  // Right-clicking behaves like left-clicking on gear: half a stack comes up from the
+  // pack with empty hands, and one unit goes down from the hand that holds it.
   overlay.addEventListener('contextmenu', (event) => {
     const element = event.target as Element
 
@@ -309,7 +310,9 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     const ref = target ? readSlotRef(target) : null
     if (!ref) return
     event.preventDefault()
-    updateInventory((current) => (current.cursor ? current : pickUpHalf(current, ref)))
+    updateInventory((current) =>
+      current.cursor ? placeOne(current, ref) : pickUpHalf(current, ref),
+    )
   })
 }
 
