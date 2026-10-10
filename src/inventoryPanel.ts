@@ -76,6 +76,21 @@ function equipSlotMarkup(
 }
 
 /**
+ * The stack riding the pointer. Sits after `.inv-panel` so it paints over it without
+ * needing a `z-index`, and is empty while nothing is held.
+ */
+function cursorMarkup(state: InventoryState): string {
+  const cursor = state.cursor
+  if (!cursor) return ''
+
+  return `
+    <div class="inv-cursor" aria-hidden="true">
+      <span class="inv-slot-glyph" data-item-id="${cursor.itemId}"></span>
+      ${cursor.quantity > 1 ? `<span class="inv-slot-count">${cursor.quantity}</span>` : ''}
+    </div>`
+}
+
+/**
  * Builds the panel's markup into a detached element. Slot contents are painted by
  * `renderInventoryPanel`, so opening and re-rendering share one code path.
  */
@@ -104,6 +119,7 @@ function panelContent(state: InventoryState): string {
 
       <button id="inventory-close">Close</button>
     </div>
+    ${cursorMarkup(state)}
   `
 }
 
