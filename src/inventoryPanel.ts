@@ -27,6 +27,9 @@ type DragSource =
 
 let dragSource: DragSource | null = null
 
+/** Last pointer position, so the held stack can be placed again after a re-render. */
+let lastPointer: { x: number; y: number } | null = null
+
 let unsubscribe: (() => void) | null = null
 
 export function isInventoryPanelOpen(): boolean {
@@ -40,6 +43,7 @@ export function closeInventoryPanel(): void {
   unsubscribe?.()
   unsubscribe = null
   dragSource = null
+  lastPointer = null
 
   // Park whatever the pointer was carrying. Runs after the panel is gone so the
   // store update reaches the hotbar and HUD without redrawing a removed panel.
@@ -160,6 +164,14 @@ function activateGearSlot(equipSlot: EquipSlot): void {
   if (refused) showToast('That item does not fit there')
 }
 
+/** Parks the held-stack element under the last known pointer position. */
+function positionCursor(overlay: HTMLElement): void {
+  const cursor = overlay.querySelector<HTMLElement>('.inv-cursor')
+  if (!cursor || !lastPointer) return
+  cursor.style.left = `${lastPointer.x}px`
+  cursor.style.top = `${lastPointer.y}px`
+}
+
 function readSlotRef(element: Element): SlotRef | null {
   const container = element.getAttribute('data-container')
   const index = Number(element.getAttribute('data-index'))
@@ -246,6 +258,11 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     const related = event.relatedTarget as Node | null
     if (related && target.contains(related)) return
     target.classList.remove('inv-slot-hover')
+  })
+
+  overlay.addEventListener('mousemove', (event) => {
+    lastPointer = { x: event.clientX, y: event.clientY }
+    positionCursor(overlay)
   })
 
   overlay.addEventListener('drop', (event) => {
@@ -371,6 +388,7 @@ export function renderInventoryPanel(state: InventoryState): void {
   if (!overlay) return
   overlay.innerHTML = panelContent(state)
   paintItemIcons(overlay)
+  positionCursor(overlay)
   overlay.querySelector('#inventory-close')?.addEventListener('click', () => {
     closeInventoryPanel()
   })
