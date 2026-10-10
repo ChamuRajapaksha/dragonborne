@@ -11,6 +11,7 @@ import {
   updateInventory,
 } from './inventory'
 import { paintItemIcons } from './itemIcon'
+import { showToast } from './toast'
 
 const PANEL_ID = 'inventory-panel'
 
@@ -214,14 +215,22 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     if (equipSlot) {
       // Worn gear cannot be dropped onto another gear slot; only carryable slots feed
       // the gear slots, and `equipFromSlot` picks the slot from the item itself.
-      if (from.kind === 'gear') return
+      if (from.kind === 'gear') {
+        showToast('Gear goes back to the pack')
+        return
+      }
 
+      let fitted = true
       updateInventory((current) => {
         const source = current[from.ref.container][from.ref.index]
         const item = source ? getItemById(source.itemId) : undefined
-        if (!item || item.equipSlot !== equipSlot) return current
+        if (!item || item.equipSlot !== equipSlot) {
+          fitted = false
+          return current
+        }
         return equipFromSlot(current, from.ref).state
       })
+      if (!fitted) showToast('That item does not fit there')
       return
     }
 
@@ -229,7 +238,13 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     if (!to) return
 
     if (from.kind === 'gear') {
-      updateInventory((current) => moveGearToSlot(current, from.slot, to).state)
+      let moved = false
+      updateInventory((current) => {
+        const result = moveGearToSlot(current, from.slot, to)
+        moved = result.ok
+        return result.state
+      })
+      if (!moved) showToast('That slot holds something else')
       return
     }
 
