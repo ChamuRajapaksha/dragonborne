@@ -4,8 +4,11 @@ import {
   countItem,
   createEmptyInventory,
   effectiveStats,
+  equipCursor,
   equipFromSlot,
+  moveGearToSlot,
   moveStack,
+  pickUpGear,
   pickUpHalf,
   pickUpSlot,
   placeCursor,
@@ -15,7 +18,7 @@ import {
   splitStack,
   unequipToSlot,
 } from './logic'
-import type { InventoryState, ItemStack } from './types'
+import type { EquipSlot, InventoryState, ItemStack } from './types'
 import type { SlotRef } from './logic'
 
 const grid = (index: number): SlotRef => ({ container: 'slots', index })
@@ -439,5 +442,151 @@ describe('returnCursor', () => {
     const returned = returnCursor(state)
 
     expect(returned.cursor).toEqual({ itemId: 'heath-herb', quantity: 5 })
+  })
+})
+
+/** Puts a piece of gear on directly, so drag tests do not depend on equipFromSlot. */
+function withGear(state: InventoryState, slot: EquipSlot, stack: ItemStack | null): InventoryState {
+  return { ...state, equipment: { ...state.equipment, [slot]: stack } }
+}
+
+describe('moveGearToSlot', () => {
+  it('moves worn gear into an empty carryable slot without mutating the source', () => {
+    const state = withGear(createEmptyInventory(), 'head', { itemId: 'leather-cap', quantity: 1 })
+    const result = moveGearToSlot(state, 'head', grid(4))
+
+    expect(result.ok).toBe(true)
+    expect(result.state.equipment.head).toBeNull()
+    expect(result.state.slots[4]).toEqual({ itemId: 'leather-cap', quantity: 1 })
+    expect(state.equipment.head).toEqual({ itemId: 'leather-cap', quantity: 1 })
+  })
+
+  it('swaps with a same-slot item already in the pack', () => {
+    let state = withGear(createEmptyInventory(), 'head', { itemId: 'leather-cap', quantity: 1 })
+    state = withGridStack(state, 0, { itemId: 'iron-helm', quantity: 1 })
+
+    const result = moveGearToSlot(state, 'head', grid(0))
+
+    expect(result.ok).toBe(true)
+    expect(result.state.equipment.head).toEqual({ itemId: 'iron-helm', quantity: 1 })
+    expect(result.state.slots[0]).toEqual({ itemId: 'leather-cap', quantity: 1 })
+    expect(result.displaced).toEqual({ itemId: 'iron-helm', quantity: 1 })
+  })
+
+  it('refuses to drop gear onto an unrelated stack', () => {
+    let state = withGear(createEmptyInventory(), 'head', { itemId: 'leather-cap', quantity: 1 })
+    state = withGridStack(state, 0, { itemId: 'heath-herb', quantity: 5 })
+
+    const result = moveGearToSlot(state, 'head', grid(0))
+
+    expect(result).toMatchObject({ ok: false, reason: 'wrong-slot' })
+    expect(result.state).toEqual(state)
+  })
+
+  it('refuses an empty gear slot and an out-of-range target', () => {
+    const empty = createEmptyInventory()
+    expect(moveGearToSlot(empty, 'head', grid(0))).toMatchObject({
+      ok: false,
+      reason: 'nothing-equipped',
+    })
+
+    const geared = withGear(empty, 'head', { itemId: 'leather-cap', quantity: 1 })
+    expect(moveGearToSlot(geared, 'head', grid(999))).toMatchObject({
+      ok: false,
+      reason: 'empty-slot',
+    })
+  })
+})
+
+describe('pickUpGear / equipCursor', () => {
+  it('lifts worn gear out of its slot into the cursor', () => {
+    const state = withGear(createEmptyInventory(), 'head', { itemId: 'leather-cap', quantity: 1 })
+    const held = pickUpGear(state, 'head')
+
+    expect(held.equipment.head).toBeNull()
+    expect(held.cursor).toEqual({ itemId: 'leather-cap', quantity: 1 })
+  })
+
+  it('is a no-op while already holding or from an empty gear slot', () => {
+    const empty = createEmptyInventory()
+    expect(pickUpGear(empty, 'head')).toEqual(empty)
+
+    const geared = withGear(
+      withCursor(empty, { itemId: 'torch', quantity: 1 }),
+      'head',
+      { itemId: 'leather-cap', quantity: 1 },
+    )
+    expect(pickUpGear(geared, 'head')).toEqual(geared)
+  })
+
+  it('equips a matching cursor stack and holds what it displaced', () => {
+    const state = withGear(
+      withCursor(createEmptyInventory(), { itemId: 'iron-helm', quantity: 1 }),
+      'head',
+      { itemId: 'leather-cap', quantity: 1 },
+    )
+
+    const result = equipCursor(state, 'head')
+
+    expect(result.ok).toBe(true)
+    expect(result.state.equipment.head).toEqual({ itemId: 'iron-helm', quantity: 1 })
+    expect(result.state.cursor).toEqual({ itemId: 'leather-cap', quantity: 1 })
+  })
+
+  it('refuses an empty cursor or a stack that belongs in another slot', () => {
+    expect(equipCursor(createEmptyInventory(), 'head')).toMatchObject({
+      ok: false,
+      reason: 'nothing-held',
+    })
+
+    const held = withCursor(createEmptyInventory(), { itemId: 'leather-cap', quantity: 1 })
+    expect(equipCursor(held, 'chest')).toMatchObject({ ok: false, reason: 'wrong-slot' })
+    expect(equipCursor(held, 'chest').state).toEqual(held)
+  })
+})
+
+describe('half-stack and single-unit edges', () => {
+  it('splits an even stack down the middle', () => {
+    const state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 2 })
+    const held = pickUpHalf(state, grid(0))
+
+    expect(held.cursor).toEqual({ itemId: 'iron-ore', quantity: 1 })
+    expect(held.slots[0]).toEqual({ itemId: 'iron-ore', quantity: 1 })
+  })
+
+  it('ignores half-picking an empty slot or a slot while already holding', () => {
+    const empty = createEmptyInventory()
+    expect(pickUpHalf(empty, grid(0))).toEqual(empty)
+
+    const seeded = withCursor(
+      withGridStack(empty, 0, { itemId: 'iron-ore', quantity: 4 }),
+      { itemId: 'torch', quantity: 1 },
+    )
+    expect(pickUpHalf(seeded, grid(0))).toEqual(seeded)
+  })
+
+  it('clears the cursor when the last unit is placed one at a time', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 1 })
+    state = pickUpSlot(state, grid(0))
+
+    const placed = placeOne(state, grid(5))
+
+    expect(placed.cursor).toBeNull()
+    expect(placed.slots[5]).toEqual({ itemId: 'iron-ore', quantity: 1 })
+  })
+
+  it('tops a matching target up one unit at a time', () => {
+    let state = withGridStack(createEmptyInventory(), 0, { itemId: 'iron-ore', quantity: 3 })
+    state = withGridStack(state, 1, { itemId: 'iron-ore', quantity: 10 })
+    state = pickUpSlot(state, grid(0))
+
+    const placed = placeOne(state, grid(1))
+
+    expect(placed.slots[1]).toEqual({ itemId: 'iron-ore', quantity: 11 })
+    expect(placed.cursor).toEqual({ itemId: 'iron-ore', quantity: 2 })
+  })
+
+  it('is a no-op placing one with an empty cursor', () => {
+    expect(placeOne(createEmptyInventory(), grid(0))).toEqual(createEmptyInventory())
   })
 })
