@@ -76,6 +76,13 @@ This is the only loop to build in this phase. No inventory/crafting, no combat, 
 ### 5.4 UI layer
 - Character creation screen and any quest/dialogue popups can be simple Phaser UI or DOM overlay — agent's choice, but keep it easy to hand-restyle later
 - No polish pass needed yet — that's done by hand afterward
+- Inventory pointer controls are Minecraft-style and live entirely in the DOM pack panel:
+  left click picks up a whole stack and places it (topping a same-item stack up to its limit,
+  otherwise swapping), right click takes half a stack or places a single unit, gear slots
+  equip and unequip on click, and HTML5 drag & drop moves stacks between the pack and the
+  hotbar. The stack in hand is held in inventory state (`cursor`, schema `version: 2`), so
+  closing the panel returns it to the pack and a reload parks it there — an item is never
+  lost. The README's "How to test the vertical slice" step 7 is the full interaction spec.
 
 ### 5.5 Explicitly not in scope this phase
 - Multiplayer (no networking code at all)
