@@ -1,15 +1,16 @@
 import type { EquipSlot, InventoryState, SlotRef } from './inventory'
 import {
+  equipCursor,
   equipFromSlot,
   getItemById,
   moveGearToSlot,
   moveStack,
+  pickUpGear,
   pickUpSlot,
   placeCursor,
   returnCursor,
   splitStack,
   subscribeInventory,
-  unequipToSlot,
   updateInventory,
 } from './inventory'
 import { paintItemIcons } from './itemIcon'
@@ -138,6 +139,25 @@ function panelContent(state: InventoryState): string {
   `
 }
 
+/**
+ * A left or right click on a gear slot. With empty hands it lifts the worn item into
+ * the cursor; while carrying it equips the item when it belongs in that slot, and
+ * toasts otherwise. Gear stacks are always one, so both mouse buttons do the same.
+ */
+function activateGearSlot(equipSlot: EquipSlot): void {
+  let refused = false
+
+  updateInventory((current) => {
+    if (!current.cursor) return pickUpGear(current, equipSlot)
+
+    const result = equipCursor(current, equipSlot)
+    refused = !result.ok
+    return result.state
+  })
+
+  if (refused) showToast('That item does not fit there')
+}
+
 function readSlotRef(element: Element): SlotRef | null {
   const container = element.getAttribute('data-container')
   const index = Number(element.getAttribute('data-index'))
@@ -253,10 +273,18 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     updateInventory((current) => moveStack(current, from.ref, to))
   })
 
-  // Left-clicking a slot lifts its stack onto the pointer, or drops what the pointer
-  // already carries into the slot — an empty hand picks up, a full one places.
+  // Clicking a slot or a gear slot: an empty hand picks the stack up, a full one
+  // places it. Gear slots equip or unequip instead; see `activateGearSlot`.
   overlay.addEventListener('click', (event) => {
-    const target = (event.target as Element).closest('[data-container]')
+    const element = event.target as Element
+
+    const gear = element.closest('[data-equip]')
+    if (gear) {
+      activateGearSlot(gear.getAttribute('data-equip') as EquipSlot)
+      return
+    }
+
+    const target = element.closest('[data-container]')
     const ref = target ? readSlotRef(target) : null
     if (!ref) return
 
@@ -265,30 +293,22 @@ function bindDragAndDrop(overlay: HTMLElement): void {
     )
   })
 
-  // Right-click splits a stack in half; the split-off half takes the lowest free
-  // slot, which is `splitStack`'s job.
+  // Right-clicking behaves like left-clicking on gear, and splits a stack in the pack.
   overlay.addEventListener('contextmenu', (event) => {
-    const target = (event.target as Element).closest('[data-container]')
+    const element = event.target as Element
+
+    const gear = element.closest('[data-equip]')
+    if (gear) {
+      event.preventDefault()
+      activateGearSlot(gear.getAttribute('data-equip') as EquipSlot)
+      return
+    }
+
+    const target = element.closest('[data-container]')
     const ref = target ? readSlotRef(target) : null
     if (!ref) return
     event.preventDefault()
     updateInventory((current) => splitStack(current, ref, 1))
-  })
-
-  // Double-clicking a stack wears it, and double-clicking a gear slot takes it off.
-  overlay.addEventListener('dblclick', (event) => {
-    const target = (event.target as Element).closest('[data-container], [data-equip]')
-    if (!target) return
-
-    const equipSlot = target.getAttribute('data-equip') as EquipSlot | null
-    if (equipSlot) {
-      updateInventory((current) => unequipToSlot(current, equipSlot).state)
-      return
-    }
-
-    const ref = readSlotRef(target)
-    if (!ref) return
-    updateInventory((current) => equipFromSlot(current, ref).state)
   })
 }
 

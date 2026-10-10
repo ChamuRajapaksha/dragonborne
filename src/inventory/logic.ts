@@ -368,6 +368,42 @@ export function returnCursor(state: InventoryState): InventoryState {
 }
 
 /**
+ * Lifts worn gear into the cursor, leaving the gear slot empty. A no-op while the
+ * cursor already holds, or when the slot is empty.
+ */
+export function pickUpGear(state: InventoryState, slot: EquipSlot): InventoryState {
+  const stack = state.equipment[slot]
+  if (state.cursor || !stack) return state
+
+  return { ...setEquipment(state, slot, null), cursor: { ...stack } }
+}
+
+/**
+ * Equips the cursor stack into its declared gear slot. Whatever was worn takes the
+ * cursor's place, so a swap never loses either item. Refuses a stack that does not
+ * belong in that slot, or an empty cursor.
+ */
+export function equipCursor(state: InventoryState, slot: EquipSlot): EquipResult {
+  const cursor = state.cursor
+  if (!cursor) return { state, ok: false, reason: 'nothing-held', displaced: null }
+
+  const item = getItemById(cursor.itemId)
+  if (item?.equipSlot !== slot) {
+    return { state, ok: false, reason: 'wrong-slot', displaced: null }
+  }
+
+  const previous = state.equipment[slot]
+  return {
+    state: {
+      ...setEquipment(state, slot, { ...cursor }),
+      cursor: previous ? { ...previous } : null,
+    },
+    ok: true,
+    displaced: previous,
+  }
+}
+
+/**
  * Base class stats plus the bonuses of everything worn. Returns a fresh object —
  * `character.stats` is never mutated, so quest gating can call this freely.
  *
@@ -419,7 +455,13 @@ export interface EquipResult {
   state: InventoryState
   /** False when nothing changed — see `reason`. */
   ok: boolean
-  reason?: 'empty-slot' | 'not-equippable' | 'inventory-full' | 'nothing-equipped' | 'wrong-slot'
+  reason?:
+    | 'empty-slot'
+    | 'not-equippable'
+    | 'inventory-full'
+    | 'nothing-equipped'
+    | 'nothing-held'
+    | 'wrong-slot'
   /** The item that came out of the gear slot, if a previous one was replaced. */
   displaced: ItemStack | null
 }
