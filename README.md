@@ -47,9 +47,21 @@ the Vitest suite.
    Quests with unmet stat requirements are listed but locked — bonuses from equipped gear
    count toward them.
 7. Your **hotbar** runs along the bottom of the screen; press **1**–**9** to select a slot
-   and the HUD names the selected item. Press **I** to open the pack: drag stacks between
-   the hotbar and the 27 pack slots, right-click a stack to split a single unit off, and
-   double-click a piece of gear to wear it (double-click the gear slot to take it off).
+   and the HUD names the selected item. Press **I** to open the pack. The pack panel is the
+   movement surface — it holds the same 9-slot hotbar row plus the 27 pack slots, and gear
+   slots on the side:
+   - **Left click** a stack to pick it up whole; left click again to drop it. Dropping onto
+     the same item tops the stack up to its limit, dropping onto a different item swaps the
+     two, and anything that will not fit stays in your hand.
+   - **Right click** picks up half a stack (rounded up); while carrying, right click drops a
+     single unit at a time.
+   - **Drag & drop** works as well: drag a stack from any pack or hotbar slot onto another
+     slot, or drag a piece of gear onto a slot to equip it and drag it back out again.
+   - **Click a gear slot** to equip the item you are carrying (if it belongs there) or, with
+     an empty hand, to take the worn item off.
+   - The stack in hand follows the pointer. Closing the panel (**I** or **Close**) returns it
+     to your pack, hotbar, or its own empty gear slot — and a reload parks it in the pack, so
+     an item is never lost.
 8. Items lie in the world as small coloured tiles — walk up to one and press **E** to pick
    it up (an item-name hint appears when you are close). Pickups respawn when you leave and
    re-enter the area, except the few flagged as one-time. If your pack is full the item
@@ -70,10 +82,11 @@ the Vitest suite.
 The forest → village vertical slice **and** the inventory plan are **complete**: create
 character → wake in the forest → walk the track → portal into Emberhold → talk to NPCs →
 take class-appropriate quests → complete them for item rewards. You start with a
-traveller's kit, pick items up off the ground, drag stacks around a 9-slot hotbar and a
-27-slot pack, wear gear in four equipment slots, and its stat bonuses feed into your
-character — enough to unlock stat-gated quests. Area, position, flags, inventory, and
-completed quests all survive a reload. All placeholder visuals.
+traveller's kit, pick items up off the ground, and move stacks around a 9-slot hotbar and a
+27-slot pack with click-to-pick-up/place, right-click half/single, or real drag & drop;
+wear gear in four equipment slots, and its stat bonuses feed into your character — enough to
+unlock stat-gated quests. Area, position, flags, inventory, and completed quests all survive
+a reload. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
