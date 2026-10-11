@@ -47,6 +47,7 @@ export function closeInventoryPanel(): void {
   unsubscribe = null
   dragSource = null
   lastPointer = null
+  hideItemTooltip()
 
   // Park whatever the pointer was carrying. Runs after the panel is gone so the
   // store update reaches the hotbar and HUD without redrawing a removed panel.
@@ -454,6 +455,9 @@ export function renderInventoryPanel(state: InventoryState): void {
 
   const overlay = document.getElementById(PANEL_ID)
   if (!overlay) return
+  // The innerHTML rewrite destroys the hovered slot's DOM node; a tooltip still
+  // pointing at it would linger with stale content until the pointer moves.
+  hideItemTooltip()
   overlay.innerHTML = panelContent(state)
   paintItemIcons(overlay)
   positionCursor(overlay)
