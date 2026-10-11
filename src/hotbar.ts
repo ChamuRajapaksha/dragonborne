@@ -10,6 +10,7 @@ export function isHotbarMounted(): boolean {
 }
 
 export function destroyHotbar(): void {
+  hideItemTooltip()
   document.getElementById(HOTBAR_ID)?.remove()
 }
 
@@ -95,6 +96,8 @@ export function renderHotbar(state: InventoryState): void {
   const element = document.getElementById(HOTBAR_ID)
   if (!element) return
 
+  // Same stale-tooltip issue as the pack panel: the rewrite destroys the hovered slot.
+  hideItemTooltip()
   element.innerHTML = Array.from({ length: HOTBAR_SLOT_COUNT }, (_, index) =>
     slotMarkup(state, index),
   ).join('')
