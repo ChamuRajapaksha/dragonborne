@@ -218,6 +218,8 @@ function bindDragAndDrop(overlay: HTMLElement): void {
       return
     }
 
+    hideItemTooltip()
+
     const element = event.target as Element
 
     const gearTarget = element.closest('[data-equip]')
@@ -389,6 +391,14 @@ function bindTooltips(overlay: HTMLElement): void {
   let hoveredSlot: Element | null = null
 
   overlay.addEventListener('mousemove', (event) => {
+    // While a drag is in flight the hovered slot and the tooltip would fight the drop
+    // highlight (and `mousemove` can stutter mid-drag) — leave them off entirely.
+    if (dragSource) {
+      hoveredSlot = null
+      hideItemTooltip()
+      return
+    }
+
     const slot = (event.target as Element).closest('[data-container], [data-equip]')
 
     if (!slot) {
