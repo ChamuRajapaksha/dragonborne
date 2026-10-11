@@ -1,5 +1,6 @@
 import type { EquipSlot, InventoryState, SlotRef } from './inventory'
 import {
+  EQUIP_SLOT_LABELS,
   equipCursor,
   equipFromSlot,
   getInventory,
@@ -49,13 +50,6 @@ export function closeInventoryPanel(): void {
   // store update reaches the hotbar and HUD without redrawing a removed panel.
   if (wasOpen) updateInventory(returnCursor)
 }
-
-const EQUIP_SLOT_LABELS = {
-  mainhand: 'Main Hand',
-  head: 'Head',
-  chest: 'Chest',
-  legs: 'Legs',
-} as const
 
 function slotMarkup(
   container: 'hotbar' | 'slots',

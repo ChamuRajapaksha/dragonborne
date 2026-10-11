@@ -8,6 +8,7 @@ export type {
   StatKey,
 } from './types'
 export { EQUIP_SLOTS, HOTBAR_SLOT_COUNT, INVENTORY_SLOT_COUNT } from './types'
+export { EQUIP_SLOT_LABELS } from './labels'
 export { ITEMS, getItemById, getItemsByKind } from './catalog'
 export type {
   AddItemResult,
