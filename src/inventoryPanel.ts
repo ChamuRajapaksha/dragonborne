@@ -17,6 +17,8 @@ import {
   updateInventory,
 } from './inventory'
 import { paintItemIcons } from './itemIcon'
+import { buildTooltipModel } from './itemTooltipModel'
+import { hideItemTooltip, moveItemTooltip, showItemTooltip } from './itemTooltip'
 import { showToast } from './toast'
 
 const PANEL_ID = 'inventory-panel'
@@ -171,6 +173,31 @@ function readSlotRef(element: Element): SlotRef | null {
   const index = Number(element.getAttribute('data-index'))
   if ((container !== 'slots' && container !== 'hotbar') || !Number.isInteger(index)) return null
   return { container, index }
+}
+
+/**
+ * Resolves the item a hovered slot holds straight from the store, never from the
+ * DOM — the panel's innerHTML is rewritten on every store change, so node identity is
+ * not stable.
+ */
+function resolveHoveredSlot(
+  element: Element,
+): { itemId: string; quantity: number } | null {
+  const state = getInventory()
+
+  const gear = element.closest('[data-equip]')
+  if (gear) {
+    const slot = gear.getAttribute('data-equip') as EquipSlot
+    const stack = state.equipment[slot]
+    return stack ? { itemId: stack.itemId, quantity: stack.quantity } : null
+  }
+
+  const target = element.closest('[data-container]')
+  const ref = target ? readSlotRef(target) : null
+  if (!ref) return null
+
+  const stack = state[ref.container][ref.index]
+  return stack ? { itemId: stack.itemId, quantity: stack.quantity } : null
 }
 
 /**
@@ -353,6 +380,35 @@ function bindDragAndDrop(overlay: HTMLElement): void {
 }
 
 /**
+ * Hover tooltips, bound by delegation so they survive the panel's innerHTML rewrites.
+ * `mousemove` re-resolves the slot under the pointer on every move; anything that is
+ * not a filled slot hides the tooltip again.
+ */
+function bindTooltips(overlay: HTMLElement): void {
+  overlay.addEventListener('mousemove', (event) => {
+    const slot = (event.target as Element).closest('[data-container], [data-equip]')
+    if (!slot) {
+      hideItemTooltip()
+      return
+    }
+
+    const resolved = resolveHoveredSlot(slot)
+    const item = resolved ? getItemById(resolved.itemId) : undefined
+    if (!resolved || !item) {
+      hideItemTooltip()
+      return
+    }
+
+    showItemTooltip(buildTooltipModel(item, { quantity: resolved.quantity }), item.id)
+    moveItemTooltip(slot.getBoundingClientRect())
+  })
+
+  overlay.addEventListener('mouseleave', () => {
+    hideItemTooltip()
+  })
+}
+
+/**
  * Opens the panel if it is closed. Idempotent — calling it twice does not stack
  * overlays.
  */
@@ -366,6 +422,7 @@ export function showInventoryPanel(state: InventoryState): void {
   document.body.appendChild(overlay)
 
   bindDragAndDrop(overlay)
+  bindTooltips(overlay)
 
   unsubscribe = subscribeInventory((next) => {
     renderInventoryPanel(next)
