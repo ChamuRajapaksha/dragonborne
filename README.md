@@ -62,6 +62,9 @@ the Vitest suite.
    - The stack in hand follows the pointer. Closing the panel (**I** or **Close**) returns it
      to your pack, hotbar, or its own empty gear slot — and a reload parks it in the pack, so
      an item is never lost.
+   - **Hover any filled slot** (pack, panel hotbar row, gear slot, or the bottom hotbar) to
+     see its tooltip: name, category and equip slot, the flavour description, its stat
+     bonuses, and the stack size. Empty slots show nothing.
 8. Items lie in the world as small coloured tiles — walk up to one and press **E** to pick
    it up (an item-name hint appears when you are close). Pickups respawn when you leave and
    re-enter the area, except the few flagged as one-time. If your pack is full the item
@@ -133,5 +136,6 @@ authoring approach, art style, and any backend beyond localStorage.
   (movement, NPCs, portals, pickups, HUD)
 - `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts` — DOM overlays for
   character creation, quests, and area intro text
-- `src/hotbar.ts`, `src/inventoryPanel.ts`, `src/itemIcon.ts`, `src/toast.ts` — DOM
-  overlays for the hotbar, the pack panel, item glyphs, and transient messages
+- `src/hotbar.ts`, `src/inventoryPanel.ts`, `src/itemIcon.ts`, `src/itemTooltip.ts`,
+  `src/toast.ts` — DOM overlays for the hotbar, the pack panel, item glyphs, hover
+  tooltips, and transient messages
