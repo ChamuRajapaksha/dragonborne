@@ -434,3 +434,77 @@ body {
   font-size: 13px;
   white-space: nowrap;
 }
+
+/*
+ * Hover tooltip for a filled inventory slot. Fixed-positioned and pointer-events:
+ * none, like the held-stack cursor, so it never swallows the click or drag meant for
+ * the slot underneath it.
+ */
+.item-tooltip {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: max-content;
+  max-width: 240px;
+  padding: 10px 12px;
+  border: 1px solid #4a4a58;
+  border-radius: 6px;
+  background: rgba(29, 29, 40, 0.96);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  color: #e5e5ea;
+  pointer-events: none;
+}
+
+.item-tooltip-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.item-tooltip-header .inv-slot-glyph {
+  font-size: 22px;
+}
+
+.item-tooltip-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.item-tooltip-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.item-tooltip-subtitle {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8a96;
+}
+
+.item-tooltip-description {
+  font-size: 12px;
+  line-height: 1.4;
+  color: #b8b8c4;
+}
+
+.item-tooltip-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-top: 1px solid #4a4a58;
+  padding-top: 6px;
+}
+
+.item-tooltip-stat {
+  font-size: 12px;
+  color: #ffd27f;
+}
+
+.item-tooltip-quantity {
+  font-size: 11px;
+  color: #8a8a96;
+}
