@@ -381,16 +381,27 @@ function bindDragAndDrop(overlay: HTMLElement): void {
 
 /**
  * Hover tooltips, bound by delegation so they survive the panel's innerHTML rewrites.
- * `mousemove` re-resolves the slot under the pointer on every move; anything that is
- * not a filled slot hides the tooltip again.
+ * A cached reference to the hovered slot means the tooltip is only rebuilt when the
+ * pointer moves onto a different slot; moving within the same slot just repositions it.
  */
 function bindTooltips(overlay: HTMLElement): void {
+  let hoveredSlot: Element | null = null
+
   overlay.addEventListener('mousemove', (event) => {
     const slot = (event.target as Element).closest('[data-container], [data-equip]')
+
     if (!slot) {
+      hoveredSlot = null
       hideItemTooltip()
       return
     }
+
+    if (slot === hoveredSlot) {
+      moveItemTooltip(slot.getBoundingClientRect())
+      return
+    }
+
+    hoveredSlot = slot
 
     const resolved = resolveHoveredSlot(slot)
     const item = resolved ? getItemById(resolved.itemId) : undefined
@@ -404,6 +415,7 @@ function bindTooltips(overlay: HTMLElement): void {
   })
 
   overlay.addEventListener('mouseleave', () => {
+    hoveredSlot = null
     hideItemTooltip()
   })
 }
