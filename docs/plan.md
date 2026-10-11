@@ -82,7 +82,9 @@ This is the only loop to build in this phase. No inventory/crafting, no combat, 
   equip and unequip on click, and HTML5 drag & drop moves stacks between the pack and the
   hotbar. The stack in hand is held in inventory state (`cursor`, schema `version: 2`), so
   closing the panel returns it to the pack and a reload parks it there — an item is never
-  lost. The README's "How to test the vertical slice" step 7 is the full interaction spec.
+  lost. Hovering a filled slot shows an item tooltip: name, category/equip slot, description,
+  stat bonuses and stack size, in the panel's rows and on the bottom hotbar. The README's
+  "How to test the vertical slice" step 7 is the full interaction spec.
 
 ### 5.5 Explicitly not in scope this phase
 - Multiplayer (no networking code at all)
