@@ -2,6 +2,8 @@ import { createItemIcon } from './itemIcon'
 import type { ItemTooltipModel } from './itemTooltipModel'
 
 const TOOLTIP_ID = 'item-tooltip'
+const GAP = 8
+const VIEWPORT_PADDING = 8
 
 /**
  * A body-level, cursor-free tooltip for a hovered inventory slot. One element is
@@ -73,11 +75,33 @@ export function showItemTooltip(model: ItemTooltipModel, itemId: string): void {
   document.body.appendChild(tooltip)
 }
 
-/** Moves the tooltip beside a slot, just off its top-right corner. */
+/**
+ * Moves the tooltip beside a slot. Puts it to the right when there is room and to the
+ * left when the right edge would overflow, then clamps both axes to the viewport so a
+ * long description never runs off screen.
+ */
 export function moveItemTooltip(anchor: DOMRect): void {
   const tooltip = document.getElementById(TOOLTIP_ID)
   if (!tooltip) return
 
-  tooltip.style.left = `${anchor.right + 8}px`
-  tooltip.style.top = `${anchor.top}px`
+  const rect = tooltip.getBoundingClientRect()
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+
+  let left = anchor.right + GAP
+  if (left + rect.width > viewportWidth - VIEWPORT_PADDING) {
+    left = anchor.left - GAP - rect.width
+  }
+  const clampedLeft = Math.max(
+    VIEWPORT_PADDING,
+    Math.min(left, viewportWidth - rect.width - VIEWPORT_PADDING),
+  )
+
+  const clampedTop = Math.max(
+    VIEWPORT_PADDING,
+    Math.min(anchor.top, viewportHeight - rect.height - VIEWPORT_PADDING),
+  )
+
+  tooltip.style.left = `${clampedLeft}px`
+  tooltip.style.top = `${clampedTop}px`
 }
