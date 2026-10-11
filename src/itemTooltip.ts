@@ -5,6 +5,13 @@ const TOOLTIP_ID = 'item-tooltip'
 const GAP = 8
 const VIEWPORT_PADDING = 8
 
+/** Last slot the tooltip was anchored to, so a resize can re-clamp it. */
+let lastAnchor: DOMRect | null = null
+
+window.addEventListener('resize', () => {
+  if (lastAnchor && document.getElementById(TOOLTIP_ID)) positionItemTooltip(lastAnchor)
+})
+
 /**
  * A body-level, cursor-free tooltip for a hovered inventory slot. One element is
  * shared by the pack panel and the bottom hotbar; it is appended last each time so
@@ -81,6 +88,11 @@ export function showItemTooltip(model: ItemTooltipModel, itemId: string): void {
  * long description never runs off screen.
  */
 export function moveItemTooltip(anchor: DOMRect): void {
+  lastAnchor = anchor
+  positionItemTooltip(anchor)
+}
+
+function positionItemTooltip(anchor: DOMRect): void {
   const tooltip = document.getElementById(TOOLTIP_ID)
   if (!tooltip) return
 
