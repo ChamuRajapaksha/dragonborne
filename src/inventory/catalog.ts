@@ -199,6 +199,14 @@ const itemData = [
     maxStack: 99,
     icon: { glyph: '|', color: 0x8a6238 },
   },
+  {
+    id: 'axe',
+    name: "Woodcutter's Axe",
+    description: 'A camp felling axe, held in the hotbar. Three good swings bring a tree down.',
+    kind: 'tool',
+    maxStack: 1,
+    icon: { glyph: 'Y', color: 0xcfd6dd },
+  },
 ] as const satisfies readonly ItemDefinition[]
 
 export const ITEMS: readonly ItemDefinition[] = itemData
