@@ -246,6 +246,7 @@ export const FOREST: AreaDefinition = {
     { itemId: 'rough-hides', x: 45, y: 8 },
     { itemId: 'emberglass', x: 6, y: 16, onceFlag: true },
     { itemId: 'worn-dagger', x: 57, y: 26, onceFlag: true },
+    { itemId: 'axe', x: 58, y: 24, onceFlag: true },
   ],
   intro: {
     title: 'The Thornwood',
