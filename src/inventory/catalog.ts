@@ -191,6 +191,14 @@ const itemData = [
     maxStack: 99,
     icon: { glyph: 'E', color: 0xff7f4a },
   },
+  {
+    id: 'wood',
+    name: 'Wood Log',
+    description: 'A felled trunk, trimmed and stacked. Emberhold traders pay coin by the log.',
+    kind: 'resource',
+    maxStack: 99,
+    icon: { glyph: '|', color: 0x8a6238 },
+  },
 ] as const satisfies readonly ItemDefinition[]
 
 export const ITEMS: readonly ItemDefinition[] = itemData
