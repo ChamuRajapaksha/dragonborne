@@ -26,6 +26,7 @@ export const TILE_LEGEND: readonly TileLegendEntry[] = [
   { index: 9, char: 'w', name: 'wall', base: 0x7d6a52, detail: 0x92806a, collides: true },
   { index: 10, char: 'f', name: 'floor', base: 0xa89880, detail: 0xbcaa92, collides: false },
   { index: 11, char: 'k', name: 'keep', base: 0x5f6470, detail: 0x717683, collides: true },
+  { index: 12, char: 's', name: 'stump', base: 0x453022, detail: 0x574029, collides: false },
 ]
 
 export const TILE_BY_CHAR: ReadonlyMap<string, TileLegendEntry> = new Map(
@@ -35,6 +36,26 @@ export const TILE_BY_CHAR: ReadonlyMap<string, TileLegendEntry> = new Map(
 export const COLLIDING_TILE_INDEXES: readonly number[] = TILE_LEGEND.filter(
   (tile) => tile.collides,
 ).map((tile) => tile.index)
+
+function indexOfChar(char: string): number {
+  const tile = TILE_LEGEND.find((entry) => entry.char === char)
+  if (!tile) throw new Error(`Tile '${char}' is missing from the legend`)
+  return tile.index
+}
+
+/** The tree trunk (`t`) tile index — felling retiles this to the stump. */
+export const TREE_TRUNK_INDEX = indexOfChar('t')
+
+/** The stump (`s`) tile index left behind by a felled tree; walkable. */
+export const STUMP_TILE_INDEX = indexOfChar('s')
+
+/** Swings needed to fell a tree; mid-chop progress is transient and never persisted. */
+export const TREE_CHOP_HITS = 3
+
+/** True when a terrain tile is a choppable tree trunk. */
+export function isTreeTrunkTile(tileIndex: number | undefined): boolean {
+  return tileIndex === TREE_TRUNK_INDEX
+}
 
 const SHEET_COLUMNS = 4
 
