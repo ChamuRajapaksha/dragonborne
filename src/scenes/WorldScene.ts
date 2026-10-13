@@ -10,6 +10,7 @@ import {
   effectiveStats,
   getItemById,
   getInventory,
+  remainingCapacity,
   subscribeInventory,
   updateInventory,
 } from '../inventory'
@@ -17,12 +18,17 @@ import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById } from '../story'
-import { AREAS, getAreaById, getAreaSpawn } from '../world/areas'
+import { AREAS, getAreaById, getAreaSpawn, worldToTile } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { loadProgress, saveProgress, setProgressFlag } from '../world/progress'
-import { TILE_SIZE } from '../world/tileset'
+import {
+  STUMP_TILE_INDEX,
+  TILE_SIZE,
+  TREE_CHOP_HITS,
+  isTreeTrunkTile,
+} from '../world/tileset'
 
 const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
@@ -44,6 +50,9 @@ const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
 const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
+const AXE_ITEM_ID = 'axe'
+const WOOD_ITEM_ID = 'wood'
+const WOOD_YIELD = 3
 const COMPASS_POINTS = [
   'east',
   'south-east',
@@ -84,6 +93,14 @@ interface WasdKeys {
   D: Phaser.Input.Keyboard.Key
 }
 
+/** A choppable tree trunk, located by tile so its progress can be keyed. */
+interface TreeSpot {
+  tileX: number
+  tileY: number
+  x: number
+  y: number
+}
+
 interface WorldSceneData {
   character?: Character
   areaId?: string
@@ -108,6 +125,9 @@ export default class WorldScene extends Phaser.Scene {
   private portalMarkers: AreaPortalMarker[] = []
   /** Items lying in the area, kept live so pickups can remove them. */
   private itemMarkers: AreaItemMarker[] = []
+  private terrain!: Phaser.Tilemaps.TilemapLayerBase
+  /** Transient hits remaining per tree tile, keyed `"x,y"`; never persisted. */
+  private chopProgress = new Map<string, number>()
   private popupOpen = false
   private introCardOpen = false
   private inventoryOpen = false
@@ -131,6 +151,7 @@ export default class WorldScene extends Phaser.Scene {
     this.npcMarkers = []
     this.portalMarkers = []
     this.itemMarkers = []
+    this.chopProgress = new Map()
     this.hotbarKeys = []
     this.waypoint = null
     this.popupOpen = false
@@ -148,15 +169,14 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerPoint = { x: spawn.x, y: spawn.y }
 
-    const terrain = buildTerrain(this, area)
+    this.terrain = buildTerrain(this, area)
 
     this.player = this.add.rectangle(spawn.x, spawn.y, 32, 32, 0x22cc66)
     this.physics.add.existing(this.player)
     this.playerBody = this.player.body as Phaser.Physics.Arcade.Body
     this.playerBody.setCollideWorldBounds(true)
 
-    this.physics.add.collider(this.player, terrain)
-
+    this.physics.add.collider(this.player, this.terrain)
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
@@ -338,6 +358,7 @@ export default class WorldScene extends Phaser.Scene {
     const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()
     const nearestItem = this.findNearestItem()
+    const nearestTree = this.findNearestTree()
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
@@ -384,6 +405,8 @@ export default class WorldScene extends Phaser.Scene {
       this.popupOpen = true
     } else if (nearestItem && interactPressed && !this.popupOpen) {
       this.pickupItem(nearestItem)
+    } else if (nearestTree && interactPressed && !this.popupOpen) {
+      this.chopTree(nearestTree)
     }
   }
 
@@ -551,5 +574,83 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     return nearest
+  }
+
+  /** Scans the terrain tiles within reach for a choppable trunk. */
+  private findNearestTree(): TreeSpot | null {
+    const origin = worldToTile(this.playerPoint.x, this.playerPoint.y)
+    const radius = Math.ceil(INTERACT_RANGE / TILE_SIZE)
+    let nearest: TreeSpot | null = null
+    let nearestDistance = INTERACT_RANGE
+
+    for (let tileY = origin.y - radius; tileY <= origin.y + radius; tileY += 1) {
+      for (let tileX = origin.x - radius; tileX <= origin.x + radius; tileX += 1) {
+        const tile = this.terrain.getTileAt(tileX, tileY)
+        if (!tile || !isTreeTrunkTile(tile.index)) continue
+
+        const x = tileX * TILE_SIZE + TILE_SIZE / 2
+        const y = tileY * TILE_SIZE + TILE_SIZE / 2
+        const distance = Phaser.Math.Distance.Between(this.playerPoint.x, this.playerPoint.y, x, y)
+        if (distance <= nearestDistance) {
+          nearest = { tileX, tileY, x, y }
+          nearestDistance = distance
+        }
+      }
+    }
+
+    return nearest
+  }
+
+  /**
+   * Swings the selected hotbar tool at a tree. A trunk only falls to the axe, after
+   * `TREE_CHOP_HITS` swings. The final swing is refused — tree held at one hit — while
+   * the pack cannot take the whole yield, so chopped wood is never lost.
+   */
+  private chopTree(tree: TreeSpot): void {
+    if (this.selectedHotbarItemId() !== AXE_ITEM_ID) return
+
+    const key = `${tree.tileX},${tree.tileY}`
+    const remaining = (this.chopProgress.get(key) ?? TREE_CHOP_HITS) - 1
+
+    if (remaining > 0) {
+      this.chopProgress.set(key, remaining)
+      showToast(`Tree: ${remaining} more ${remaining === 1 ? 'hit' : 'hits'}`)
+      return
+    }
+
+    if (!this.canHoldWood()) {
+      this.chopProgress.set(key, 1)
+      showToast('Your pack is full')
+      return
+    }
+
+    this.chopProgress.delete(key)
+    this.grantWood()
+    this.terrain.putTileAt(STUMP_TILE_INDEX, tree.tileX, tree.tileY)
+    showToast(`+${WOOD_YIELD} Wood Log`)
+  }
+
+  private canHoldWood(): boolean {
+    const state = getInventory()
+    return (
+      remainingCapacity(state, WOOD_ITEM_ID, 'hotbar') +
+        remainingCapacity(state, WOOD_ITEM_ID, 'slots') >=
+      WOOD_YIELD
+    )
+  }
+
+  /** Fills the hotbar first so the logs are visible, then the pack. */
+  private grantWood(): void {
+    updateInventory((current) => {
+      const intoHotbar = addItem(current, WOOD_ITEM_ID, WOOD_YIELD, 'hotbar')
+      return intoHotbar.remainder > 0
+        ? addItem(intoHotbar.state, WOOD_ITEM_ID, intoHotbar.remainder, 'slots').state
+        : intoHotbar.state
+    })
+  }
+
+  private selectedHotbarItemId(): string | undefined {
+    const state = getInventory()
+    return state.hotbar[state.selectedHotbarSlot]?.itemId
   }
 }
