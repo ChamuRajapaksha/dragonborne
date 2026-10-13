@@ -3,11 +3,13 @@ import type { AreaDefinition } from './areas'
 import { getAreaById, getAreaSize, parseAreaMap, tileToWorld } from './areas'
 import { getNpcById } from '../story'
 import { getItemById } from '../inventory'
-import { getProgressFlag, pickupFlagKey } from './progress'
+import { chopFlagKey, getProgressFlag, pickupFlagKey } from './progress'
 import {
   COLLIDING_TILE_INDEXES,
+  STUMP_TILE_INDEX,
   TILESET_KEY,
   TILE_SIZE,
+  TREE_TRUNK_INDEX,
   ensureTileset,
   toCssColor,
 } from './tileset'
@@ -49,8 +51,9 @@ export function buildTerrain(
 ): Phaser.Tilemaps.TilemapLayerBase {
   ensureTileset(scene)
 
+  const data = parseAreaMap(area.map)
   const map = scene.make.tilemap({
-    data: parseAreaMap(area.map),
+    data,
     tileWidth: TILE_SIZE,
     tileHeight: TILE_SIZE,
   })
@@ -71,6 +74,17 @@ export function buildTerrain(
   }
 
   layer.setCollision([...COLLIDING_TILE_INDEXES], true, true)
+
+  // Trees felled in a previous session come back as stumps, so the map reads
+  // identically to the live `putTileAt` change made when chopping.
+  for (let y = 0; y < data.length; y += 1) {
+    const row = data[y]
+    for (let x = 0; x < row.length; x += 1) {
+      if (row[x] !== TREE_TRUNK_INDEX) continue
+      if (!getProgressFlag(chopFlagKey(area.id, x, y))) continue
+      layer.putTileAt(STUMP_TILE_INDEX, x, y)
+    }
+  }
 
   const size = getAreaSize(area)
   scene.cameras.main.setBackgroundColor(toCssColor(area.backgroundColor))

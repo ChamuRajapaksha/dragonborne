@@ -22,7 +22,7 @@ import { AREAS, getAreaById, getAreaSpawn, worldToTile } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
-import { loadProgress, saveProgress, setProgressFlag } from '../world/progress'
+import { chopFlagKey, loadProgress, saveProgress, setProgressFlag } from '../world/progress'
 import {
   STUMP_TILE_INDEX,
   TILE_SIZE,
@@ -631,6 +631,7 @@ export default class WorldScene extends Phaser.Scene {
     this.chopProgress.delete(key)
     this.grantWood()
     this.terrain.putTileAt(STUMP_TILE_INDEX, tree.tileX, tree.tileY)
+    setProgressFlag(chopFlagKey(this.areaId, tree.tileX, tree.tileY))
     showToast(`+${WOOD_YIELD} Wood Log`)
   }
 

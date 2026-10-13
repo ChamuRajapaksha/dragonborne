@@ -58,6 +58,14 @@ export function pickupFlagKey(areaId: string, itemId: string, x: number, y: numb
   return `pickup:${areaId}:${itemId}:${x},${y}`
 }
 
+/**
+ * Flag key for a felled tree, keyed by area and tile so the trunk respawns as a
+ * stump on reload. Mirrors `pickupFlagKey` / `introFlagKey`.
+ */
+export function chopFlagKey(areaId: string, x: number, y: number): string {
+  return `chop:${areaId}:${x},${y}`
+}
+
 export function clearProgress(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
