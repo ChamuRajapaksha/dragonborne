@@ -1,6 +1,7 @@
 import Phaser from 'phaser'
 import type { Character } from '../character'
 import { getClassById } from '../character'
+import { formatGold, getGold, subscribeGold } from '../economy'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
@@ -32,7 +33,7 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 110
+const HUD_PANEL_HEIGHT = 130
 const HUD_BACKGROUND_COLOR = 0x000000
 const HUD_BACKGROUND_ALPHA = 0.5
 const HUD_PANEL_DEPTH = 10
@@ -40,6 +41,7 @@ const HUD_TEXT_DEPTH = 11
 const HUD_NAME_STYLE = { color: '#ffffff', fontSize: '16px', fontStyle: 'bold' } as const
 const HUD_CLASS_STYLE = { color: '#aa3bff', fontSize: '12px' } as const
 const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
+const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const COMPASS_POINTS = [
@@ -100,6 +102,7 @@ export default class WorldScene extends Phaser.Scene {
   private interactHint!: Phaser.GameObjects.Text
   private waypointHint!: Phaser.GameObjects.Text
   private hudSelectedItem!: Phaser.GameObjects.Text
+  private hudGold!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
@@ -109,6 +112,7 @@ export default class WorldScene extends Phaser.Scene {
   private introCardOpen = false
   private inventoryOpen = false
   private unsubscribeInventory: (() => void) | null = null
+  private unsubscribeGold: (() => void) | null = null
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
   private spawnPx: { x: number; y: number } | null = null
@@ -133,6 +137,7 @@ export default class WorldScene extends Phaser.Scene {
     this.introCardOpen = false
     this.inventoryOpen = false
     this.unsubscribeInventory = null
+    this.unsubscribeGold = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
   }
@@ -189,6 +194,7 @@ export default class WorldScene extends Phaser.Scene {
       renderHotbar(state)
       this.refreshSelectedHud(state)
     })
+    this.unsubscribeGold = subscribeGold((gold) => this.refreshGoldHud(gold))
 
     this.maybeShowIntroCard(area)
 
@@ -196,6 +202,8 @@ export default class WorldScene extends Phaser.Scene {
       this.saveCurrentProgress()
       this.unsubscribeInventory?.()
       this.unsubscribeInventory = null
+      this.unsubscribeGold?.()
+      this.unsubscribeGold = null
       destroyHotbar()
     })
   }
@@ -228,6 +236,8 @@ export default class WorldScene extends Phaser.Scene {
 
     addRow(area.name, HUD_AREA_STYLE)
 
+    this.hudGold = addRow(formatGold(getGold()), HUD_GOLD_STYLE)
+
     this.waypointHint = addRow('', HUD_HINT_STYLE)
     this.refreshWaypointHint()
 
@@ -244,6 +254,11 @@ export default class WorldScene extends Phaser.Scene {
         : `Selected: ${item.name}${stack.quantity > 1 ? ` \u00d7 ${stack.quantity}` : ''}`
 
     if (this.hudSelectedItem.text !== text) this.hudSelectedItem.setText(text)
+  }
+
+  private refreshGoldHud(gold: number): void {
+    const text = formatGold(gold)
+    if (this.hudGold.text !== text) this.hudGold.setText(text)
   }
 
   private resolveWaypoint(area: AreaDefinition): Waypoint | null {
