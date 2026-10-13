@@ -383,6 +383,10 @@ export default class WorldScene extends Phaser.Scene {
           ? `${nearestItem.name} \u00d7 ${nearestItem.quantity}`
           : nearestItem.name
       this.showInteractHint(`Press E \u2192 ${label}`, nearestItem.x, nearestItem.y - 30)
+    } else if (nearestTree) {
+      const hint =
+        this.selectedHotbarItemId() === AXE_ITEM_ID ? 'Press E \u2192 Chop tree' : 'Need an axe'
+      this.showInteractHint(hint, nearestTree.x, nearestTree.y - 30)
     } else {
       this.interactHint.setVisible(false)
     }
