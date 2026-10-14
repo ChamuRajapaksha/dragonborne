@@ -1,6 +1,7 @@
-import { formatGold, getGold, getTradePrice } from './economy'
-import { countItem, getItemById, getInventory } from './inventory'
+import { TRADE_OFFERS, formatGold, getGold, getTradePrice, updateGold } from './economy'
+import { countItem, getItemById, getInventory, removeItemEverywhere, updateInventory } from './inventory'
 import type { NpcDefinition } from './story'
+import { showToast } from './toast'
 
 const PANEL_ID = 'trade-popup'
 
@@ -10,6 +11,36 @@ export function isTradePanelOpen(): boolean {
 
 export function closeTradePanel(): void {
   document.getElementById(PANEL_ID)?.remove()
+}
+
+/** Wood the player carries across the pack and the hotbar. */
+function countOffer(itemId: string): number {
+  const state = getInventory()
+  return countItem(state, itemId, 'slots') + countItem(state, itemId, 'hotbar')
+}
+
+/**
+ * Drains up to `quantity` of `itemId` from the pack and hotbar, then credits the
+ * gold actually earned. Nothing is paid for wood that was not removed.
+ */
+function sell(itemId: string, quantity: number): void {
+  const price = getTradePrice(itemId) ?? 0
+  let removed = 0
+
+  updateInventory((current) => {
+    const result = removeItemEverywhere(current, itemId, quantity)
+    removed = result.removed
+    return result.state
+  })
+
+  if (removed <= 0) {
+    showToast('Nothing to sell')
+    return
+  }
+
+  updateGold(removed * price)
+  const name = getItemById(itemId)?.name ?? itemId
+  showToast(`+${removed * price} gold for ${removed} ${name}`)
 }
 
 /**
@@ -25,16 +56,12 @@ export function showTradePanel(npc: NpcDefinition): void {
   document.body.appendChild(overlay)
 
   const render = () => {
-    const state = getInventory()
-
-    const offers = [
-      {
-        itemId: 'wood',
-        name: getItemById('wood')?.name ?? 'Wood',
-        price: getTradePrice('wood') ?? 0,
-        held: countItem(state, 'wood', 'slots') + countItem(state, 'wood', 'hotbar'),
-      },
-    ]
+    const offers = TRADE_OFFERS.map((offer) => ({
+      itemId: offer.itemId,
+      name: getItemById(offer.itemId)?.name ?? offer.itemId,
+      price: offer.price,
+      held: countOffer(offer.itemId),
+    }))
 
     overlay.innerHTML = `
       <div class="trade-panel">
@@ -52,9 +79,15 @@ export function showTradePanel(npc: NpcDefinition): void {
             <span class="trade-held">You hold ${offer.held}</span>
           </p>
           <div class="trade-actions">
-            <button type="button" data-sell="${offer.itemId}" data-qty="1">Sell 1</button>
-            <button type="button" data-sell="${offer.itemId}" data-qty="10">Sell 10</button>
-            <button type="button" data-sell="${offer.itemId}" data-qty="all">Sell All</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="1" ${
+              offer.held < 1 ? 'disabled' : ''
+            }>Sell 1</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="10" ${
+              offer.held < 1 ? 'disabled' : ''
+            }>Sell 10</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="all" ${
+              offer.held < 1 ? 'disabled' : ''
+            }>Sell All</button>
           </div>
         </div>`,
           )
@@ -62,6 +95,16 @@ export function showTradePanel(npc: NpcDefinition): void {
         <button type="button" class="trade-close">Close</button>
       </div>
     `
+
+    overlay.querySelectorAll<HTMLButtonElement>('[data-sell]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const itemId = button.dataset.sell!
+        const qty = button.dataset.qty
+        const held = countOffer(itemId)
+        sell(itemId, qty === 'all' ? held : Math.min(Number(qty), held))
+        render()
+      })
+    })
 
     overlay.querySelector('.trade-close')!.addEventListener('click', () => {
       overlay.remove()
