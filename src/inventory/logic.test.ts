@@ -14,6 +14,7 @@ import {
   placeCursor,
   placeOne,
   removeItem,
+  removeItemEverywhere,
   returnCursor,
   splitStack,
   unequipToSlot,
@@ -103,6 +104,63 @@ describe('removeItem', () => {
     expect(result.removed).toBe(4)
     expect(result.shortfall).toBe(6)
     expect(result.state.slots[0]).toBeNull()
+  })
+})
+
+describe('removeItemEverywhere', () => {
+  it('drains the pack before touching the hotbar', () => {
+    let state = createEmptyInventory()
+    state = addItem(state, 'wood', 5, 'slots').state
+    state = addItem(state, 'wood', 5, 'hotbar').state
+
+    const result = removeItemEverywhere(state, 'wood', 7)
+
+    expect(result.removed).toBe(7)
+    expect(result.shortfall).toBe(0)
+    expect(countItem(result.state, 'wood', 'slots')).toBe(0)
+    expect(countItem(result.state, 'wood', 'hotbar')).toBe(3)
+  })
+
+  it('chains a shortfall from the pack into the hotbar', () => {
+    let state = createEmptyInventory()
+    state = addItem(state, 'wood', 2, 'slots').state
+    state = addItem(state, 'wood', 6, 'hotbar').state
+
+    const result = removeItemEverywhere(state, 'wood', 6)
+
+    expect(result.removed).toBe(6)
+    expect(result.shortfall).toBe(0)
+    expect(countItem(result.state, 'wood', 'slots')).toBe(0)
+    expect(countItem(result.state, 'wood', 'hotbar')).toBe(2)
+  })
+
+  it('reports the remainder when neither container holds enough', () => {
+    let state = createEmptyInventory()
+    state = addItem(state, 'wood', 3, 'slots').state
+    state = addItem(state, 'wood', 1, 'hotbar').state
+
+    const result = removeItemEverywhere(state, 'wood', 10)
+
+    expect(result.removed).toBe(4)
+    expect(result.shortfall).toBe(6)
+    expect(countItem(result.state, 'wood', 'slots')).toBe(0)
+    expect(countItem(result.state, 'wood', 'hotbar')).toBe(0)
+  })
+
+  it('never mutates the state it was given', () => {
+    const state = addItem(createEmptyInventory(), 'wood', 3, 'hotbar').state
+    removeItemEverywhere(state, 'wood', 2)
+
+    expect(countItem(state, 'wood', 'hotbar')).toBe(3)
+  })
+
+  it('takes nothing for a non-positive quantity', () => {
+    const state = addItem(createEmptyInventory(), 'wood', 3).state
+    const result = removeItemEverywhere(state, 'wood', 0)
+
+    expect(result.removed).toBe(0)
+    expect(result.shortfall).toBe(0)
+    expect(countItem(result.state, 'wood')).toBe(3)
   })
 })
 
