@@ -5,6 +5,7 @@ import { formatGold, getGold, subscribeGold } from '../economy'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
+import { closeTradePanel, isTradePanelOpen, showTradePanel } from '../tradePanel'
 import {
   addItem,
   effectiveStats,
@@ -131,6 +132,7 @@ export default class WorldScene extends Phaser.Scene {
   private popupOpen = false
   private introCardOpen = false
   private inventoryOpen = false
+  private tradeOpen = false
   private unsubscribeInventory: (() => void) | null = null
   private unsubscribeGold: (() => void) | null = null
   private character: Character | undefined = undefined
@@ -157,6 +159,7 @@ export default class WorldScene extends Phaser.Scene {
     this.popupOpen = false
     this.introCardOpen = false
     this.inventoryOpen = false
+    this.tradeOpen = false
     this.unsubscribeInventory = null
     this.unsubscribeGold = null
     this.idleSeconds = 0
@@ -330,6 +333,7 @@ export default class WorldScene extends Phaser.Scene {
 
   update(_time: number, delta: number): void {
     this.syncInventoryFlag()
+    this.syncTradeFlag()
 
     let vx = 0
     let vy = 0
@@ -339,7 +343,7 @@ export default class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1
     if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1
 
-    if (this.inventoryOpen) {
+    if (this.inventoryOpen || this.tradeOpen) {
       vx = 0
       vy = 0
     }
@@ -393,20 +397,41 @@ export default class WorldScene extends Phaser.Scene {
 
     // The inventory sets `popupOpen` too, but walk-away must never dismiss it —
     // only the I key or the panel's own Close button does.
-    if (this.popupOpen && !this.introCardOpen && !this.inventoryOpen && !nearestNpc) {
+    if (
+      this.popupOpen &&
+      !this.introCardOpen &&
+      !this.inventoryOpen &&
+      !this.tradeOpen &&
+      !nearestNpc
+    ) {
       closeQuestPopup()
       this.popupOpen = false
     }
 
+    // The trade panel closes on walk-away like the quest popup, but only for
+    // itself — standing at a quest NPC must not dismiss an open trade panel
+    // that was somehow left open.
+    if (this.tradeOpen && !nearestNpc) {
+      closeTradePanel()
+      this.tradeOpen = false
+      this.popupOpen = false
+    }
+
     if (nearestNpc && this.character && interactPressed && !this.popupOpen) {
-      // Gear must be able to unlock stat-gated quests — the popup never shows
-      // while the inventory is open, so this snapshot cannot go stale.
-      showQuestPopup(
-        nearestNpc,
-        this.character.classId,
-        effectiveStats(this.character.stats, getInventory()),
-      )
-      this.popupOpen = true
+      if (nearestNpc.service === 'trade') {
+        showTradePanel(nearestNpc)
+        this.popupOpen = true
+        this.tradeOpen = true
+      } else {
+        // Gear must be able to unlock stat-gated quests — the popup never shows
+        // while the inventory is open, so this snapshot cannot go stale.
+        showQuestPopup(
+          nearestNpc,
+          this.character.classId,
+          effectiveStats(this.character.stats, getInventory()),
+        )
+        this.popupOpen = true
+      }
     } else if (nearestItem && interactPressed && !this.popupOpen) {
       this.pickupItem(nearestItem)
     } else if (nearestTree && interactPressed && !this.popupOpen) {
@@ -453,6 +478,13 @@ export default class WorldScene extends Phaser.Scene {
   private syncInventoryFlag(): void {
     if (!this.inventoryOpen || isInventoryPanelOpen()) return
     this.inventoryOpen = false
+    this.popupOpen = false
+  }
+
+  /** Same DOM-existence reconciliation as the inventory panel, for the trader. */
+  private syncTradeFlag(): void {
+    if (!this.tradeOpen || isTradePanelOpen()) return
+    this.tradeOpen = false
     this.popupOpen = false
   }
 
