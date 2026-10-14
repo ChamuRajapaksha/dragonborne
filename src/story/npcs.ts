@@ -1,8 +1,12 @@
+/** What pressing E on this NPC opens. Defaults to the quest popup. */
+export type NpcService = 'quest' | 'trade'
+
 export interface NpcDefinition {
   id: string
   name: string
   role: string
   greeting: string
+  service?: NpcService
 }
 
 export const NPCS: readonly NpcDefinition[] = [
