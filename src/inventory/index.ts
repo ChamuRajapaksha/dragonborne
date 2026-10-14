@@ -35,6 +35,7 @@ export {
   placeOne,
   remainingCapacity,
   removeItem,
+  removeItemEverywhere,
   returnCursor,
   splitStack,
   unequipToSlot,

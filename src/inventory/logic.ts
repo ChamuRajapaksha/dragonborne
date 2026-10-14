@@ -152,6 +152,26 @@ export function removeItem(
   }
 }
 
+/**
+ * Removes up to `quantity` of `itemId` from the pack first, then the hotbar,
+ * chaining any shortfall. One result covers both containers, so callers never
+ * lose track of how much was actually taken.
+ */
+export function removeItemEverywhere(
+  state: InventoryState,
+  itemId: string,
+  quantity: number,
+): RemoveItemResult {
+  const fromPack = removeItem(state, itemId, quantity, 'slots')
+  const fromBar = removeItem(fromPack.state, itemId, fromPack.shortfall, 'hotbar')
+
+  return {
+    state: fromBar.state,
+    removed: fromPack.removed + fromBar.removed,
+    shortfall: fromBar.shortfall,
+  }
+}
+
 /** Addresses one of the 36 carryable slots: 9 hotbar + 27 grid. */
 export interface SlotRef {
   container: ItemContainer
