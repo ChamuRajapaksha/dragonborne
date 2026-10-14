@@ -27,7 +27,7 @@ import { chopFlagKey, loadProgress, saveProgress, setProgressFlag } from '../wor
 import {
   STUMP_TILE_INDEX,
   TILE_SIZE,
-  TREE_CHOP_HITS,
+  chopHitsRemaining,
   isTreeTrunkTile,
 } from '../world/tileset'
 
@@ -646,7 +646,7 @@ export default class WorldScene extends Phaser.Scene {
     if (this.selectedHotbarItemId() !== AXE_ITEM_ID) return
 
     const key = `${tree.tileX},${tree.tileY}`
-    const remaining = (this.chopProgress.get(key) ?? TREE_CHOP_HITS) - 1
+    const remaining = chopHitsRemaining(this.chopProgress.get(key))
 
     if (remaining > 0) {
       this.chopProgress.set(key, remaining)

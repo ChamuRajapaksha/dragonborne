@@ -52,6 +52,14 @@ export const STUMP_TILE_INDEX = indexOfChar('s')
 /** Swings needed to fell a tree; mid-chop progress is transient and never persisted. */
 export const TREE_CHOP_HITS = 3
 
+/**
+ * Hits remaining after one swing. A tree with no recorded progress starts at
+ * `TREE_CHOP_HITS`; `0` means the felling swing.
+ */
+export function chopHitsRemaining(previous: number | undefined): number {
+  return (previous ?? TREE_CHOP_HITS) - 1
+}
+
 /** True when a terrain tile is a choppable tree trunk. */
 export function isTreeTrunkTile(tileIndex: number | undefined): boolean {
   return tileIndex === TREE_TRUNK_INDEX
