@@ -203,6 +203,7 @@ export const VILLAGE: AreaDefinition = {
     { npcId: 'village-smith', x: 56, y: 37 },
     { npcId: 'village-archivist', x: 44, y: 31 },
     { npcId: 'village-host', x: 50, y: 31 },
+    { npcId: 'village-trader', x: 46, y: 39 },
   ],
   portals: [
     {
