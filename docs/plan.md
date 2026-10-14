@@ -97,6 +97,14 @@ This is the only loop to build in this phase. No inventory/crafting, no combat, 
 all persisted in localStorage (see the README). That sign-off covers inventory only; it
 does not extend to crafting, combat or mining.
 
+**Signed off in `fifth_plan.md`:** tree felling and trading are **in scope** — a one-time
+woodcutter's axe pickup, three-hit tree felling that yields wood and leaves a permanent
+stump (chop flags ride the world-progress `flags` record), a persisted gold wallet shown
+in the HUD, and a data-driven trader in Emberhold who buys wood at a flat price. The axe
+must be the selected hotbar item; selling drains the pack and the hotbar via
+`removeItemEverywhere` before crediting gold. Mining rocks/ore, buying items, crafting,
+durability and tree regrowth remain **out of scope**.
+
 ---
 
 ## 6. Step-by-step setup instructions for the agent
@@ -190,4 +198,5 @@ type Quest = {
 - Flag back if "Terraria-like" is expected to include crafting/building/mining — current scope assumes it does not.
 - Do not add multiplayer or combat systems in this phase without explicit sign-off.
 - Inventory/equipment/world pickups **have** explicit sign-off and are implemented (see §5.5); crafting, building and mining do not.
+- Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); mining rocks/ore, buying items, and crafting do not.
 - **Phaser version:** this project uses Phaser 4, not Phaser 3. Phaser 4 has a rebuilt WebGL renderer and a cleaner logic/rendering separation compared to Phaser 3 — use the project's Phaser 4 skill for engine-specific conventions rather than defaulting to older Phaser 3 patterns you may know from training data. If a Phaser 3 vs 4 API difference matters for a given step, flag it rather than guessing.
