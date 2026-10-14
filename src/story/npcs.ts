@@ -38,6 +38,14 @@ export const NPCS: readonly NpcDefinition[] = [
     greeting:
       'A village this size survives on gossip and song. Whatever you can carry through the gates, I will find you a place for it.',
   },
+  {
+    id: 'village-trader',
+    name: 'Hollis',
+    role: 'Trader',
+    service: 'trade',
+    greeting:
+      'Timber is timber and gold is gold, and Emberhold always needs more of the first to make the second.',
+  },
 ]
 
 export function getNpcById(npcId: string): NpcDefinition | undefined {
