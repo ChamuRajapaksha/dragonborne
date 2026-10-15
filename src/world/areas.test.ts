@@ -1,6 +1,45 @@
 import { describe, expect, it } from 'vitest'
 import { findMapViolations } from './mapRules'
-import { FOREST_MAP, VILLAGE_MAP } from './maps'
+import {
+  FOREST_ITEMS,
+  FOREST_MAP,
+  FOREST_NPCS,
+  FOREST_PORTALS,
+  FOREST_SPAWN,
+  VILLAGE_ITEMS,
+  VILLAGE_MAP,
+  VILLAGE_NPCS,
+  VILLAGE_PORTALS,
+  VILLAGE_SPAWN,
+} from './maps'
+
+const AREA_MAPS = {
+  forest: FOREST_MAP,
+  village: VILLAGE_MAP,
+}
+
+const AREA_FIXTURES = [
+  {
+    name: 'forest',
+    map: FOREST_MAP,
+    placements: {
+      spawn: FOREST_SPAWN,
+      npcs: FOREST_NPCS,
+      portals: FOREST_PORTALS,
+      items: FOREST_ITEMS,
+    },
+  },
+  {
+    name: 'village',
+    map: VILLAGE_MAP,
+    placements: {
+      spawn: VILLAGE_SPAWN,
+      npcs: VILLAGE_NPCS,
+      portals: VILLAGE_PORTALS,
+      items: VILLAGE_ITEMS,
+    },
+  },
+]
 
 describe('area maps', () => {
   it('keeps the forest a uniform shape of known characters', () => {
@@ -9,6 +48,12 @@ describe('area maps', () => {
 
   it('keeps the village a uniform shape of known characters', () => {
     expect(findMapViolations(VILLAGE_MAP)).toEqual([])
+  })
+})
+
+describe.each(AREA_FIXTURES)('$name placements', ({ map, placements }) => {
+  it('sit on walkable tiles', () => {
+    expect(findMapViolations(map, placements, { areaMaps: AREA_MAPS })).toEqual([])
   })
 })
 
@@ -23,5 +68,39 @@ describe('findMapViolations shape rules', () => {
 
   it('flags tile characters missing from the legend', () => {
     expect(findMapViolations(['Tx'])).toEqual(["unknown tile char 'x' at 1,0"])
+  })
+})
+
+describe('findMapViolations placement rules', () => {
+  it('flags a placement sitting on a colliding tile', () => {
+    const violations = findMapViolations(FOREST_MAP, {
+      spawn: FOREST_SPAWN,
+      npcs: [],
+      portals: [],
+      items: [{ itemId: 'test-item', x: 0, y: 0 }],
+    })
+    expect(violations).toContain("item 'test-item' at 0,0 sits on colliding 'T'")
+  })
+
+  it('flags a placement outside the map', () => {
+    const violations = findMapViolations(FOREST_MAP, {
+      spawn: { x: 999, y: 999 },
+      npcs: [],
+      portals: [],
+      items: [],
+    })
+    expect(violations).toContain('spawn at 999,999 is outside the map')
+  })
+
+  it('flags a portal toSpawn sitting on a colliding tile of its destination', () => {
+    const violations = findMapViolations(FOREST_MAP, {
+      spawn: FOREST_SPAWN,
+      npcs: [],
+      portals: [{ x: 62, y: 24, toAreaId: 'village', toSpawn: { x: 0, y: 0 }, label: 'test' }],
+      items: [],
+    }, { areaMaps: AREA_MAPS })
+    expect(violations).toContain(
+      "portal to 'village' (toSpawn) at 0,0 sits on colliding 'T'",
+    )
   })
 })
