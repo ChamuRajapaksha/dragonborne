@@ -55,6 +55,7 @@ export function findMapViolations(
 
   if (placements) {
     violations.push(...findPlacementViolations(map, placements, rules))
+    violations.push(...findReachabilityViolations(map, placements))
   }
 
   return violations
@@ -99,6 +100,90 @@ function findPlacementViolations(
       requireWalkable(`portal to '${portal.toAreaId}' (toSpawn)`, destination, portal.toSpawn)
     }
   }
+
+  return violations
+}
+
+/** The legend char for a choppable tree trunk. */
+const TRUNK_CHAR = 't'
+
+const ORTHOGONAL: readonly MapPoint[] = [
+  { x: 0, y: -1 },
+  { x: 0, y: 1 },
+  { x: -1, y: 0 },
+  { x: 1, y: 0 },
+]
+
+function spawnReachable(map: readonly string[], spawn: MapPoint): Set<string> {
+  const width = map[0]?.length ?? 0
+  const height = map.length
+  const reachable = new Set<string>()
+
+  const startChar = map[spawn.y]?.[spawn.x]
+  const startTile = startChar === undefined ? undefined : TILE_BY_CHAR.get(startChar)
+  if (!startTile || startTile.collides) return reachable
+
+  reachable.add(`${spawn.x},${spawn.y}`)
+  const queue: MapPoint[] = [spawn]
+  while (queue.length > 0) {
+    const current = queue.pop()
+    if (!current) break
+    for (const step of ORTHOGONAL) {
+      const x = current.x + step.x
+      const y = current.y + step.y
+      if (x < 0 || y < 0 || x >= width || y >= height) continue
+      const key = `${x},${y}`
+      if (reachable.has(key)) continue
+      const char = map[y]?.[x] ?? ''
+      const tile = TILE_BY_CHAR.get(char)
+      if (!tile || tile.collides) continue
+      reachable.add(key)
+      queue.push({ x, y })
+    }
+  }
+
+  return reachable
+}
+
+/**
+ * Rules 3–4: a flood fill from the spawn over walkable tiles must reach every
+ * placement, and every trunk must have at least one 4-neighbour that is both
+ * walkable and inside that reachable set.
+ */
+function findReachabilityViolations(
+  map: readonly string[],
+  placements: MapPlacements,
+): string[] {
+  const violations: string[] = []
+  const reachable = spawnReachable(map, placements.spawn)
+
+  const requireReached = (label: string, point: MapPoint): void => {
+    if (!reachable.has(`${point.x},${point.y}`)) {
+      violations.push(`${label} at ${point.x},${point.y} is not reachable from the spawn`)
+    }
+  }
+
+  for (const npc of placements.npcs) {
+    requireReached(`npc '${npc.npcId}'`, npc)
+  }
+  for (const item of placements.items) {
+    requireReached(`item '${item.itemId}'`, item)
+  }
+  for (const portal of placements.portals) {
+    requireReached(`portal to '${portal.toAreaId}'`, portal)
+  }
+
+  map.forEach((row, y) => {
+    for (let x = 0; x < row.length; x += 1) {
+      if (row[x] !== TRUNK_CHAR) continue
+      const hasOpenNeighbour = ORTHOGONAL.some((step) =>
+        reachable.has(`${x + step.x},${y + step.y}`),
+      )
+      if (!hasOpenNeighbour) {
+        violations.push(`trunk at ${x},${y} has no reachable walkable neighbour`)
+      }
+    }
+  })
 
   return violations
 }

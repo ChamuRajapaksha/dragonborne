@@ -57,6 +57,12 @@ describe.each(AREA_FIXTURES)('$name placements', ({ map, placements }) => {
   })
 })
 
+describe.each(AREA_FIXTURES)('$name reachability', ({ map, placements }) => {
+  it('lets the spawn reach every placement and every trunk neighbour', () => {
+    expect(findMapViolations(map, placements, { areaMaps: AREA_MAPS })).toEqual([])
+  })
+})
+
 describe('findMapViolations shape rules', () => {
   it('flags an empty map', () => {
     expect(findMapViolations([])).toEqual(['map has no rows'])
@@ -102,5 +108,27 @@ describe('findMapViolations placement rules', () => {
     expect(violations).toContain(
       "portal to 'village' (toSpawn) at 0,0 sits on colliding 'T'",
     )
+  })
+})
+
+describe('findMapViolations reachability rules', () => {
+  it('flags a placement the spawn cannot reach', () => {
+    const violations = findMapViolations(['T.T', 'T.T', 'T.T'], {
+      spawn: { x: 0, y: 0 },
+      npcs: [],
+      portals: [],
+      items: [{ itemId: 'cut-off', x: 2, y: 0 }],
+    })
+    expect(violations).toContain("item 'cut-off' at 2,0 is not reachable from the spawn")
+  })
+
+  it('flags a trunk with no reachable walkable neighbour', () => {
+    const violations = findMapViolations(['TtT', 'TTT', 'T.T'], {
+      spawn: { x: 1, y: 2 },
+      npcs: [],
+      portals: [],
+      items: [],
+    })
+    expect(violations).toContain('trunk at 1,0 has no reachable walkable neighbour')
   })
 })
