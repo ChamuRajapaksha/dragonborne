@@ -1,0 +1,187 @@
+/**
+ * Pure area-map data: ASCII maps, spawn points, and placement arrays with the
+ * interfaces that type them. No imports (not even Phaser types) — this module
+ * must stay loadable in plain node so the map rules can be unit-tested.
+ */
+
+export interface TilePoint {
+  x: number
+  y: number
+}
+
+export interface Portal {
+  x: number
+  y: number
+  toAreaId: string
+  toSpawn: TilePoint
+  label: string
+}
+
+export interface AreaNpcPlacement {
+  npcId: string
+  x: number
+  y: number
+}
+
+export interface AreaItemPlacement {
+  itemId: string
+  x: number // tile coords
+  y: number
+  quantity?: number // default 1
+  /** One-time pickup: hidden for good once its progress flag has been set. */
+  onceFlag?: boolean
+}
+
+export const FOREST_MAP = [
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'T,.b.,T,.T....,...,............TT.....T.,T.,.....,.......,....,T',
+  'T.,,,.b..TTT..t..#...T..........T.,.,...TT,,.,.T,,...,.,.......T',
+  'T........,..,..b,T...,..T...,T......T,.T..T..,.,..,....,.....T.T',
+  'T.T,,TT.,..T..b....T..,,.T.T,.....t..T.....,..b,T..T...T,....T,T',
+  'T....,..#,....b.,..T,TT...,.T...,.....#...Tb,.....,T..T,.T,T.,.T',
+  'T.,...,b....,.TT......T...,,.......T.#...........,.,..,.,,.....T',
+  'T..,,T,,........,.T,......T....T,..T......b.......T.,.T..,.,..,T',
+  'T........,........T.....#.....................TT.....T.......,.T',
+  'T.,.,....b...,.#.....,....,.T.,.T..#,,T...T.T.....,...T.....TT.T',
+  'T.,,,..........T.,.T,,..T.#..#...T,..T...#..,#....T,....,......T',
+  'T....T.TT,#.....T.#.,.,b..,.,.T.......T.T..#...T,T,.#.,.,,T.,..T',
+  'T.T....T.......,.b.T....,.,T.....T,.......,.T..T..T..T.,T..,..bT',
+  'T.T,T,,..T..,.T...T....,,,.....,.,...b.T.,...,.T.,..T.,,,,..,..T',
+  'T.,.,,...,....,#.,.T.T...,..,..T....,.T#.,.,T................T.T',
+  'T.,...T................,......T,....T.b...,..T.,,.....,...T...,T',
+  'TT...T...................,T,.,.....T..,..,....,T...b.......,,.bT',
+  'T........#####........T.b..T...T...,.T..,.#,..,.....,.T..,.....T',
+  'TT.....###...###.......T....,...,...........T.,........T.T..,..T',
+  'T.....##.......##........,.T....................T..,T..,T.,b...T',
+  'T....##.........##.......T..,..,.......T.T.T#....b..,..,...,..bT',
+  'T....#...........#....,.T,.,.,...T,..,T..,,..............T.#.b.T',
+  'TT..##...........##...TT.,T,,,t.,...T...,T......T....T.....,...T',
+  'T#------------------------------------------------------------.T',
+  'T.----------------------t-------------------------------------.T',
+  'T.------------------------------------------------------------.T',
+  'TT..##...........##....,...,.---,,....T...T.,..........,T.,....T',
+  'T....#...........#...,,....,,---.bT....b.TT,,.T...b,...b.....TTT',
+  'T,...##.........##....b..,,T.---.,...b,..TT,...,TT....T,.....T.T',
+  'TT....##.......##....b,..#...---....T.#...b.,.,T.....,..T..T.T.T',
+  'T,.....###...###........T.T..---.....,..t,,.T.,,....T.....,,.T,T',
+  'T........#####.......,...T.T.---...T..,T.T.#.TT.........T..,.,.T',
+  'T,...,............,....,...,,---,....T.#T....#..b,...,,,..,T...T',
+  'T.T.............,.T.,..T..,..---.,T...b,.,.T..T...T,T..T..T.,..T',
+  'T...,.,,......,.#,.,.T....T.T---.b.,.,.,..T....,...b.,.T...T...T',
+  'T..,...,,.,.....,#,..T.T,.,,T---b......T...,..,,...T.....TT,.b.T',
+  'T..T...,.....,....,........,-----.TT...T.,..,....,.,...,...,...T',
+  'T.,...TT.T..,.T.,#T.....-------------,.T,,....#.,,.........TT..T',
+  'T.,.,T....,...,.,...,.-----------------,T.........,.....b..T,T.T',
+  'T........T..b......,.-------------------.T......,T.T,.#.,.#T.T.T',
+  'T...T.,T..T..,.#.,.,.-------------------.,...,.....,....b...T.,T',
+  'T....,..,bT.......b..-------------------....T,......,.b.....T..T',
+  'T...,bb..,.......,...,-----------------...,...T.T,.,.,,........T',
+  'T...T.T...T......,..,,b,-------------,T.TT.,.b.........,.......T',
+  'T.T..,..,T......,..,tTTT..TT-----...,....T.....,.....,........,T',
+  'Tb......,..,,,..,T,......,.T......,..TT..,...,..b.......,.b..#.T',
+  'TT.....,..T.,.T...,.,.,.........T..,.T..,.....T........,.......T',
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+]
+
+export const VILLAGE_MAP = [
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+  'T......,.................b................rrrrrrrrrrrrrrrrr,...T',
+  'T....,.................,kkrrrrrrrrrrrb....rrrrrrrrrrrrrrrrr...,T',
+  'T.....b.......#.........kkrrrrrrrrrrr..b..rrrrrrrrrrrrrrrrr..b.T',
+  'T..........#######...,..kkrrrrrrrrrrr.....rrrrrrrrrrrrrrrrr....T',
+  'T.....,...#########.....kkrrrrrrrrrrr.....wwwwwwwwwwwwwwwww.,..T',
+  'T....b,.,###.~~~.###.,..kkrrrrrrrrrrr...,.wfffffffffffffffw....T',
+  'T.......###~~~~~~~###...kkrrrrrrrrrrr,.....ffff---ffffffff..,,.T',
+  'T......,##,~~~~~~~,##...kkwwwwwwwwwww,.........----....,..b...,T',
+  'T......b##~~~~~~~~~##....fffffffffff.....b.....----............T',
+  'T......###~~~~~~~~~###..,..,....,.....,........----............T',
+  'T.,.....##~~~~~~~~~##b............,........,...----.,.......b..T',
+  'T.,.....##,~~~~~~~,##,.......,...........,.....----......,...,.T',
+  'Tb....b.###~~~~~~~###........,b....,...........----............T',
+  'T.b..b..,###.~~~.###.......b.....,,...,...,....----............T',
+  'Tbb....,..#########...,.........bb...........,.----...,...,....T',
+  'T..........#######...........,b.bb.........,...----..,.........T',
+  'T.........,.,.#.........,.......rrrrrrr....,...----............T',
+  'T,---,.,......,.......b.........rrrrrrrr,.....,----,...........T',
+  'T.---.......bb.b...,.b..........rrrrrrrr....,..----.rrrrrrrr...T',
+  'T.---rrrrrrrrrr........b.b...b..rrrrrrrr.......----.rrrrrrrr...T',
+  'T.---rrrrrrrrrr.....,---b.,...b.wwwwwwwr.......----.rrrrrrrr...T',
+  'T.---rrrrrrrrrr,...-------.......fffffww.......----.rrrrrrrr...T',
+  'T.---rrrrrrrrrr....-------.......tfffff.......,----.wwwwwwww...T',
+  'T,---wwwwwwwwww...---------,..............,....----..ffffff,..,T',
+  'T.---fffffffff.,...-------.....................----..b...,.....T',
+  'T.---..............-------...,.....,.,.........----....b.......T',
+  'T,---..,...b..b....,.---...b............b,.....----..........,.T',
+  'T.---rrrrrrrrrrr....t...,...,........,.,---------------------..T',
+  'T.---rrrrrrrrrrrrrrrrrrrrrr..,........-----------------------,.T',
+  'T.---rrrrrrrrrrrrrrrrrrrrrr........,.------------------------..T',
+  'T.---rrrrrrrrrrrrrrrrrrrrrr...........-----------------------..T',
+  'T.---wwwwwwwwwwwrrrrrrrrrrr......,..,...---------------------..T',
+  'T.---ffffffffffwwwwwwwwwwwwb..........-------------------------T',
+  'T.---.........,.ffffffffff,...........-------------------------T',
+  'T,---...,,,...,......................--------------------------T',
+  'T--------------------------------------------------------------T',
+  'T--------------------------------------------------------------T',
+  'T--------------------------------------------------------------T',
+  'T..,.....,.....,..........,........,.--------------------------T',
+  'T...................,..rrrrrrrrr--....--------------rrrrrrr----T',
+  'T,..b.b.....,.b.,..b..rrrrrrrrrr----..--------------rrrrrrr----T',
+  'T............,........rrrrrrrrrr-----,..------------rrrrrrr--..T',
+  'T.b.,bb.....,.........rrrrrrrrrr----...,------------rrrrrrr--..T',
+  'T.b...b.,....b........rwwwwwwwww--..t.bb------------wwwwwww--.,T',
+  'Tb...bb.....t......,..wwwwwwwww...............-------fffffb..b.T',
+  'T.,.......,....,..,....fffffff,...............b,...............T',
+  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
+]
+
+export const FOREST_SPAWN: TilePoint = { x: 11, y: 24 }
+export const VILLAGE_SPAWN: TilePoint = { x: 50, y: 37 }
+
+export const FOREST_NPCS: readonly AreaNpcPlacement[] = [
+  { npcId: 'forest-guide', x: 16, y: 22 },
+]
+
+export const VILLAGE_NPCS: readonly AreaNpcPlacement[] = [
+  { npcId: 'village-smith', x: 56, y: 37 },
+  { npcId: 'village-archivist', x: 44, y: 31 },
+  { npcId: 'village-host', x: 50, y: 31 },
+  { npcId: 'village-trader', x: 46, y: 39 },
+]
+
+export const FOREST_PORTALS: readonly Portal[] = [
+  {
+    x: 62,
+    y: 24,
+    toAreaId: 'village',
+    toSpawn: { x: 4, y: 37 },
+    label: 'To Emberhold',
+  },
+]
+
+export const VILLAGE_PORTALS: readonly Portal[] = [
+  {
+    x: 2,
+    y: 37,
+    toAreaId: 'forest',
+    toSpawn: { x: 60, y: 24 },
+    label: 'To the Thornwood',
+  },
+]
+
+export const FOREST_ITEMS: readonly AreaItemPlacement[] = [
+  { itemId: 'torch', x: 7, y: 24 },
+  { itemId: 'heath-herb', x: 13, y: 27, quantity: 3 },
+  { itemId: 'oak-kindling', x: 26, y: 17, quantity: 5 },
+  { itemId: 'rough-hides', x: 45, y: 8 },
+  { itemId: 'emberglass', x: 6, y: 16, onceFlag: true },
+  { itemId: 'worn-dagger', x: 57, y: 26, onceFlag: true },
+  { itemId: 'axe', x: 58, y: 24, onceFlag: true },
+]
+
+export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = [
+  { itemId: 'iron-ore', x: 38, y: 10, quantity: 5 },
+  { itemId: 'bog-reed', x: 7, y: 16, quantity: 3 },
+  { itemId: 'coil-rope', x: 17, y: 19 },
+  { itemId: 'rough-hides', x: 40, y: 39, quantity: 2 },
+  { itemId: 'leather-cap', x: 15, y: 35, onceFlag: true },
+]

@@ -1,11 +1,26 @@
 import Phaser from 'phaser'
+import type {
+  AreaItemPlacement,
+  AreaNpcPlacement,
+  Portal,
+  TilePoint,
+} from './maps'
+import {
+  FOREST_ITEMS,
+  FOREST_MAP,
+  FOREST_NPCS,
+  FOREST_PORTALS,
+  FOREST_SPAWN,
+  VILLAGE_ITEMS,
+  VILLAGE_MAP,
+  VILLAGE_NPCS,
+  VILLAGE_PORTALS,
+  VILLAGE_SPAWN,
+} from './maps'
 import type { TileLegendEntry } from './tileset'
 import { TILE_BY_CHAR, TILE_SIZE } from './tileset'
 
-export interface TilePoint {
-  x: number
-  y: number
-}
+export type { AreaItemPlacement, AreaNpcPlacement, Portal, TilePoint } from './maps'
 
 export function parseAreaMap(
   rows: readonly string[],
@@ -48,29 +63,6 @@ export function worldToTile(x: number, y: number, size = TILE_SIZE): TilePoint {
   return { x: Math.floor(x / size), y: Math.floor(y / size) }
 }
 
-export interface Portal {
-  x: number
-  y: number
-  toAreaId: string
-  toSpawn: { x: number; y: number }
-  label: string
-}
-
-export interface AreaNpcPlacement {
-  npcId: string
-  x: number
-  y: number
-}
-
-export interface AreaItemPlacement {
-  itemId: string
-  x: number // tile coords
-  y: number
-  quantity?: number // default 1
-  /** One-time pickup: hidden for good once its progress flag has been set. */
-  onceFlag?: boolean
-}
-
 export interface AreaIntro {
   title: string
   body: readonly string[]
@@ -91,136 +83,15 @@ export interface AreaDefinition {
   waypointAreaId?: string
 }
 
-const FOREST_MAP = [
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-  'T,.b.,T,.T....,...,............TT.....T.,T.,.....,.......,....,T',
-  'T.,,,.b..TTT..t..#...T..........T.,.,...TT,,.,.T,,...,.,.......T',
-  'T........,..,..b,T...,..T...,T......T,.T..T..,.,..,....,.....T.T',
-  'T.T,,TT.,..T..b....T..,,.T.T,.....t..T.....,..b,T..T...T,....T,T',
-  'T....,..#,....b.,..T,TT...,.T...,.....#...Tb,.....,T..T,.T,T.,.T',
-  'T.,...,b....,.TT......T...,,.......T.#...........,.,..,.,,.....T',
-  'T..,,T,,........,.T,......T....T,..T......b.......T.,.T..,.,..,T',
-  'T........,........T.....#.....................TT.....T.......,.T',
-  'T.,.,....b...,.#.....,....,.T.,.T..#,,T...T.T.....,...T.....TT.T',
-  'T.,,,..........T.,.T,,..T.#..#...T,..T...#..,#....T,....,......T',
-  'T....T.TT,#.....T.#.,.,b..,.,.T.......T.T..#...T,T,.#.,.,,T.,..T',
-  'T.T....T.......,.b.T....,.,T.....T,.......,.T..T..T..T.,T..,..bT',
-  'T.T,T,,..T..,.T...T....,,,.....,.,...b.T.,...,.T.,..T.,,,,..,..T',
-  'T.,.,,...,....,#.,.T.T...,..,..T....,.T#.,.,T................T.T',
-  'T.,...T................,......T,....T.b...,..T.,,.....,...T...,T',
-  'TT...T...................,T,.,.....T..,..,....,T...b.......,,.bT',
-  'T........#####........T.b..T...T...,.T..,.#,..,.....,.T..,.....T',
-  'TT.....###...###.......T....,...,...........T.,........T.T..,..T',
-  'T.....##.......##........,.T....................T..,T..,T.,b...T',
-  'T....##.........##.......T..,..,.......T.T.T#....b..,..,...,..bT',
-  'T....#...........#....,.T,.,.,...T,..,T..,,..............T.#.b.T',
-  'TT..##...........##...TT.,T,,,t.,...T...,T......T....T.....,...T',
-  'T#------------------------------------------------------------.T',
-  'T.----------------------t-------------------------------------.T',
-  'T.------------------------------------------------------------.T',
-  'TT..##...........##....,...,.---,,....T...T.,..........,T.,....T',
-  'T....#...........#...,,....,,---.bT....b.TT,,.T...b,...b.....TTT',
-  'T,...##.........##....b..,,T.---.,...b,..TT,...,TT....T,.....T.T',
-  'TT....##.......##....b,..#...---....T.#...b.,.,T.....,..T..T.T.T',
-  'T,.....###...###........T.T..---.....,..t,,.T.,,....T.....,,.T,T',
-  'T........#####.......,...T.T.---...T..,T.T.#.TT.........T..,.,.T',
-  'T,...,............,....,...,,---,....T.#T....#..b,...,,,..,T...T',
-  'T.T.............,.T.,..T..,..---.,T...b,.,.T..T...T,T..T..T.,..T',
-  'T...,.,,......,.#,.,.T....T.T---.b.,.,.,..T....,...b.,.T...T...T',
-  'T..,...,,.,.....,#,..T.T,.,,T---b......T...,..,,...T.....TT,.b.T',
-  'T..T...,.....,....,........,-----.TT...T.,..,....,.,...,...,...T',
-  'T.,...TT.T..,.T.,#T.....-------------,.T,,....#.,,.........TT..T',
-  'T.,.,T....,...,.,...,.-----------------,T.........,.....b..T,T.T',
-  'T........T..b......,.-------------------.T......,T.T,.#.,.#T.T.T',
-  'T...T.,T..T..,.#.,.,.-------------------.,...,.....,....b...T.,T',
-  'T....,..,bT.......b..-------------------....T,......,.b.....T..T',
-  'T...,bb..,.......,...,-----------------...,...T.T,.,.,,........T',
-  'T...T.T...T......,..,,b,-------------,T.TT.,.b.........,.......T',
-  'T.T..,..,T......,..,tTTT..TT-----...,....T.....,.....,........,T',
-  'Tb......,..,,,..,T,......,.T......,..TT..,...,..b.......,.b..#.T',
-  'TT.....,..T.,.T...,.,.,.........T..,.T..,.....T........,.......T',
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-]
-
-const VILLAGE_MAP = [
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-  'T......,.................b................rrrrrrrrrrrrrrrrr,...T',
-  'T....,.................,kkrrrrrrrrrrrb....rrrrrrrrrrrrrrrrr...,T',
-  'T.....b.......#.........kkrrrrrrrrrrr..b..rrrrrrrrrrrrrrrrr..b.T',
-  'T..........#######...,..kkrrrrrrrrrrr.....rrrrrrrrrrrrrrrrr....T',
-  'T.....,...#########.....kkrrrrrrrrrrr.....wwwwwwwwwwwwwwwww.,..T',
-  'T....b,.,###.~~~.###.,..kkrrrrrrrrrrr...,.wfffffffffffffffw....T',
-  'T.......###~~~~~~~###...kkrrrrrrrrrrr,.....ffff---ffffffff..,,.T',
-  'T......,##,~~~~~~~,##...kkwwwwwwwwwww,.........----....,..b...,T',
-  'T......b##~~~~~~~~~##....fffffffffff.....b.....----............T',
-  'T......###~~~~~~~~~###..,..,....,.....,........----............T',
-  'T.,.....##~~~~~~~~~##b............,........,...----.,.......b..T',
-  'T.,.....##,~~~~~~~,##,.......,...........,.....----......,...,.T',
-  'Tb....b.###~~~~~~~###........,b....,...........----............T',
-  'T.b..b..,###.~~~.###.......b.....,,...,...,....----............T',
-  'Tbb....,..#########...,.........bb...........,.----...,...,....T',
-  'T..........#######...........,b.bb.........,...----..,.........T',
-  'T.........,.,.#.........,.......rrrrrrr....,...----............T',
-  'T,---,.,......,.......b.........rrrrrrrr,.....,----,...........T',
-  'T.---.......bb.b...,.b..........rrrrrrrr....,..----.rrrrrrrr...T',
-  'T.---rrrrrrrrrr........b.b...b..rrrrrrrr.......----.rrrrrrrr...T',
-  'T.---rrrrrrrrrr.....,---b.,...b.wwwwwwwr.......----.rrrrrrrr...T',
-  'T.---rrrrrrrrrr,...-------.......fffffww.......----.rrrrrrrr...T',
-  'T.---rrrrrrrrrr....-------.......tfffff.......,----.wwwwwwww...T',
-  'T,---wwwwwwwwww...---------,..............,....----..ffffff,..,T',
-  'T.---fffffffff.,...-------.....................----..b...,.....T',
-  'T.---..............-------...,.....,.,.........----....b.......T',
-  'T,---..,...b..b....,.---...b............b,.....----..........,.T',
-  'T.---rrrrrrrrrrr....t...,...,........,.,---------------------..T',
-  'T.---rrrrrrrrrrrrrrrrrrrrrr..,........-----------------------,.T',
-  'T.---rrrrrrrrrrrrrrrrrrrrrr........,.------------------------..T',
-  'T.---rrrrrrrrrrrrrrrrrrrrrr...........-----------------------..T',
-  'T.---wwwwwwwwwwwrrrrrrrrrrr......,..,...---------------------..T',
-  'T.---ffffffffffwwwwwwwwwwwwb..........-------------------------T',
-  'T.---.........,.ffffffffff,...........-------------------------T',
-  'T,---...,,,...,......................--------------------------T',
-  'T--------------------------------------------------------------T',
-  'T--------------------------------------------------------------T',
-  'T--------------------------------------------------------------T',
-  'T..,.....,.....,..........,........,.--------------------------T',
-  'T...................,..rrrrrrrrr--....--------------rrrrrrr----T',
-  'T,..b.b.....,.b.,..b..rrrrrrrrrr----..--------------rrrrrrr----T',
-  'T............,........rrrrrrrrrr-----,..------------rrrrrrr--..T',
-  'T.b.,bb.....,.........rrrrrrrrrr----...,------------rrrrrrr--..T',
-  'T.b...b.,....b........rwwwwwwwww--..t.bb------------wwwwwww--.,T',
-  'Tb...bb.....t......,..wwwwwwwww...............-------fffffb..b.T',
-  'T.,.......,....,..,....fffffff,...............b,...............T',
-  'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-]
-
 export const VILLAGE: AreaDefinition = {
   id: 'village',
   name: 'Emberhold',
   backgroundColor: 0x2c3e2c,
   map: VILLAGE_MAP,
-  defaultSpawn: { x: 50, y: 37 },
-  npcs: [
-    { npcId: 'village-smith', x: 56, y: 37 },
-    { npcId: 'village-archivist', x: 44, y: 31 },
-    { npcId: 'village-host', x: 50, y: 31 },
-    { npcId: 'village-trader', x: 46, y: 39 },
-  ],
-  portals: [
-    {
-      x: 2,
-      y: 37,
-      toAreaId: 'forest',
-      toSpawn: { x: 60, y: 24 },
-      label: 'To the Thornwood',
-    },
-  ],
-  items: [
-    { itemId: 'iron-ore', x: 38, y: 10, quantity: 5 },
-    { itemId: 'bog-reed', x: 7, y: 16, quantity: 3 },
-    { itemId: 'coil-rope', x: 17, y: 19 },
-    { itemId: 'rough-hides', x: 40, y: 39, quantity: 2 },
-    { itemId: 'leather-cap', x: 15, y: 35, onceFlag: true },
-  ],
+  defaultSpawn: VILLAGE_SPAWN,
+  npcs: VILLAGE_NPCS,
+  portals: VILLAGE_PORTALS,
+  items: VILLAGE_ITEMS,
 }
 
 export const FOREST: AreaDefinition = {
@@ -228,27 +99,11 @@ export const FOREST: AreaDefinition = {
   name: 'The Thornwood',
   backgroundColor: 0x1d2b1d,
   map: FOREST_MAP,
-  defaultSpawn: { x: 11, y: 24 },
-  npcs: [{ npcId: 'forest-guide', x: 16, y: 22 }],
+  defaultSpawn: FOREST_SPAWN,
+  npcs: FOREST_NPCS,
   waypointAreaId: 'village',
-  portals: [
-    {
-      x: 62,
-      y: 24,
-      toAreaId: 'village',
-      toSpawn: { x: 4, y: 37 },
-      label: 'To Emberhold',
-    },
-  ],
-  items: [
-    { itemId: 'torch', x: 7, y: 24 },
-    { itemId: 'heath-herb', x: 13, y: 27, quantity: 3 },
-    { itemId: 'oak-kindling', x: 26, y: 17, quantity: 5 },
-    { itemId: 'rough-hides', x: 45, y: 8 },
-    { itemId: 'emberglass', x: 6, y: 16, onceFlag: true },
-    { itemId: 'worn-dagger', x: 57, y: 26, onceFlag: true },
-    { itemId: 'axe', x: 58, y: 24, onceFlag: true },
-  ],
+  portals: FOREST_PORTALS,
+  items: FOREST_ITEMS,
   intro: {
     title: 'The Thornwood',
     body: [
