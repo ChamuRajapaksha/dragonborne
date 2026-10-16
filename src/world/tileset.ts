@@ -18,7 +18,7 @@ export const TILE_LEGEND: readonly TileLegendEntry[] = [
   { index: 1, char: ',', name: 'tall grass', base: 0x3d6b33, detail: 0x54903f, collides: false },
   { index: 2, char: 'T', name: 'tree canopy', base: 0x27562b, detail: 0x2f6b32, collides: true },
   { index: 3, char: 't', name: 'tree trunk', base: 0x5a4128, detail: 0x6b4d2f, collides: true },
-  { index: 4, char: '#', name: 'rock', base: 0x6f7176, detail: 0x8b8d92, collides: true },
+  { index: 4, char: '#', name: 'rock', base: 0x7a7268, detail: 0x8d8478, collides: true },
   { index: 5, char: '~', name: 'water', base: 0x2f6a8f, detail: 0x3f83ad, collides: true },
   { index: 6, char: '-', name: 'dirt path', base: 0x9a8256, detail: 0xab9163, collides: false },
   { index: 7, char: 'b', name: 'bush', base: 0x35632c, detail: 0x43773a, collides: true },
