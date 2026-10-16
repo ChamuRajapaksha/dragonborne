@@ -63,6 +63,22 @@ describe.each(AREA_FIXTURES)('$name reachability', ({ map, placements }) => {
   })
 })
 
+const FOREST_MAIN_CORRIDOR = {
+  label: 'main path',
+  fromRow: 23,
+  toRow: 25,
+  fromCol: 2,
+  toCol: 61,
+}
+
+describe('forest main corridor', () => {
+  it('stays free of colliding tiles across the whole run', () => {
+    expect(
+      findMapViolations(FOREST_MAP, undefined, { corridors: [FOREST_MAIN_CORRIDOR] }),
+    ).toEqual([])
+  })
+})
+
 describe('findMapViolations shape rules', () => {
   it('flags an empty map', () => {
     expect(findMapViolations([])).toEqual(['map has no rows'])
@@ -130,5 +146,37 @@ describe('findMapViolations reachability rules', () => {
       items: [],
     })
     expect(violations).toContain('trunk at 1,0 has no reachable walkable neighbour')
+  })
+})
+
+describe('findMapViolations corridor rules', () => {
+  const mainPath = {
+    label: 'main path',
+    fromRow: 1,
+    toRow: 1,
+    fromCol: 1,
+    toCol: 2,
+  }
+
+  it('flags a colliding tile inside a corridor', () => {
+    const violations = findMapViolations(['....', '.TT.', '....'], undefined, {
+      corridors: [mainPath],
+    })
+    expect(violations).toContain("corridor 'main path' at 1,1 is blocked by 'T'")
+    expect(violations).toContain("corridor 'main path' at 2,1 is blocked by 'T'")
+  })
+
+  it('allows colliding tiles outside the corridor', () => {
+    const violations = findMapViolations(['T..T', '....', 'T..T'], undefined, {
+      corridors: [mainPath],
+    })
+    expect(violations).toEqual([])
+  })
+
+  it('flags a corridor reaching outside the map', () => {
+    const violations = findMapViolations(['..'], undefined, {
+      corridors: [{ label: 'main path', fromRow: 0, toRow: 1, fromCol: 0, toCol: 1 }],
+    })
+    expect(violations).toContain("corridor 'main path' at 0,1 is outside the map")
   })
 })

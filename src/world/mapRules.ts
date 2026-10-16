@@ -13,9 +13,20 @@ export interface MapPlacements {
   items: readonly AreaItemPlacement[]
 }
 
+export interface MapCorridor {
+  /** Human-readable name used in violation messages, e.g. 'main path'. */
+  label: string
+  fromRow: number
+  toRow: number
+  fromCol: number
+  toCol: number
+}
+
 export interface MapRules {
   /** areaId → that area's map rows, so each portal's `toSpawn` can be checked on its destination map. */
   areaMaps?: Readonly<Record<string, readonly string[]>>
+  /** Rectangles (inclusive bounds) that must stay free of colliding tiles. */
+  corridors?: readonly MapCorridor[]
 }
 
 /**
@@ -58,6 +69,10 @@ export function findMapViolations(
     violations.push(...findReachabilityViolations(map, placements))
   }
 
+  if (rules.corridors) {
+    violations.push(...findCorridorViolations(map, rules.corridors))
+  }
+
   return violations
 }
 
@@ -98,6 +113,35 @@ function findPlacementViolations(
     const destination = rules.areaMaps?.[portal.toAreaId]
     if (destination) {
       requireWalkable(`portal to '${portal.toAreaId}' (toSpawn)`, destination, portal.toSpawn)
+    }
+  }
+
+  return violations
+}
+
+/**
+ * Rule 5: every corridor rectangle must stay free of colliding tiles so a
+ * two-tile-wide player can always pass through.
+ */
+function findCorridorViolations(
+  map: readonly string[],
+  corridors: readonly MapCorridor[],
+): string[] {
+  const violations: string[] = []
+
+  for (const corridor of corridors) {
+    for (let y = corridor.fromRow; y <= corridor.toRow; y += 1) {
+      for (let x = corridor.fromCol; x <= corridor.toCol; x += 1) {
+        const char = map[y]?.[x]
+        if (char === undefined) {
+          violations.push(`corridor '${corridor.label}' at ${x},${y} is outside the map`)
+          continue
+        }
+        const tile = TILE_BY_CHAR.get(char)
+        if (tile?.collides) {
+          violations.push(`corridor '${corridor.label}' at ${x},${y} is blocked by '${char}'`)
+        }
+      }
     }
   }
 
