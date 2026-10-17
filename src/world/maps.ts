@@ -72,14 +72,14 @@ export const FOREST_MAP = [
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTT---tTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTt---TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTT---TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
-  'TTTTTTTTTTtTTTTTTTTTTTTTTTTTT---TTTTTTTTTTTTTTTTTTtTTTTTTTTTTTTT',
+  'TTTTTTTTTTtTTTTTTTTTTTTTtTTTt---TTtTTTtTTTTTTTTTTTtTTTTTTTTTTTTT',
   'T.......................-----------------......................T',
   'T.......................-----------------......................T',
-  'T.......................---s-------------......................T',
+  'T......................t---s-------------t.....................T',
   'T.......................-----------s-----......................T',
   'T...................t...-----------------......................T',
   'T.......................-----------------......................T',
-  'T..............................................................T',
+  'T.........................t........t...........................T',
   'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
 ]
 
