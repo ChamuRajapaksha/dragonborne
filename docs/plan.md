@@ -105,6 +105,18 @@ must be the selected hotbar item; selling drains the pack and the hotbar via
 `removeItemEverywhere` before crediting gold. Mining rocks/ore, buying items, crafting,
 durability and tree regrowth remain **out of scope**.
 
+**Signed off in `.agents/plans/plan.md` (forest layout fix):** the Thornwood map data was
+redesigned — the ASCII maps moved out of `areas.ts` into a pure, import-free
+`src/world/maps.ts` (so they are unit-testable under plain node), and
+`src/world/mapRules.ts` now enforces shape, walkable placements, spawn reachability to
+every placement and trunk neighbour, an obstruction-free main corridor (rows 23–25), and a
+minimum choppable-trunk count. The layout itself is solid canopy masses cut by a real
+trail network (central north trail, east north trail, south trail to a rectangular logging
+clearing), ~35–45 reachable trunks ringing the masses and the clearing, tall-grass and
+bush clusters only at mass edges (no salt-and-pepper scatter), and a warmed rock palette
+so stones no longer read as purple. No gameplay-logic changes; tree regrowth is still out
+of scope.
+
 ---
 
 ## 6. Step-by-step setup instructions for the agent
@@ -199,4 +211,5 @@ type Quest = {
 - Do not add multiplayer or combat systems in this phase without explicit sign-off.
 - Inventory/equipment/world pickups **have** explicit sign-off and are implemented (see §5.5); crafting, building and mining do not.
 - Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); mining rocks/ore, buying items, and crafting do not.
+- The forest layout redesign **has** explicit sign-off (see §5.5): dense tree masses + trails with ~35–45 choppable trunks, map data pure in `src/world/maps.ts`, rules in `src/world/mapRules.ts`. Tree regrowth and gameplay changes remain out of scope.
 - **Phaser version:** this project uses Phaser 4, not Phaser 3. Phaser 4 has a rebuilt WebGL renderer and a cleaner logic/rendering separation compared to Phaser 3 — use the project's Phaser 4 skill for engine-specific conventions rather than defaulting to older Phaser 3 patterns you may know from training data. If a Phaser 3 vs 4 API difference matters for a given step, flag it rather than guessing.
