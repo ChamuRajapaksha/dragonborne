@@ -79,6 +79,18 @@ describe('forest main corridor', () => {
   })
 })
 
+describe('forest choppable trunks', () => {
+  it('keeps at least 30 reachable trunks in the woods', () => {
+    let trunks = 0
+    for (const row of FOREST_MAP) {
+      for (const char of row) {
+        if (char === 't') trunks += 1
+      }
+    }
+    expect(trunks).toBeGreaterThanOrEqual(30)
+  })
+})
+
 describe('findMapViolations shape rules', () => {
   it('flags an empty map', () => {
     expect(findMapViolations([])).toEqual(['map has no rows'])
