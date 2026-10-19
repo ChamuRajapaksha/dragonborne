@@ -200,6 +200,14 @@ const itemData = [
     icon: { glyph: '|', color: 0x8a6238 },
   },
   {
+    id: 'sapling',
+    name: 'Oak Sapling',
+    description: 'A young oak with the roots balled in sacking. Plant it where a tree once stood.',
+    kind: 'resource',
+    maxStack: 10,
+    icon: { glyph: 'y', color: 0x6fbf5e },
+  },
+  {
     id: 'axe',
     name: "Woodcutter's Axe",
     description: 'A camp felling axe, held in the hotbar. Three good swings bring a tree down.',
