@@ -231,3 +231,88 @@ function findReachabilityViolations(
 
   return violations
 }
+
+const BOX_STEPS: readonly MapPoint[] = [
+  { x: 1, y: 0 },
+  { x: -1, y: 0 },
+  { x: 0, y: 1 },
+  { x: 0, y: -1 },
+]
+
+function isWalkableTile(rows: readonly string[], x: number, y: number): boolean {
+  const char = rows[y]?.[x]
+  if (char === undefined) return false
+  const tile = TILE_BY_CHAR.get(char)
+  return tile !== undefined && !tile.collides
+}
+
+/** True when the 2x2 player body standing on this top-left anchor is on open tiles. */
+function isValidBox(rows: readonly string[], boxX: number, boxY: number): boolean {
+  return (
+    isWalkableTile(rows, boxX, boxY) &&
+    isWalkableTile(rows, boxX + 1, boxY) &&
+    isWalkableTile(rows, boxX, boxY + 1) &&
+    isWalkableTile(rows, boxX + 1, boxY + 1)
+  )
+}
+
+/**
+ * Rule 6: the player body is 2x2 tiles, so a one-tile gap is a wall. Returns
+ * every walkable tile the body cannot cover when box-stepping from any 2x2
+ * box that contains the spawn — an empty array means the whole open map is
+ * traversable. Shared by the forest generator and the area tests.
+ */
+export function unreachedTiles(rows: readonly string[], spawn: MapPoint): MapPoint[] {
+  const width = rows[0]?.length ?? 0
+  const height = rows.length
+  if (width === 0 || height === 0) return []
+
+  const anchors: readonly MapPoint[] = [
+    { x: spawn.x, y: spawn.y },
+    { x: spawn.x - 1, y: spawn.y },
+    { x: spawn.x, y: spawn.y - 1 },
+    { x: spawn.x - 1, y: spawn.y - 1 },
+  ]
+
+  const visitedBoxes = new Set<string>()
+  const covered = new Set<string>()
+  const queue: MapPoint[] = []
+
+  const enterBox = (boxX: number, boxY: number): void => {
+    const key = `${boxX},${boxY}`
+    if (visitedBoxes.has(key)) return
+    visitedBoxes.add(key)
+    queue.push({ x: boxX, y: boxY })
+    for (let dx = 0; dx < 2; dx += 1) {
+      for (let dy = 0; dy < 2; dy += 1) {
+        covered.add(`${boxX + dx},${boxY + dy}`)
+      }
+    }
+  }
+
+  for (const anchor of anchors) {
+    if (isValidBox(rows, anchor.x, anchor.y)) enterBox(anchor.x, anchor.y)
+  }
+
+  while (queue.length > 0) {
+    const box = queue.pop()
+    if (!box) break
+    for (const step of BOX_STEPS) {
+      const boxX = box.x + step.x
+      const boxY = box.y + step.y
+      if (boxX < 0 || boxY < 0 || boxX + 1 >= width || boxY + 1 >= height) continue
+      if (visitedBoxes.has(`${boxX},${boxY}`)) continue
+      if (!isValidBox(rows, boxX, boxY)) continue
+      enterBox(boxX, boxY)
+    }
+  }
+
+  const unreached: MapPoint[] = []
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (!isWalkableTile(rows, x, y)) continue
+      if (!covered.has(`${x},${y}`)) unreached.push({ x, y })
+    }
+  }
+  return unreached
+}
