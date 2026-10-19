@@ -12,6 +12,7 @@ import {
   getItemById,
   getInventory,
   remainingCapacity,
+  removeItemEverywhere,
   subscribeInventory,
   updateInventory,
 } from '../inventory'
@@ -23,10 +24,11 @@ import { AREAS, getAreaById, getAreaSpawn, worldToTile } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
-import { chopFlagKey, loadProgress, saveProgress, setProgressFlag } from '../world/progress'
+import { chopFlagKey, clearChopFlag, loadProgress, saveProgress, setProgressFlag } from '../world/progress'
 import {
   STUMP_TILE_INDEX,
   TILE_SIZE,
+  TREE_TRUNK_INDEX,
   chopHitsRemaining,
   isStumpTile,
   isTreeTrunkTile,
@@ -453,6 +455,8 @@ export default class WorldScene extends Phaser.Scene {
       this.pickupItem(nearestItem)
     } else if (nearestTree && interactPressed && !this.popupOpen) {
       this.chopTree(nearestTree)
+    } else if (nearestStump && interactPressed && !this.popupOpen) {
+      this.replantStump(nearestStump)
     }
   }
 
@@ -709,6 +713,31 @@ export default class WorldScene extends Phaser.Scene {
     this.terrain.putTileAt(STUMP_TILE_INDEX, tree.tileX, tree.tileY)
     setProgressFlag(chopFlagKey(this.areaId, tree.tileX, tree.tileY))
     showToast(`+${WOOD_YIELD} Wood Log`)
+  }
+
+  /**
+   * Plants a sapling at a felled stump: consumes one from the pack or hotbar,
+   * clears the chop flag so the trunk survives reloads, and restores the tile.
+   * The player must have a sapling selected in the hotbar.
+   */
+  private replantStump(stump: StumpSpot): void {
+    if (this.selectedHotbarItemId() !== SAPLING_ITEM_ID) return
+
+    let consumed = 0
+    updateInventory((current) => {
+      const result = removeItemEverywhere(current, SAPLING_ITEM_ID, 1)
+      consumed = result.removed
+      return result.state
+    })
+
+    if (consumed <= 0) {
+      showToast('Need a sapling')
+      return
+    }
+
+    clearChopFlag(this.areaId, stump.tileX, stump.tileY)
+    this.terrain.putTileAt(TREE_TRUNK_INDEX, stump.tileX, stump.tileY)
+    showToast('Sapling planted')
   }
 
   private canHoldWood(): boolean {
