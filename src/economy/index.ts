@@ -1,5 +1,11 @@
 export { applyGold, formatGold } from './wallet'
 export { clearGold, loadGold, saveGold } from './storage'
 export { getGold, hydrateGold, resetGold, subscribeGold, updateGold } from './store'
-export type { TradeOffer } from './trade'
-export { TRADE_OFFERS, getTradePrice } from './trade'
+export type { ShopOffer, TradeOffer } from './trade'
+export {
+  SHOP_OFFERS,
+  TRADE_OFFERS,
+  getShopPrice,
+  getTradePrice,
+  maxAffordable,
+} from './trade'
