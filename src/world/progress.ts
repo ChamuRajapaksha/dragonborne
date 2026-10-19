@@ -5,6 +5,8 @@ export interface WorldProgress {
   x: number
   y: number
   flags: Record<string, boolean>
+  /** Seed of the procedural forest layout; assigned on first forest load. */
+  seed?: number
 }
 
 function emptyProgress(): WorldProgress {
@@ -16,6 +18,10 @@ function isFlagRecord(value: unknown): value is Record<string, boolean> {
   return Object.values(value).every((entry) => typeof entry === 'boolean')
 }
 
+function isSeed(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value)
+}
+
 export function loadProgress(): WorldProgress | null {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
@@ -24,12 +30,14 @@ export function loadProgress(): WorldProgress | null {
     const parsed = JSON.parse(raw) as Partial<WorldProgress>
     if (typeof parsed.areaId !== 'string') return null
     if (!Number.isFinite(parsed.x) || !Number.isFinite(parsed.y)) return null
-    return {
+    const progress: WorldProgress = {
       areaId: parsed.areaId,
       x: parsed.x as number,
       y: parsed.y as number,
       flags: isFlagRecord(parsed.flags) ? parsed.flags : {},
     }
+    if (isSeed(parsed.seed)) progress.seed = parsed.seed
+    return progress
   } catch {
     return null
   }
@@ -48,6 +56,20 @@ export function setProgressFlag(flag: string, value = true): void {
 /** True only when the flag exists and is `true`; missing or corrupt saves read as false. */
 export function getProgressFlag(flag: string): boolean {
   return loadProgress()?.flags[flag] === true
+}
+
+/**
+ * The seed the forest layout is generated from. Existing saves keep their
+ * seed forever; a save that predates seeds (or has none yet) gets a fresh one
+ * that is written back immediately, so the layout never shifts under a player.
+ */
+export function getForestSeed(): number {
+  const progress = loadProgress()
+  if (progress && isSeed(progress.seed)) return progress.seed
+
+  const seed = Math.floor(Math.random() * 0x100000000)
+  saveProgress({ ...emptyProgress(), ...progress, seed })
+  return seed
 }
 
 /**

@@ -535,11 +535,13 @@ export default class WorldScene extends Phaser.Scene {
     if (x === this.savedPoint.x && y === this.savedPoint.y) return
 
     this.savedPoint = { x, y }
+    const previous = loadProgress()
     saveProgress({
       areaId: this.areaId,
       x,
       y,
-      flags: loadProgress()?.flags ?? {},
+      flags: previous?.flags ?? {},
+      seed: previous?.seed,
     })
   }
 
