@@ -216,6 +216,14 @@ body {
   color: #ffd166;
 }
 
+.trade-section-label {
+  margin: 14px 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #b8b8c4;
+}
+
 .trade-card {
   border: 1px solid #4a4a58;
   border-radius: 6px;
@@ -255,6 +263,11 @@ body {
   background: #aa3bff;
   color: #fff;
   cursor: pointer;
+}
+
+.trade-panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .trade-close {
