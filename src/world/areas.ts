@@ -7,7 +7,6 @@ import type {
 } from './maps'
 import {
   FOREST_ITEMS,
-  FOREST_MAP,
   FOREST_NPCS,
   FOREST_PORTALS,
   FOREST_SPAWN,
@@ -17,6 +16,8 @@ import {
   VILLAGE_PORTALS,
   VILLAGE_SPAWN,
 } from './maps'
+import { FOREST_SKELETON, generateForestMap } from './forestGen'
+import { getForestSeed } from './progress'
 import type { TileLegendEntry } from './tileset'
 import { TILE_BY_CHAR, TILE_SIZE } from './tileset'
 
@@ -98,7 +99,7 @@ export const FOREST: AreaDefinition = {
   id: 'forest',
   name: 'The Thornwood',
   backgroundColor: 0x1d2b1d,
-  map: FOREST_MAP,
+  map: FOREST_SKELETON,
   defaultSpawn: FOREST_SPAWN,
   npcs: FOREST_NPCS,
   waypointAreaId: 'village',
@@ -123,6 +124,28 @@ export function getAreaById(areaId: string): AreaDefinition {
   const area = AREAS[areaId]
   if (!area) throw new Error(`Unknown area '${areaId}'`)
   return area
+}
+
+/** Generated forest rows per seed, so re-entering the area never re-rolls it. */
+const FOREST_ROWS_BY_SEED = new Map<number, readonly string[]>()
+
+/**
+ * The rows terrain is built from: the seeded forest layout for the forest
+ * (cached per seed for the session), the hand-authored map everywhere else.
+ * `AreaDefinition.map` holds the forest skeleton — same 64x48 shape — so map
+ * sizing never depends on the save's seed. Chop flags stay coordinate-keyed,
+ * and a stable seed keeps them valid across reloads.
+ */
+export function resolveAreaRows(area: AreaDefinition): readonly string[] {
+  if (area.id !== 'forest') return area.map
+
+  const seed = getForestSeed()
+  let rows = FOREST_ROWS_BY_SEED.get(seed)
+  if (!rows) {
+    rows = generateForestMap(seed)
+    FOREST_ROWS_BY_SEED.set(seed, rows)
+  }
+  return rows
 }
 
 export function getAreaSize(area: AreaDefinition): Phaser.Geom.Rectangle {

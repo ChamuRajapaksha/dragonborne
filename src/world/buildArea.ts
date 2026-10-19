@@ -1,6 +1,6 @@
 import type Phaser from 'phaser'
 import type { AreaDefinition } from './areas'
-import { getAreaById, getAreaSize, parseAreaMap, tileToWorld } from './areas'
+import { getAreaById, getAreaSize, parseAreaMap, resolveAreaRows, tileToWorld } from './areas'
 import { getNpcById } from '../story'
 import { getItemById } from '../inventory'
 import { chopFlagKey, getProgressFlag, pickupFlagKey } from './progress'
@@ -51,7 +51,7 @@ export function buildTerrain(
 ): Phaser.Tilemaps.TilemapLayerBase {
   ensureTileset(scene)
 
-  const data = parseAreaMap(area.map)
+  const data = parseAreaMap(resolveAreaRows(area))
   const map = scene.make.tilemap({
     data,
     tileWidth: TILE_SIZE,
