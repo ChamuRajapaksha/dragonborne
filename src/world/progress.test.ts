@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  chopFlagKey,
+  clearChopFlag,
   getForestSeed,
   getProgressFlag,
   loadProgress,
@@ -119,5 +121,38 @@ describe('seed survival under flag writes', () => {
     setProgressFlag('intro:village')
     expect(getProgressFlag('intro:village')).toBe(true)
     expect(getForestSeed()).toBe(seed)
+  })
+})
+
+describe('clearChopFlag', () => {
+  it('sets a felled tree flag to false so the stump is not redrawn', () => {
+    setProgressFlag(chopFlagKey('forest', 5, 5))
+    expect(getProgressFlag(chopFlagKey('forest', 5, 5))).toBe(true)
+
+    clearChopFlag('forest', 5, 5)
+
+    expect(getProgressFlag(chopFlagKey('forest', 5, 5))).toBe(false)
+  })
+
+  it('leaves the flag present as false rather than deleting it', () => {
+    setProgressFlag(chopFlagKey('forest', 5, 5))
+    clearChopFlag('forest', 5, 5)
+    expect(loadProgress()?.flags[chopFlagKey('forest', 5, 5)]).toBe(false)
+  })
+
+  it('keeps sibling flags and the stored seed intact', () => {
+    const seed = getForestSeed()
+    setProgressFlag(chopFlagKey('forest', 5, 5))
+    setProgressFlag(chopFlagKey('forest', 9, 9))
+
+    clearChopFlag('forest', 5, 5)
+
+    expect(getProgressFlag(chopFlagKey('forest', 9, 9))).toBe(true)
+    expect(getForestSeed()).toBe(seed)
+  })
+
+  it('clears a flag that was never set without throwing', () => {
+    clearChopFlag('forest', 2, 3)
+    expect(getProgressFlag(chopFlagKey('forest', 2, 3))).toBe(false)
   })
 })

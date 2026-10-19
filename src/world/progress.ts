@@ -88,6 +88,16 @@ export function chopFlagKey(areaId: string, x: number, y: number): string {
   return `chop:${areaId}:${x},${y}`
 }
 
+/**
+ * Clears a felled tree's chop flag (replanting). The flag is written as `false`
+ * rather than deleted so the write is visible in the save; `buildTerrain` only
+ * re-draws the stump while the flag reads `true`, so a cleared flag lets the
+ * generated trunk take the tile again on reload.
+ */
+export function clearChopFlag(areaId: string, x: number, y: number): void {
+  setProgressFlag(chopFlagKey(areaId, x, y), false)
+}
+
 export function clearProgress(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
