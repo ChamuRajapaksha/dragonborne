@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { generateForestMap } from './forestGen'
 import { findMapViolations } from './mapRules'
 import {
   FOREST_ITEMS,
-  FOREST_MAP,
   FOREST_NPCS,
   FOREST_PORTALS,
   FOREST_SPAWN,
@@ -13,55 +13,37 @@ import {
   VILLAGE_SPAWN,
 } from './maps'
 
-const AREA_MAPS = {
-  forest: FOREST_MAP,
-  village: VILLAGE_MAP,
+const FOREST_SEEDS = Array.from({ length: 20 }, (_, index) => index * 104729 + 17)
+
+const FOREST_ROWS_CACHE = new Map<number, readonly string[]>()
+
+/** One generated forest per seed, memoized so twenty rules runs stay cheap. */
+function forestRows(seed: number): readonly string[] {
+  let rows = FOREST_ROWS_CACHE.get(seed)
+  if (!rows) {
+    rows = generateForestMap(seed)
+    FOREST_ROWS_CACHE.set(seed, rows)
+  }
+  return rows
 }
 
-const AREA_FIXTURES = [
-  {
-    name: 'forest',
-    map: FOREST_MAP,
-    placements: {
-      spawn: FOREST_SPAWN,
-      npcs: FOREST_NPCS,
-      portals: FOREST_PORTALS,
-      items: FOREST_ITEMS,
-    },
-  },
-  {
-    name: 'village',
-    map: VILLAGE_MAP,
-    placements: {
-      spawn: VILLAGE_SPAWN,
-      npcs: VILLAGE_NPCS,
-      portals: VILLAGE_PORTALS,
-      items: VILLAGE_ITEMS,
-    },
-  },
-]
+const FOREST_PLACEMENTS = {
+  spawn: FOREST_SPAWN,
+  npcs: FOREST_NPCS,
+  portals: FOREST_PORTALS,
+  items: FOREST_ITEMS,
+}
 
-describe('area maps', () => {
-  it('keeps the forest a uniform shape of known characters', () => {
-    expect(findMapViolations(FOREST_MAP)).toEqual([])
-  })
+const VILLAGE_PLACEMENTS = {
+  spawn: VILLAGE_SPAWN,
+  npcs: VILLAGE_NPCS,
+  portals: VILLAGE_PORTALS,
+  items: VILLAGE_ITEMS,
+}
 
-  it('keeps the village a uniform shape of known characters', () => {
-    expect(findMapViolations(VILLAGE_MAP)).toEqual([])
-  })
-})
-
-describe.each(AREA_FIXTURES)('$name placements', ({ map, placements }) => {
-  it('sit on walkable tiles', () => {
-    expect(findMapViolations(map, placements, { areaMaps: AREA_MAPS })).toEqual([])
-  })
-})
-
-describe.each(AREA_FIXTURES)('$name reachability', ({ map, placements }) => {
-  it('lets the spawn reach every placement and every trunk neighbour', () => {
-    expect(findMapViolations(map, placements, { areaMaps: AREA_MAPS })).toEqual([])
-  })
-})
+function areaMapsFor(forest: readonly string[]): Record<string, readonly string[]> {
+  return { forest, village: VILLAGE_MAP }
+}
 
 const FOREST_MAIN_CORRIDOR = {
   label: 'main path',
@@ -71,23 +53,57 @@ const FOREST_MAIN_CORRIDOR = {
   toCol: 61,
 }
 
+describe('area map shapes', () => {
+  it('keeps every generated forest a uniform shape of known characters', () => {
+    for (const seed of FOREST_SEEDS) {
+      expect(findMapViolations(forestRows(seed)), `forest seed ${seed}`).toEqual([])
+    }
+  })
+
+  it('keeps the village a uniform shape of known characters', () => {
+    expect(findMapViolations(VILLAGE_MAP)).toEqual([])
+  })
+})
+
+describe('area placements', () => {
+  it('sit on walkable, reachable tiles on every generated forest seed', () => {
+    for (const seed of FOREST_SEEDS) {
+      const forest = forestRows(seed)
+      const areaMaps = areaMapsFor(forest)
+      expect(
+        findMapViolations(forest, FOREST_PLACEMENTS, { areaMaps }),
+        `forest seed ${seed}`,
+      ).toEqual([])
+      expect(
+        findMapViolations(VILLAGE_MAP, VILLAGE_PLACEMENTS, { areaMaps }),
+        `village with forest seed ${seed}`,
+      ).toEqual([])
+    }
+  })
+})
+
 describe('forest main corridor', () => {
-  it('stays free of colliding tiles across the whole run', () => {
-    expect(
-      findMapViolations(FOREST_MAP, undefined, { corridors: [FOREST_MAIN_CORRIDOR] }),
-    ).toEqual([])
+  it('stays free of colliding tiles across the whole run on every seed', () => {
+    for (const seed of FOREST_SEEDS) {
+      expect(
+        findMapViolations(forestRows(seed), undefined, { corridors: [FOREST_MAIN_CORRIDOR] }),
+        `forest seed ${seed}`,
+      ).toEqual([])
+    }
   })
 })
 
 describe('forest choppable trunks', () => {
-  it('keeps at least 30 reachable trunks in the woods', () => {
-    let trunks = 0
-    for (const row of FOREST_MAP) {
-      for (const char of row) {
-        if (char === 't') trunks += 1
+  it('keeps at least 30 reachable trunks in the woods on every seed', () => {
+    for (const seed of FOREST_SEEDS) {
+      let trunks = 0
+      for (const row of forestRows(seed)) {
+        for (const char of row) {
+          if (char === 't') trunks += 1
+        }
       }
+      expect(trunks, `forest seed ${seed}`).toBeGreaterThanOrEqual(30)
     }
-    expect(trunks).toBeGreaterThanOrEqual(30)
   })
 })
 
@@ -107,8 +123,8 @@ describe('findMapViolations shape rules', () => {
 
 describe('findMapViolations placement rules', () => {
   it('flags a placement sitting on a colliding tile', () => {
-    const violations = findMapViolations(FOREST_MAP, {
-      spawn: FOREST_SPAWN,
+    const violations = findMapViolations(VILLAGE_MAP, {
+      spawn: VILLAGE_SPAWN,
       npcs: [],
       portals: [],
       items: [{ itemId: 'test-item', x: 0, y: 0 }],
@@ -117,7 +133,7 @@ describe('findMapViolations placement rules', () => {
   })
 
   it('flags a placement outside the map', () => {
-    const violations = findMapViolations(FOREST_MAP, {
+    const violations = findMapViolations(VILLAGE_MAP, {
       spawn: { x: 999, y: 999 },
       npcs: [],
       portals: [],
@@ -127,12 +143,20 @@ describe('findMapViolations placement rules', () => {
   })
 
   it('flags a portal toSpawn sitting on a colliding tile of its destination', () => {
-    const violations = findMapViolations(FOREST_MAP, {
-      spawn: FOREST_SPAWN,
+    const violations = findMapViolations(VILLAGE_MAP, {
+      spawn: VILLAGE_SPAWN,
       npcs: [],
-      portals: [{ x: 62, y: 24, toAreaId: 'village', toSpawn: { x: 0, y: 0 }, label: 'test' }],
+      portals: [
+        {
+          x: VILLAGE_SPAWN.x,
+          y: VILLAGE_SPAWN.y,
+          toAreaId: 'village',
+          toSpawn: { x: 0, y: 0 },
+          label: 'test',
+        },
+      ],
       items: [],
-    }, { areaMaps: AREA_MAPS })
+    }, { areaMaps: { village: VILLAGE_MAP } })
     expect(violations).toContain(
       "portal to 'village' (toSpawn) at 0,0 sits on colliding 'T'",
     )
