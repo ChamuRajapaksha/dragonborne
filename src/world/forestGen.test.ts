@@ -7,7 +7,7 @@ import {
   generateForestMap,
   isReservedForestTile,
 } from './forestGen'
-import { findMapViolations } from './mapRules'
+import { findMapViolations, unreachedTiles } from './mapRules'
 import {
   FOREST_ITEMS,
   FOREST_NPCS,
@@ -142,6 +142,20 @@ describe('generated choppable trunks', () => {
         expect(row[0]).not.toBe('t')
         expect(row[FOREST_WIDTH - 1]).not.toBe('t')
       }
+    }
+  })
+})
+
+const LOOP_SEEDS = [3, 11, 42, 101, 2718, 31415, 65535, 777777, 20260, 999983]
+
+describe('full-loop connectivity', () => {
+  it('starts from a skeleton the 2x2 player body can fully cross', () => {
+    expect(unreachedTiles(FOREST_SKELETON, FOREST_SPAWN)).toEqual([])
+  })
+
+  it('leaves every open tile reachable by the 2x2 player body on every tested seed', () => {
+    for (const seed of LOOP_SEEDS) {
+      expect(unreachedTiles(generateForestMap(seed), FOREST_SPAWN)).toEqual([])
     }
   })
 })

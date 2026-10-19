@@ -6,6 +6,7 @@
  */
 import type { TilePoint } from './maps'
 import { FOREST_ITEMS, FOREST_NPCS, FOREST_PORTALS, FOREST_SPAWN } from './maps'
+import { unreachedGridTiles, unreachedTiles, walkableGrid } from './mapRules'
 import type { Rng } from './rng'
 import { mulberry32, randomInt, randomPick, shuffle } from './rng'
 import { TILE_BY_CHAR } from './tileset'
@@ -138,24 +139,38 @@ function pickGroveSeed(rows: string[][], rng: Rng): TilePoint | null {
 
 function placeGroveTile(
   rows: string[][],
+  grid: Uint8Array,
   tile: TilePoint,
   cluster: TilePoint[],
   scattered: TilePoint[],
-): void {
+): boolean {
+  const index = tile.y * FOREST_WIDTH + tile.x
+  const previous = rows[tile.y][tile.x]
   rows[tile.y][tile.x] = CANOPY_CHAR
-  cluster.push(tile)
-  scattered.push(tile)
+  grid[index] = 0
+  // A grove tile that would strand any open tile behind a 1-tile gap is
+  // rejected outright — pockets of unreachable grass would otherwise need
+  // sealing into solid canopy, which is exactly what groves replace.
+  if (unreachedGridTiles(grid, FOREST_WIDTH, FOREST_HEIGHT, FOREST_SPAWN).length === 0) {
+    cluster.push(tile)
+    scattered.push(tile)
+    return true
+  }
+  rows[tile.y][tile.x] = previous
+  grid[index] = 1
+  return false
 }
 
 function growCluster(
   rows: string[][],
+  grid: Uint8Array,
   rng: Rng,
   seed: TilePoint,
   scattered: TilePoint[],
 ): void {
   const target = randomInt(rng, GROVE_MIN_TILES, GROVE_MAX_TILES + 1)
   const cluster: TilePoint[] = []
-  placeGroveTile(rows, seed, cluster, scattered)
+  if (!placeGroveTile(rows, grid, seed, cluster, scattered)) return
 
   let attempts = 0
   const maxAttempts = target * PLACEMENT_ATTEMPTS_PER_TILE
@@ -166,17 +181,18 @@ function growCluster(
     const x = base.x + direction.x
     const y = base.y + direction.y
     if (!canGrowInto(rows, x, y)) continue
-    placeGroveTile(rows, { x, y }, cluster, scattered)
+    placeGroveTile(rows, grid, { x, y }, cluster, scattered)
   }
 }
 
 /** Scatter random grove clusters across the skeleton's open grass. */
 function growGroveClusters(rows: string[][], rng: Rng): TilePoint[] {
+  const grid = walkableGrid(rows.map((row) => row.join('')))
   const scattered: TilePoint[] = []
   for (let grove = 0; grove < GROVE_COUNT; grove += 1) {
     const seed = pickGroveSeed(rows, rng)
     if (!seed) continue
-    growCluster(rows, rng, seed, scattered)
+    growCluster(rows, grid, rng, seed, scattered)
   }
   return scattered
 }
@@ -211,14 +227,28 @@ function placeTrunks(rows: string[][], rng: Rng, scattered: TilePoint[]): void {
 }
 
 /**
+ * Convert any walkable tile the 2x2 body still cannot reach (a leftover
+ * pocket or 1-tile crack) into solid canopy, so every open tile on the final
+ * map is traversable.
+ */
+function sealUnreachable(rows: string[][]): void {
+  const snapshot = rows.map((row) => row.join(''))
+  for (const tile of unreachedTiles(snapshot, FOREST_SPAWN)) {
+    rows[tile.y][tile.x] = CANOPY_CHAR
+  }
+}
+
+/**
  * Build the forest layout for a seed: skeleton + scattered groves + choppable
- * trunks along their edges. The same seed always produces the same rows, so
- * `chop:forest:x,y` flags and saved positions stay valid for a save's life.
+ * trunks along their edges, with unreachable pockets sealed. The same seed
+ * always produces the same rows, so `chop:forest:x,y` flags and saved
+ * positions stay valid for a save's life.
  */
 export function generateForestMap(seed: number): readonly string[] {
   const rng = mulberry32(seed)
   const rows = FOREST_SKELETON.map((row) => row.split(''))
   const scattered = growGroveClusters(rows, rng)
   placeTrunks(rows, rng, scattered)
+  sealUnreachable(rows)
   return rows.map((row) => row.join(''))
 }

@@ -239,21 +239,92 @@ const BOX_STEPS: readonly MapPoint[] = [
   { x: 0, y: -1 },
 ]
 
-function isWalkableTile(rows: readonly string[], x: number, y: number): boolean {
-  const char = rows[y]?.[x]
-  if (char === undefined) return false
-  const tile = TILE_BY_CHAR.get(char)
-  return tile !== undefined && !tile.collides
+/**
+ * Precomputed walkability (`1` open, `0` blocked) in row-major order, so the
+ * generator can re-run the box walk thousands of times without re-parsing
+ * characters.
+ */
+export function walkableGrid(rows: readonly string[]): Uint8Array {
+  const width = rows[0]?.length ?? 0
+  const grid = new Uint8Array(width * rows.length)
+  for (let y = 0; y < rows.length; y += 1) {
+    const row = rows[y] ?? ''
+    for (let x = 0; x < width && x < row.length; x += 1) {
+      const tile = TILE_BY_CHAR.get(row[x] ?? '')
+      grid[y * width + x] = tile && !tile.collides ? 1 : 0
+    }
+  }
+  return grid
 }
 
-/** True when the 2x2 player body standing on this top-left anchor is on open tiles. */
-function isValidBox(rows: readonly string[], boxX: number, boxY: number): boolean {
-  return (
-    isWalkableTile(rows, boxX, boxY) &&
-    isWalkableTile(rows, boxX + 1, boxY) &&
-    isWalkableTile(rows, boxX, boxY + 1) &&
-    isWalkableTile(rows, boxX + 1, boxY + 1)
-  )
+/**
+ * The 2x2 box flood fill over a `walkableGrid`: returns every open tile no
+ * reachable 2x2 box can stand on, starting from the boxes containing the
+ * spawn. Shared by `unreachedTiles` and the forest generator.
+ */
+export function unreachedGridTiles(
+  grid: Uint8Array,
+  width: number,
+  height: number,
+  spawn: MapPoint,
+): MapPoint[] {
+  if (width === 0 || height === 0) return []
+
+  const isWalkable = (x: number, y: number): boolean =>
+    x >= 0 && y >= 0 && x < width && y < height && grid[y * width + x] === 1
+
+  const isValidBox = (boxX: number, boxY: number): boolean =>
+    isWalkable(boxX, boxY) &&
+    isWalkable(boxX + 1, boxY) &&
+    isWalkable(boxX, boxY + 1) &&
+    isWalkable(boxX + 1, boxY + 1)
+
+  const visitedBoxes = new Uint8Array(width * height)
+  const covered = new Uint8Array(width * height)
+  const queue: number[] = []
+
+  const enterBox = (boxX: number, boxY: number): void => {
+    visitedBoxes[boxY * width + boxX] = 1
+    queue.push(boxY * width + boxX)
+    for (let dx = 0; dx < 2; dx += 1) {
+      for (let dy = 0; dy < 2; dy += 1) {
+        covered[(boxY + dy) * width + (boxX + dx)] = 1
+      }
+    }
+  }
+
+  const anchors: readonly MapPoint[] = [
+    { x: spawn.x, y: spawn.y },
+    { x: spawn.x - 1, y: spawn.y },
+    { x: spawn.x, y: spawn.y - 1 },
+    { x: spawn.x - 1, y: spawn.y - 1 },
+  ]
+  for (const anchor of anchors) {
+    if (isValidBox(anchor.x, anchor.y)) enterBox(anchor.x, anchor.y)
+  }
+
+  while (queue.length > 0) {
+    const index = queue.pop() ?? 0
+    const boxX = index % width
+    const boxY = (index - boxX) / width
+    for (const step of BOX_STEPS) {
+      const nextX = boxX + step.x
+      const nextY = boxY + step.y
+      if (nextX < 0 || nextY < 0 || nextX + 1 >= width || nextY + 1 >= height) continue
+      if (visitedBoxes[nextY * width + nextX] === 1) continue
+      if (!isValidBox(nextX, nextY)) continue
+      enterBox(nextX, nextY)
+    }
+  }
+
+  const unreached: MapPoint[] = []
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (grid[y * width + x] !== 1) continue
+      if (covered[y * width + x] !== 1) unreached.push({ x, y })
+    }
+  }
+  return unreached
 }
 
 /**
@@ -264,55 +335,6 @@ function isValidBox(rows: readonly string[], boxX: number, boxY: number): boolea
  */
 export function unreachedTiles(rows: readonly string[], spawn: MapPoint): MapPoint[] {
   const width = rows[0]?.length ?? 0
-  const height = rows.length
-  if (width === 0 || height === 0) return []
-
-  const anchors: readonly MapPoint[] = [
-    { x: spawn.x, y: spawn.y },
-    { x: spawn.x - 1, y: spawn.y },
-    { x: spawn.x, y: spawn.y - 1 },
-    { x: spawn.x - 1, y: spawn.y - 1 },
-  ]
-
-  const visitedBoxes = new Set<string>()
-  const covered = new Set<string>()
-  const queue: MapPoint[] = []
-
-  const enterBox = (boxX: number, boxY: number): void => {
-    const key = `${boxX},${boxY}`
-    if (visitedBoxes.has(key)) return
-    visitedBoxes.add(key)
-    queue.push({ x: boxX, y: boxY })
-    for (let dx = 0; dx < 2; dx += 1) {
-      for (let dy = 0; dy < 2; dy += 1) {
-        covered.add(`${boxX + dx},${boxY + dy}`)
-      }
-    }
-  }
-
-  for (const anchor of anchors) {
-    if (isValidBox(rows, anchor.x, anchor.y)) enterBox(anchor.x, anchor.y)
-  }
-
-  while (queue.length > 0) {
-    const box = queue.pop()
-    if (!box) break
-    for (const step of BOX_STEPS) {
-      const boxX = box.x + step.x
-      const boxY = box.y + step.y
-      if (boxX < 0 || boxY < 0 || boxX + 1 >= width || boxY + 1 >= height) continue
-      if (visitedBoxes.has(`${boxX},${boxY}`)) continue
-      if (!isValidBox(rows, boxX, boxY)) continue
-      enterBox(boxX, boxY)
-    }
-  }
-
-  const unreached: MapPoint[] = []
-  for (let y = 0; y < height; y += 1) {
-    for (let x = 0; x < width; x += 1) {
-      if (!isWalkableTile(rows, x, y)) continue
-      if (!covered.has(`${x},${y}`)) unreached.push({ x, y })
-    }
-  }
-  return unreached
+  if (width === 0 || rows.length === 0) return []
+  return unreachedGridTiles(walkableGrid(rows), width, rows.length, spawn)
 }
