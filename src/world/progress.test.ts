@@ -156,3 +156,48 @@ describe('clearChopFlag', () => {
     expect(getProgressFlag(chopFlagKey('forest', 2, 3))).toBe(false)
   })
 })
+
+describe('replanting a felled tree', () => {
+  it('keeps a cleared chop flag false across a save round trip so the trunk returns', () => {
+    // Felling writes the flag; the trunk tile is swapped for a stump in the scene.
+    setProgressFlag(chopFlagKey('forest', 7, 3))
+    expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(true)
+
+    // Replanting clears the flag, then restores TREE_TRUNK_INDEX on the layer.
+    clearChopFlag('forest', 7, 3)
+
+    // Simulate the reload: progress is re-read from storage. buildTerrain draws
+    // a stump only while the flag reads true, so false leaves the generated
+    // trunk tile in place.
+    const reloaded = loadProgress()
+    expect(reloaded?.flags[chopFlagKey('forest', 7, 3)]).toBe(false)
+    expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(false)
+  })
+
+  it('only clears the replanted tile, leaving other felled trees as stumps', () => {
+    setProgressFlag(chopFlagKey('forest', 7, 3))
+    setProgressFlag(chopFlagKey('forest', 8, 3))
+
+    clearChopFlag('forest', 7, 3)
+
+    expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(false)
+    expect(getProgressFlag(chopFlagKey('forest', 8, 3))).toBe(true)
+  })
+
+  it('survives a position save the way the world scene writes them', () => {
+    setProgressFlag(chopFlagKey('forest', 7, 3))
+    clearChopFlag('forest', 7, 3)
+    const seed = getForestSeed()
+
+    saveProgress({
+      areaId: 'forest',
+      x: 200,
+      y: 400,
+      flags: loadProgress()?.flags ?? {},
+      seed: loadProgress()?.seed,
+    })
+
+    expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(false)
+    expect(getForestSeed()).toBe(seed)
+  })
+})
