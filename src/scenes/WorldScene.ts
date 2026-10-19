@@ -28,6 +28,7 @@ import {
   STUMP_TILE_INDEX,
   TILE_SIZE,
   chopHitsRemaining,
+  isStumpTile,
   isTreeTrunkTile,
 } from '../world/tileset'
 
@@ -52,6 +53,7 @@ const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const AXE_ITEM_ID = 'axe'
+const SAPLING_ITEM_ID = 'sapling'
 const WOOD_ITEM_ID = 'wood'
 const WOOD_YIELD = 3
 const COMPASS_POINTS = [
@@ -96,6 +98,14 @@ interface WasdKeys {
 
 /** A choppable tree trunk, located by tile so its progress can be keyed. */
 interface TreeSpot {
+  tileX: number
+  tileY: number
+  x: number
+  y: number
+}
+
+/** A felled stump, located by tile so a sapling can replant it. */
+interface StumpSpot {
   tileX: number
   tileY: number
   x: number
@@ -363,6 +373,7 @@ export default class WorldScene extends Phaser.Scene {
     const nearest = this.findNearestNpc()
     const nearestItem = this.findNearestItem()
     const nearestTree = this.findNearestTree()
+    const nearestStump = this.findNearestStump()
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
@@ -391,6 +402,12 @@ export default class WorldScene extends Phaser.Scene {
       const hint =
         this.selectedHotbarItemId() === AXE_ITEM_ID ? 'Press E \u2192 Chop tree' : 'Need an axe'
       this.showInteractHint(hint, nearestTree.x, nearestTree.y - 30)
+    } else if (nearestStump) {
+      const hint =
+        this.selectedHotbarItemId() === SAPLING_ITEM_ID
+          ? 'Press E \u2192 Plant sapling'
+          : 'Need a sapling'
+      this.showInteractHint(hint, nearestStump.x, nearestStump.y - 30)
     } else {
       this.interactHint.setVisible(false)
     }
@@ -625,6 +642,31 @@ export default class WorldScene extends Phaser.Scene {
       for (let tileX = origin.x - radius; tileX <= origin.x + radius; tileX += 1) {
         const tile = this.terrain.getTileAt(tileX, tileY)
         if (!tile || !isTreeTrunkTile(tile.index)) continue
+
+        const x = tileX * TILE_SIZE + TILE_SIZE / 2
+        const y = tileY * TILE_SIZE + TILE_SIZE / 2
+        const distance = Phaser.Math.Distance.Between(this.playerPoint.x, this.playerPoint.y, x, y)
+        if (distance <= nearestDistance) {
+          nearest = { tileX, tileY, x, y }
+          nearestDistance = distance
+        }
+      }
+    }
+
+    return nearest
+  }
+
+  /** Scans the terrain tiles within reach for a felled stump. */
+  private findNearestStump(): StumpSpot | null {
+    const origin = worldToTile(this.playerPoint.x, this.playerPoint.y)
+    const radius = Math.ceil(INTERACT_RANGE / TILE_SIZE)
+    let nearest: StumpSpot | null = null
+    let nearestDistance = INTERACT_RANGE
+
+    for (let tileY = origin.y - radius; tileY <= origin.y + radius; tileY += 1) {
+      for (let tileX = origin.x - radius; tileX <= origin.x + radius; tileX += 1) {
+        const tile = this.terrain.getTileAt(tileX, tileY)
+        if (!tile || !isStumpTile(tile.index)) continue
 
         const x = tileX * TILE_SIZE + TILE_SIZE / 2
         const y = tileY * TILE_SIZE + TILE_SIZE / 2
