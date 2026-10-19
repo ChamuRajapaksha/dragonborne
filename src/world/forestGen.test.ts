@@ -4,6 +4,7 @@ import {
   FOREST_HEIGHT,
   FOREST_SKELETON,
   FOREST_WIDTH,
+  generateForestMap,
   isReservedForestTile,
 } from './forestGen'
 import { findMapViolations } from './mapRules'
@@ -77,5 +78,36 @@ describe('forest reserved tiles', () => {
     expect(isReservedForestTile(18, 22)).toBe(false)
     expect(isReservedForestTile(45, 10)).toBe(false)
     expect(isReservedForestTile(30, 40)).toBe(false)
+  })
+})
+
+describe('generateForestMap', () => {
+  it('returns a uniform 64x48 grid of known characters', () => {
+    const rows = generateForestMap(42)
+    expect(rows).toHaveLength(FOREST_HEIGHT)
+    for (const row of rows) expect(row).toHaveLength(FOREST_WIDTH)
+    expect(findMapViolations(rows)).toEqual([])
+  })
+
+  it('produces the identical layout for the same seed', () => {
+    expect(generateForestMap(1234)).toEqual(generateForestMap(1234))
+  })
+
+  it('scatters a different layout for every seed', () => {
+    const first = generateForestMap(1)
+    const second = generateForestMap(2)
+    expect(first).not.toEqual(second)
+    expect(first).not.toEqual([...FOREST_SKELETON])
+  })
+
+  it('never grows groves over the corridor or reserved placements', () => {
+    const rows = generateForestMap(7)
+    for (const row of FOREST_CORRIDOR_ROWS) {
+      for (let x = 2; x <= 61; x += 1) {
+        expect(rows[row]?.[x]).not.toBe('T')
+      }
+    }
+    expect(rows[24]?.[11]).toBe('-') // spawn
+    expect(rows[22]?.[16]).toBe('.') // guide
   })
 })
