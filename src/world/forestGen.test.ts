@@ -28,6 +28,14 @@ const AREA_MAPS = {
   village: VILLAGE_MAP,
 }
 
+const FOREST_MAIN_PATH = {
+  label: 'main path',
+  fromRow: 23,
+  toRow: 25,
+  fromCol: 2,
+  toCol: 61,
+}
+
 describe('forest skeleton', () => {
   it('is a uniform 64x48 grid of known characters', () => {
     expect(FOREST_SKELETON).toHaveLength(FOREST_HEIGHT)
@@ -42,11 +50,9 @@ describe('forest skeleton', () => {
   })
 
   it('keeps the main corridor free of colliding tiles', () => {
-    expect(
-      findMapViolations(FOREST_SKELETON, undefined, {
-        corridors: [{ label: 'main path', fromRow: 23, toRow: 25, fromCol: 2, toCol: 61 }],
-      }),
-    ).toEqual([])
+    expect(findMapViolations(FOREST_SKELETON, undefined, { corridors: [FOREST_MAIN_PATH] })).toEqual(
+      [],
+    )
   })
 
   it('reaches the spawn with the 2x2 player body', () => {
@@ -161,3 +167,23 @@ describe('full-loop connectivity', () => {
 })
 
 
+
+const RULE_SEEDS = Array.from({ length: 20 }, (_, index) => index * 104729 + 17)
+
+describe('generated forest map rules', () => {
+  it('passes the shared map rules and the corridor on twenty seeds', () => {
+    for (const seed of RULE_SEEDS) {
+      const rows = generateForestMap(seed)
+      expect(
+        findMapViolations(rows, FOREST_PLACEMENTS, {
+          areaMaps: { forest: rows, village: VILLAGE_MAP },
+        }),
+        `seed ${seed} violations`,
+      ).toEqual([])
+      expect(
+        findMapViolations(rows, undefined, { corridors: [FOREST_MAIN_PATH] }),
+        `seed ${seed} corridor`,
+      ).toEqual([])
+    }
+  })
+})
