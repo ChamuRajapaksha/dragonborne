@@ -104,10 +104,46 @@ describe('generateForestMap', () => {
     const rows = generateForestMap(7)
     for (const row of FOREST_CORRIDOR_ROWS) {
       for (let x = 2; x <= 61; x += 1) {
-        expect(rows[row]?.[x]).not.toBe('T')
+        expect('-,.').toContain(rows[row]?.[x])
       }
     }
     expect(rows[24]?.[11]).toBe('-') // spawn
     expect(rows[22]?.[16]).toBe('.') // guide
   })
 })
+
+const TRUNK_SEEDS = [1, 2, 7, 42, 1337, 20260, 999983]
+
+function countChar(rows: readonly string[], char: string): number {
+  let count = 0
+  for (const row of rows) {
+    for (const cell of row) {
+      if (cell === char) count += 1
+    }
+  }
+  return count
+}
+
+describe('generated choppable trunks', () => {
+  it('keeps the trunk count in the 30-45 band on every tested seed', () => {
+    for (const seed of TRUNK_SEEDS) {
+      const trunks = countChar(generateForestMap(seed), 't')
+      expect(trunks).toBeGreaterThanOrEqual(30)
+      expect(trunks).toBeLessThanOrEqual(45)
+    }
+  })
+
+  it('never places a trunk on the world border', () => {
+    for (const seed of TRUNK_SEEDS) {
+      const rows = generateForestMap(seed)
+      expect(rows[0]).not.toContain('t')
+      expect(rows[FOREST_HEIGHT - 1]).not.toContain('t')
+      for (const row of rows) {
+        expect(row[0]).not.toBe('t')
+        expect(row[FOREST_WIDTH - 1]).not.toBe('t')
+      }
+    }
+  })
+})
+
+

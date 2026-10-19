@@ -7,7 +7,8 @@
 import type { TilePoint } from './maps'
 import { FOREST_ITEMS, FOREST_NPCS, FOREST_PORTALS, FOREST_SPAWN } from './maps'
 import type { Rng } from './rng'
-import { mulberry32, randomInt, randomPick } from './rng'
+import { mulberry32, randomInt, randomPick, shuffle } from './rng'
+import { TILE_BY_CHAR } from './tileset'
 
 export const FOREST_WIDTH = 64
 export const FOREST_HEIGHT = 48
@@ -180,14 +181,44 @@ function growGroveClusters(rows: string[][], rng: Rng): TilePoint[] {
   return scattered
 }
 
+const TRUNK_CHAR = 't'
+
+/** Choppable trunk targets per generated forest. */
+const TRUNK_MIN = 35
+const TRUNK_MAX = 45
+
+function hasWalkableNeighbour(rows: string[][], tile: TilePoint): boolean {
+  return GROWTH_DIRECTIONS.some((direction) => {
+    const char = rows[tile.y + direction.y]?.[tile.x + direction.x]
+    if (char === undefined) return false
+    const neighbour = TILE_BY_CHAR.get(char)
+    return neighbour !== undefined && !neighbour.collides
+  })
+}
+
 /**
- * Build the forest layout for a seed: skeleton + scattered groves. The same
- * seed always produces the same rows, so `chop:forest:x,y` flags and saved
- * positions stay valid for the life of a save.
+ * Turn grove-edge tiles with an open neighbour into choppable trunks. Only
+ * grove tiles qualify, so the world border stays solid canopy.
+ */
+function placeTrunks(rows: string[][], rng: Rng, scattered: TilePoint[]): void {
+  const edgeTiles = scattered.filter((tile) => hasWalkableNeighbour(rows, tile))
+  const candidates = shuffle(rng, edgeTiles)
+  const target = Math.min(randomInt(rng, TRUNK_MIN, TRUNK_MAX + 1), candidates.length)
+  for (let index = 0; index < target; index += 1) {
+    const tile = candidates[index]
+    rows[tile.y][tile.x] = TRUNK_CHAR
+  }
+}
+
+/**
+ * Build the forest layout for a seed: skeleton + scattered groves + choppable
+ * trunks along their edges. The same seed always produces the same rows, so
+ * `chop:forest:x,y` flags and saved positions stay valid for a save's life.
  */
 export function generateForestMap(seed: number): readonly string[] {
   const rng = mulberry32(seed)
   const rows = FOREST_SKELETON.map((row) => row.split(''))
-  growGroveClusters(rows, rng)
+  const scattered = growGroveClusters(rows, rng)
+  placeTrunks(rows, rng, scattered)
   return rows.map((row) => row.join(''))
 }
