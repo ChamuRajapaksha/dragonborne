@@ -65,6 +65,11 @@ export function isTreeTrunkTile(tileIndex: number | undefined): boolean {
   return tileIndex === TREE_TRUNK_INDEX
 }
 
+/** True when a terrain tile is a felled stump, left for a sapling to replant. */
+export function isStumpTile(tileIndex: number | undefined): boolean {
+  return tileIndex === STUMP_TILE_INDEX
+}
+
 const SHEET_COLUMNS = 4
 
 export function toCssColor(color: number): string {

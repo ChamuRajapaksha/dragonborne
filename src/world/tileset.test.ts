@@ -6,6 +6,7 @@ import {
   TREE_CHOP_HITS,
   TREE_TRUNK_INDEX,
   chopHitsRemaining,
+  isStumpTile,
   isTreeTrunkTile,
 } from './tileset'
 
@@ -28,6 +29,15 @@ describe('isTreeTrunkTile', () => {
     expect(isTreeTrunkTile(STUMP_TILE_INDEX)).toBe(false)
     expect(isTreeTrunkTile(0)).toBe(false)
     expect(isTreeTrunkTile(undefined)).toBe(false)
+  })
+})
+
+describe('isStumpTile', () => {
+  it('accepts only the stump index', () => {
+    expect(isStumpTile(STUMP_TILE_INDEX)).toBe(true)
+    expect(isStumpTile(TREE_TRUNK_INDEX)).toBe(false)
+    expect(isStumpTile(0)).toBe(false)
+    expect(isStumpTile(undefined)).toBe(false)
   })
 })
 
