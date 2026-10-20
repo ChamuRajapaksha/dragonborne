@@ -176,6 +176,15 @@ const itemData = [
     icon: { glyph: 'o', color: 0x7d8590 },
   },
   {
+    id: 'steel-ingot',
+    name: 'Steel Ingot',
+    description:
+      'Folded bar of steel, quenched hard. The smith trusts it more than coin and so does the garrison.',
+    kind: 'resource',
+    maxStack: 99,
+    icon: { glyph: 's', color: 0x9aa7b5 },
+  },
+  {
     id: 'oak-kindling',
     name: 'Oak Kindling',
     description: 'Split lengths that catch from a spark. The commonest currency on the roads.',
