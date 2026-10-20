@@ -117,6 +117,26 @@ bush clusters only at mass edges (no salt-and-pepper scatter), and a warmed rock
 so stones no longer read as purple. No gameplay-logic changes; tree regrowth is still out
 of scope.
 
+**Signed off in `.agents/plans/plan.md` (forest regeneration & sapling loop):** the
+hand-authored forest is replaced by a **seeded procedural layout** — the seed rides in
+world progress (same save ⇒ same forest, so coordinate-keyed `chop:forest:x,y` flags stay
+valid; a new save grows a different one). Solid canopy masses are gone: grove clusters
+scatter across the interior and a **2×2 box flood fill** from the spawn
+(`unreachedTiles` in `src/world/mapRules.ts`) seals any pocket or 1-tile crack into
+canopy, so every open tile is walkable by the player body and only the world border and
+standing trees block movement. Trunks stay on grove edges (~35–45), with light tall-grass
+fringes hugging those edges. The economy gains a **buy** side: `SHOP_OFFERS` in
+`src/economy/trade.ts` sells an Oak Sapling for 12 gold (3 logs ≈ 12 g — near-neutral, no
+infinite gold), and the trade panel renders a Buy card (Buy 1 / Buy 10, disabled when
+unaffordable) beside the Sell card, deducting gold only for units actually received. With
+a sapling selected in the hotbar, standing at a stump and pressing **E** consumes one
+sapling, clears the chop flag (`clearChopFlag`) and restores the trunk, closing the loop:
+chop → sell wood → buy sapling → replant → chop again. This sign-off covers **buying
+items** and **tree regrowth via saplings**, superseding the "buying items" and "tree
+regrowth" out-of-scope entries in the two sign-off paragraphs above. Crafting, mining,
+combat and multiplayer remain banned; passive natural regrowth (no sapling) stays out of
+scope.
+
 ---
 
 ## 6. Step-by-step setup instructions for the agent
@@ -210,6 +230,7 @@ type Quest = {
 - Flag back if "Terraria-like" is expected to include crafting/building/mining — current scope assumes it does not.
 - Do not add multiplayer or combat systems in this phase without explicit sign-off.
 - Inventory/equipment/world pickups **have** explicit sign-off and are implemented (see §5.5); crafting, building and mining do not.
-- Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); mining rocks/ore, buying items, and crafting do not.
-- The forest layout redesign **has** explicit sign-off (see §5.5): dense tree masses + trails with ~35–45 choppable trunks, map data pure in `src/world/maps.ts`, rules in `src/world/mapRules.ts`. Tree regrowth and gameplay changes remain out of scope.
+- Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); mining rocks/ore and crafting do not.
+- The forest layout redesign **has** explicit sign-off (see §5.5): a trail network with ~35–45 choppable trunks, map data pure in `src/world/maps.ts`, rules in `src/world/mapRules.ts`.
+- The forest regeneration & sapling loop **has** explicit sign-off (see §5.5): seeded procedural forest with full 2×2 walkable connectivity, a 12-gold sapling sold by the trader, and replanting felled stumps with **E** — which signs off *buying items* and *tree regrowth via saplings*, superseding those two out-of-scope entries above. Passive natural regrowth, mining, combat and multiplayer remain out of scope.
 - **Phaser version:** this project uses Phaser 4, not Phaser 3. Phaser 4 has a rebuilt WebGL renderer and a cleaner logic/rendering separation compared to Phaser 3 — use the project's Phaser 4 skill for engine-specific conventions rather than defaulting to older Phaser 3 patterns you may know from training data. If a Phaser 3 vs 4 API difference matters for a given step, flag it rather than guessing.
