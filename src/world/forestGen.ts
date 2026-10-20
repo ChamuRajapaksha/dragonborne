@@ -96,6 +96,8 @@ export function isReservedForestTile(x: number, y: number): boolean {
 }
 
 const CANOPY_CHAR = 'T'
+const GRASS_CHAR = '.'
+const TALL_GRASS_CHAR = ','
 
 /** Number of grove seed points attempted per forest. */
 const GROVE_COUNT = 30
@@ -118,7 +120,7 @@ const GROWTH_DIRECTIONS: readonly TilePoint[] = [
 ]
 
 function isGrassChar(char: string): boolean {
-  return char === '.' || char === ','
+  return char === GRASS_CHAR || char === TALL_GRASS_CHAR
 }
 
 function canGrowInto(rows: string[][], x: number, y: number): boolean {
@@ -238,11 +240,36 @@ function sealUnreachable(rows: string[][]): void {
   }
 }
 
+/** Odds an eligible grove-edge tile turns into tall grass; a light fringe. */
+const FRINGE_CHANCE = 0.5
+
+/**
+ * Sprinkle tall grass over the open tiles hugging grove edges. Only tiles that
+ * touch a canopy or a trunk qualify, and reserved clearings stay plain, so the
+ * fringe reads as a soft border — never salt-and-pepper singles in the open
+ * field. Runs last: it only swaps walkable `.` for walkable `,`, so the
+ * connectivity pass above still holds and existing seeds keep their groves,
+ * trunks and chop flags byte-for-byte.
+ */
+function fringeGroveEdges(rows: string[][], rng: Rng): void {
+  for (let y = 1; y < FOREST_HEIGHT - 1; y += 1) {
+    for (let x = 1; x < FOREST_WIDTH - 1; x += 1) {
+      if (rows[y][x] !== GRASS_CHAR) continue
+      if (isReservedForestTile(x, y)) continue
+      const atGroveEdge = GROWTH_DIRECTIONS.some((direction) => {
+        const neighbour = rows[y + direction.y]?.[x + direction.x]
+        return neighbour === CANOPY_CHAR || neighbour === TRUNK_CHAR
+      })
+      if (atGroveEdge && rng() < FRINGE_CHANCE) rows[y][x] = TALL_GRASS_CHAR
+    }
+  }
+}
+
 /**
  * Build the forest layout for a seed: skeleton + scattered groves + choppable
- * trunks along their edges, with unreachable pockets sealed. The same seed
- * always produces the same rows, so `chop:forest:x,y` flags and saved
- * positions stay valid for a save's life.
+ * trunks along their edges, with unreachable pockets sealed and a tall-grass
+ * fringe on the grove edges. The same seed always produces the same rows, so
+ * `chop:forest:x,y` flags and saved positions stay valid for a save's life.
  */
 export function generateForestMap(seed: number): readonly string[] {
   const rng = mulberry32(seed)
@@ -250,5 +277,6 @@ export function generateForestMap(seed: number): readonly string[] {
   const scattered = growGroveClusters(rows, rng)
   placeTrunks(rows, rng, scattered)
   sealUnreachable(rows)
+  fringeGroveEdges(rows, rng)
   return rows.map((row) => row.join(''))
 }

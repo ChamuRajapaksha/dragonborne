@@ -166,6 +166,46 @@ describe('full-loop connectivity', () => {
   })
 })
 
+const FRINGE_SEEDS = [1, 7, 42, 1337, 20260, 999983]
+
+function touchesGrove(rows: readonly string[], x: number, y: number): boolean {
+  const neighbours = [
+    rows[y - 1]?.[x],
+    rows[y + 1]?.[x],
+    rows[y]?.[x - 1],
+    rows[y]?.[x + 1],
+  ]
+  return neighbours.some((char) => char === 'T' || char === 't')
+}
+
+describe('tall grass fringes', () => {
+  it('keeps every fringe tile touching a canopy or a trunk', () => {
+    for (const seed of FRINGE_SEEDS) {
+      const rows = generateForestMap(seed)
+      for (let y = 0; y < FOREST_HEIGHT; y += 1) {
+        for (let x = 0; x < FOREST_WIDTH; x += 1) {
+          if (rows[y]?.[x] !== ',') continue
+          expect(touchesGrove(rows, x, y), `seed ${seed} fringe at ${x},${y}`).toBe(true)
+        }
+      }
+    }
+  })
+
+  it('produces some fringe on every tested seed', () => {
+    for (const seed of FRINGE_SEEDS) {
+      expect(countChar(generateForestMap(seed), ','), `seed ${seed}`).toBeGreaterThan(0)
+    }
+  })
+
+  it('leaves the corridor and the guide clearing as plain ground', () => {
+    const rows = generateForestMap(42)
+    for (const row of FOREST_CORRIDOR_ROWS) {
+      expect(rows[row]).not.toContain(',')
+    }
+    expect(rows[22]?.[16]).toBe('.') // guide's tile
+  })
+})
+
 
 
 const RULE_SEEDS = Array.from({ length: 20 }, (_, index) => index * 104729 + 17)
