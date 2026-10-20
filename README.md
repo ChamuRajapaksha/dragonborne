@@ -69,23 +69,32 @@ the Vitest suite.
    it up (an item-name hint appears when you are close). Pickups respawn when you leave and
    re-enter the area, except the few flagged as one-time. If your pack is full the item
    stays on the ground rather than being consumed.
-9. The Thornwood is a dense wood split by a trail network: a main dirt corridor east–west
-   across the map, a central north trail and an east north trail through the tree masses,
-   and a south trail that ends in a tidy logging clearing. Dozens of choppable **tree
-   trunks** line the mass edges along those trails. A one-time **Woodcutter's Axe** lies on
-   the ground east of the fire ring — pick it up and select it in the hotbar (**1**–**9**).
+9. The Thornwood is **generated from a seed kept in your save**: randomised tree groves
+   scatter across the interior, and the open ground between them is verified walkable by
+   your two-tile-wide body — only the world border and standing trees block you, so you can
+   loop the whole map. A save's forest is always the same (chop flags stay valid); a new
+   save grows a different one. Dozens of choppable **tree trunks** ring the grove edges,
+   with tall-grass fringes hugging them. A one-time **Woodcutter's Axe** lies on the
+   ground east of the fire ring — pick it up and select it in the hotbar (**1**–**9**).
    Stand next to a trunk and press **E** three times: the trunk falls to a stump and drops
    wood logs into your pack (hotbar first). Without the axe selected the hint reads "Need
    an axe", and if your pack is full the tree holds at one hit rather than losing the wood.
    Felled trees stay stumps across reloads.
 10. Take the wood to **Hollis the Trader** in the Emberhold market (south of the main road).
-    Press **E** to open the trade panel, which shows your gold and how many logs you carry,
-    then **Sell 1**, **Sell 10**, or **Sell All** — 4 gold per log, paid instantly. Gold is
-    shown on a HUD line and persists in `dragonborne.wallet`.
-11. **Reload** the page: you come back in the area and at the coordinates you left, and the
+    Press **E** to open the trade panel, which shows your gold and how many logs you carry.
+    **Sell 1**, **Sell 10**, or **Sell All** pays 4 gold per log, instantly. The panel also
+    has a **Buy** card: **Oak Saplings** cost 12 gold each (**Buy 1** / **Buy 10**, disabled
+    while you cannot afford them) — three logs ≈ twelve gold, so the loop is near-neutral
+    with no infinite-gold trick. Gold is shown on a HUD line and persists in
+    `dragonborne.wallet`.
+11. **Replant:** select the sapling in the hotbar, stand next to a stump, and press **E**.
+    One sapling is consumed, the trunk comes back, and the stump no longer reappears on
+    reload — so the loop closes: chop → sell wood → buy a sapling → replant → chop again.
+    The hint reads "Need a sapling" when the wrong item is selected or you carry none.
+12. **Reload** the page: you come back in the area and at the coordinates you left, and the
     intro card does not reappear. Felled trees, gold, and everything else survive. Walk back
     west through the village portal to return to the Thornwood.
-12. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
+13. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
     `localStorage.removeItem('dragonborne.character')` sends you back to character creation;
     `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
     area, position, and intro-card flags, so the next load drops you back on the fire ring
@@ -97,34 +106,36 @@ the Vitest suite.
 ## Status
 
 The forest → village vertical slice, the inventory plan, the chopping/wood/trading
-plan, **and** the forest layout redesign are **complete**: create character → wake in the
-forest → find the axe → chop trees for wood → carry it to Emberhold → sell it to Hollis
-the Trader for gold. You start with a traveller's kit, pick items up off the ground, and
+plan, the forest layout redesign, **and** the forest regeneration loop are **complete**:
+create character → wake in the forest → find the axe → chop trees for wood → carry it to
+Emberhold → sell it to Hollis the Trader for gold → buy a sapling back and replant the
+stump. You start with a traveller's kit, pick items up off the ground, and
 move stacks around a 9-slot hotbar and a 27-slot pack with click-to-pick-up/place,
 right-click half/single, or real drag & drop; wear gear in four equipment slots, and its
 stat bonuses feed into your character — enough to unlock stat-gated quests. The Thornwood
-is now a dense canopy of tree masses cut by a real trail network (main corridor, two north
-trails, a south trail to a logging clearing) with dozens of reachable choppable trunks,
-warm-toned rocks, and tall-grass/bush clusters only at the wood edges. Area, position,
-flags, inventory, gold, felled trees, and completed quests all survive a reload. All
-placeholder visuals.
+is now grown procedurally from the seed stored in your save: randomised groves across an
+interior guaranteed to loop end to end, ~35–45 choppable trunks on the grove edges,
+tall-grass fringes at those edges, warm-toned rocks, and the hand-authored village as-is.
+Area, position, flags, inventory, gold, felled trees, and completed quests all survive a
+reload. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
-forest/village world (`first_plan.md`) and the 41-commit inventory/equipment/pickups plan
-(`second_plan.md`) — live locally (and untracked, like `.agents/` itself) at
-`.agents/plans/`.
+forest/village world (`first_plan.md`), the 41-commit inventory/equipment/pickups plan
+(`second_plan.md`), and the forest regeneration & sapling loop plan (`plan.md`) —
+live locally (and untracked, like `.agents/` itself) at `.agents/plans/`.
 
 ## Current scope notes
 
 - Placeholder art only (shapes/rectangles) — no final art in this phase.
-- Two areas (`forest`, `village`), each a 64 × 48 ASCII map in `src/world/maps.ts`,
-  rendered as a collidable tilemap and linked by portals. The maps are pure data (no
-  engine imports) and are checked by unit tests (`src/world/mapRules.ts` +
-  `areas.test.ts`): uniform shape, walkable placements, spawn reachability to every
-  placement and trunk, an obstruction-free main corridor, and a minimum choppable-trunk
-  count. The forest layout is dense tree masses + trails, not scattered tiles. Adding an
-  area is a data addition.
+- Two areas (`forest`, `village`), each 64 × 48 tiles, rendered as a collidable tilemap and
+  linked by portals. The village stays hand-authored ASCII in `src/world/maps.ts`; the
+  forest is **grown from a seed** in `src/world/forestGen.ts` (seed persisted in world
+  progress — same save, same forest). Both are pure data (no engine imports) and are
+  checked by unit tests (`src/world/mapRules.ts` + `areas.test.ts`): uniform shape,
+  walkable placements, spawn reachability to every placement and trunk, an obstruction-free
+  main corridor (rows 23–25), a minimum choppable-trunk count, and — for the forest —
+  every open tile reachable by the 2×2 player body. Adding an area is a data addition.
 - Class, quest and item systems are **data-driven**: `src/character/classes.ts`,
   `src/story/quests.ts`, `src/story/npcs.ts`, and `src/inventory/catalog.ts` are pure data.
   Quest availability is a filter (`getQuestsForNpc(npcId, classId)`) and quest rewards are
@@ -133,12 +144,14 @@ forest/village world (`first_plan.md`) and the 41-commit inventory/equipment/pic
 - Inventory is in scope by explicit sign-off: a 9-slot hotbar, a 27-slot pack, four
   equipment slots with stat bonuses, world pickups (walk up + **E**), and quest item
   rewards. **Still out of scope:** crafting, and combat.
-- Tree felling, the gold wallet, and selling wood to a trader are in scope by explicit
-  sign-off (the `fifth_plan.md` override). The axe must be the selected hotbar item; trees
-  take three hits, drop wood, and stay chopped forever. The trader buys wood only, at a
-  data-driven price (`src/economy/trade.ts`); gold persists in `dragonborne.wallet` and has
-  no spend sink yet. **Still out of scope:** mining rocks/ore, buying items, crafting,
-  durability, and tree regrowth.
+- Tree felling, the gold wallet, and trading wood are in scope by explicit sign-off (the
+  `fifth_plan.md` override). The axe must be the selected hotbar item; trees take three
+  hits, drop wood, and leave a permanent stump until replanted. The trader buys wood and
+  sells saplings, both from data-driven tables (`src/economy/trade.ts`: 4 g per log, 12 g
+  per sapling); gold persists in `dragonborne.wallet`. **Buying items** and **tree
+  regrowth** are signed off by the regeneration plan — but only via the sapling loop:
+  purchase a sapling, select it at a stump, press **E**. **Still out of scope:** mining
+  rocks/ore, crafting, durability, and passive regrowth that needs no sapling.
 - Persistence is localStorage only: `dragonborne.character` for the character,
   `dragonborne.progress` for area, position, and flags (including chop flags),
   `dragonborne.inventory` for the inventory (versioned schema), `dragonborne.wallet` for
@@ -158,16 +171,17 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/story/` — `Quest`/`NpcDefinition` types, quest/npc data (including item rewards),
   class-availability and per-NPC filters, completion progress
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `maps.ts` (pure ASCII
-  map data + NPC/portal/item placements), `mapRules.ts` (pure map validation rules),
-  `areas.ts` (area definitions composing the maps), `buildArea.ts` (terrain +
-  markers + portals + pickups), `progress.ts` (world position/flag save-load)
+  village map + NPC/portal/item placements), `mapRules.ts` (pure map validation rules),
+  `forestGen.ts` (seeded procedural forest with 2×2 connectivity), `areas.ts` (area
+  definitions composing the maps), `buildArea.ts` (terrain + markers + portals + pickups),
+  `progress.ts` (world position/flag/seed save-load)
 - `src/inventory/` — item types and catalog, pure inventory logic (add/move/split/equip,
   effective stats, remove-everywhere), versioned storage, and the subscribing store
   singleton
 - `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, and the
-  trader price table
+  trader's buy/sell price tables
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress), `WorldScene`
-  (movement, NPCs, portals, pickups, chopping, HUD)
+  (movement, NPCs, portals, pickups, chopping, replanting, HUD)
 - `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts`, `src/tradePanel.ts` —
   DOM overlays for character creation, quests, area intro text, and trading
 - `src/hotbar.ts`, `src/inventoryPanel.ts`, `src/itemIcon.ts`, `src/itemTooltip.ts`,
