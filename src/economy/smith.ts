@@ -72,3 +72,33 @@ export const SMITH_OFFERS: readonly SmithOffer[] = offerData
 export function getSmithOffer(itemId: string): SmithOffer | undefined {
   return SMITH_OFFERS.find((offer) => offer.itemId === itemId)
 }
+
+/** What is still missing to pay for an offer: coin short, then each material short. */
+export interface SmithShortfall {
+  gold: number
+  items: SmithItemCost[]
+}
+
+/**
+ * What `gold` and `held` (itemId → count across slots + hotbar) still lack to
+ * cover `offer`, or `null` when the whole payment is there. The full cost is
+ * validated up front, so a purchase can never be charged in part.
+ */
+export function smithShortfall(
+  gold: number,
+  held: Readonly<Record<string, number>>,
+  offer: SmithOffer,
+): SmithShortfall | null {
+  const missingGold = Math.max(0, offer.cost.gold - gold)
+  const missingItems: SmithItemCost[] = []
+  for (const line of offer.cost.items) {
+    const missing = Math.max(0, line.quantity - (held[line.itemId] ?? 0))
+    if (missing > 0) {
+      missingItems.push({ itemId: line.itemId, quantity: missing })
+    }
+  }
+  if (missingGold === 0 && missingItems.length === 0) {
+    return null
+  }
+  return { gold: missingGold, items: missingItems }
+}
