@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { SMITH_MATERIAL_IDS, SMITH_OFFERS, getSmithOffer } from './smith'
+import { SMITH_MATERIAL_IDS, SMITH_OFFERS, getSmithOffer, smithShortfall } from './smith'
 import { getItemById } from '../inventory/catalog'
 
 describe('smith offers', () => {
@@ -36,5 +36,55 @@ describe('smith offers', () => {
     expect(getSmithOffer('iron-sword')?.cost.gold).toBe(50)
     expect(getSmithOffer('sapling')).toBeUndefined()
     expect(getSmithOffer('')).toBeUndefined()
+  })
+})
+
+describe('smithShortfall', () => {
+  const sword = getSmithOffer('iron-sword')!
+  const dagger = getSmithOffer('worn-dagger')!
+
+  it('returns null when coin and materials cover the cost', () => {
+    expect(smithShortfall(50, { 'steel-ingot': 2 }, sword)).toBeNull()
+    expect(smithShortfall(99, { 'steel-ingot': 5 }, sword)).toBeNull()
+    expect(smithShortfall(15, { 'iron-ore': 2 }, dagger)).toBeNull()
+  })
+
+  it('reports the coin that is missing when the materials are held', () => {
+    expect(smithShortfall(40, { 'steel-ingot': 2 }, sword)).toEqual({
+      gold: 10,
+      items: [],
+    })
+  })
+
+  it('reports the materials that are missing when the coin is held', () => {
+    expect(smithShortfall(50, { 'steel-ingot': 1 }, sword)).toEqual({
+      gold: 0,
+      items: [{ itemId: 'steel-ingot', quantity: 1 }],
+    })
+  })
+
+  it('reports coin and materials together when short on both', () => {
+    expect(smithShortfall(10, {}, dagger)).toEqual({
+      gold: 5,
+      items: [{ itemId: 'iron-ore', quantity: 2 }],
+    })
+  })
+
+  it('treats a held count it has never seen as none', () => {
+    expect(smithShortfall(15, { 'worn-dagger': 4 }, dagger)).toEqual({
+      gold: 0,
+      items: [{ itemId: 'iron-ore', quantity: 2 }],
+    })
+  })
+
+  it('treats negative or absent coin as nothing to spend', () => {
+    expect(smithShortfall(-5, { 'iron-ore': 2 }, dagger)?.gold).toBe(20)
+    expect(smithShortfall(0, { 'iron-ore': 2 }, dagger)?.gold).toBe(15)
+  })
+
+  it('never shortens a material line below what the offer asks', () => {
+    expect(smithShortfall(50, { 'steel-ingot': 1 }, sword)?.items).toEqual([
+      { itemId: 'steel-ingot', quantity: 1 },
+    ])
   })
 })
