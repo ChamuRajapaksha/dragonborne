@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { SMITH_MATERIAL_IDS, SMITH_OFFERS, getSmithOffer, smithShortfall } from './smith'
+import {
+  SMITH_MATERIAL_IDS,
+  SMITH_OFFERS,
+  formatSmithCost,
+  getSmithOffer,
+  smithShortfall,
+} from './smith'
 import { getItemById } from '../inventory/catalog'
 
 describe('smith offers', () => {
@@ -86,5 +92,36 @@ describe('smithShortfall', () => {
     expect(smithShortfall(50, { 'steel-ingot': 1 }, sword)?.items).toEqual([
       { itemId: 'steel-ingot', quantity: 1 },
     ])
+  })
+})
+
+describe('formatSmithCost', () => {
+  const nameFor = (itemId: string) => getItemById(itemId)?.name ?? itemId
+
+  it('reads an iron-tier ware as gold and iron ore', () => {
+    expect(formatSmithCost(getSmithOffer('worn-dagger')!, nameFor)).toBe(
+      '15 gold + 2 Iron Ore',
+    )
+  })
+
+  it('reads a steel-tier ware as gold and steel ingots', () => {
+    expect(formatSmithCost(getSmithOffer('iron-sword')!, nameFor)).toBe(
+      '50 gold + 2 Steel Ingot',
+    )
+  })
+
+  it('takes item names from the injected resolver only', () => {
+    const label = formatSmithCost(getSmithOffer('axe')!, (itemId) => `<${itemId}>`)
+    expect(label).toBe('20 gold + 3 <iron-ore>')
+  })
+
+  it('labels every ware with its gold and each material line', () => {
+    for (const offer of SMITH_OFFERS) {
+      const label = formatSmithCost(offer, nameFor)
+      expect(label.startsWith(`${offer.cost.gold} gold`)).toBe(true)
+      for (const line of offer.cost.items) {
+        expect(label).toContain(`${line.quantity} ${nameFor(line.itemId)}`)
+      }
+    }
   })
 })
