@@ -102,3 +102,18 @@ export function smithShortfall(
   }
   return { gold: missingGold, items: missingItems }
 }
+
+/**
+ * A readable price label such as `"50 gold + 2 Steel Ingot"`. The item names
+ * come from `nameFor` so this module never has to know the catalog.
+ */
+export function formatSmithCost(
+  offer: SmithOffer,
+  nameFor: (itemId: string) => string,
+): string {
+  const parts = [`${offer.cost.gold} gold`]
+  for (const line of offer.cost.items) {
+    parts.push(`${line.quantity} ${nameFor(line.itemId)}`)
+  }
+  return parts.join(' + ')
+}
