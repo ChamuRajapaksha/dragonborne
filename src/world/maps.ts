@@ -125,6 +125,8 @@ export const FOREST_ITEMS: readonly AreaItemPlacement[] = [
   { itemId: 'emberglass', x: 6, y: 16, onceFlag: true },
   { itemId: 'worn-dagger', x: 57, y: 26, onceFlag: true },
   { itemId: 'axe', x: 58, y: 24, onceFlag: true },
+  { itemId: 'steel-ingot', x: 8, y: 15, onceFlag: true },
+  { itemId: 'steel-ingot', x: 59, y: 26, onceFlag: true },
 ]
 
 export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = [
@@ -133,4 +135,7 @@ export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = [
   { itemId: 'coil-rope', x: 17, y: 19 },
   { itemId: 'rough-hides', x: 40, y: 39, quantity: 2 },
   { itemId: 'leather-cap', x: 15, y: 35, onceFlag: true },
+  { itemId: 'steel-ingot', x: 38, y: 12, onceFlag: true },
+  { itemId: 'steel-ingot', x: 17, y: 36, onceFlag: true },
+  { itemId: 'steel-ingot', x: 42, y: 40, onceFlag: true },
 ]
