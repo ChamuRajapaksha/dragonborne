@@ -35,7 +35,10 @@ const questData = [
     availableToClasses: ['warrior'],
     npcId: 'village-smith',
     requiresStats: { strength: 4 },
-    rewards: [{ itemId: 'leather-cap' }],
+    rewards: [
+      { itemId: 'leather-cap' },
+      { itemId: 'steel-ingot', quantity: 2 },
+    ],
   },
   {
     id: 'smugglers-basin',
@@ -45,7 +48,10 @@ const questData = [
     availableToClasses: ['rogue'],
     npcId: 'village-smith',
     requiresStats: { agility: 4 },
-    rewards: [{ itemId: 'bog-reed', quantity: 5 }],
+    rewards: [
+      { itemId: 'bog-reed', quantity: 5 },
+      { itemId: 'steel-ingot', quantity: 2 },
+    ],
   },
   {
     id: 'thornwood-briars',
@@ -55,7 +61,10 @@ const questData = [
     availableToClasses: ['ranger'],
     npcId: 'village-smith',
     requiresStats: { agility: 4 },
-    rewards: [{ itemId: 'oak-kindling', quantity: 5 }],
+    rewards: [
+      { itemId: 'oak-kindling', quantity: 5 },
+      { itemId: 'steel-ingot', quantity: 2 },
+    ],
   },
   {
     id: 'archivists-trove',
