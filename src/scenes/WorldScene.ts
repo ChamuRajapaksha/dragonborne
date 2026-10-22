@@ -6,7 +6,7 @@ import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
 import { closeTradePanel, isTradePanelOpen, showTradePanel } from '../tradePanel'
-import { showSmithPanel } from '../smithPanel'
+import { showSmithPanel, closeSmithPanel, isSmithPanelOpen } from '../smithPanel'
 import {
   addItem,
   effectiveStats,
@@ -146,6 +146,7 @@ export default class WorldScene extends Phaser.Scene {
   private introCardOpen = false
   private inventoryOpen = false
   private tradeOpen = false
+  private smithOpen = false
   private unsubscribeInventory: (() => void) | null = null
   private unsubscribeGold: (() => void) | null = null
   private character: Character | undefined = undefined
@@ -173,6 +174,7 @@ export default class WorldScene extends Phaser.Scene {
     this.introCardOpen = false
     this.inventoryOpen = false
     this.tradeOpen = false
+    this.smithOpen = false
     this.unsubscribeInventory = null
     this.unsubscribeGold = null
     this.idleSeconds = 0
@@ -347,6 +349,7 @@ export default class WorldScene extends Phaser.Scene {
   update(_time: number, delta: number): void {
     this.syncInventoryFlag()
     this.syncTradeFlag()
+    this.syncSmithFlag()
 
     let vx = 0
     let vy = 0
@@ -356,7 +359,7 @@ export default class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1
     if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1
 
-    if (this.inventoryOpen || this.tradeOpen) {
+    if (this.inventoryOpen || this.tradeOpen || this.smithOpen) {
       vx = 0
       vy = 0
     }
@@ -416,12 +419,14 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     // The inventory sets `popupOpen` too, but walk-away must never dismiss it —
-    // only the I key or the panel's own Close button does.
+    // only the I key or the panel's own Close button does. The smith panel owns
+    // its own walk-away below, because his quest popup rides on top of it.
     if (
       this.popupOpen &&
       !this.introCardOpen &&
       !this.inventoryOpen &&
       !this.tradeOpen &&
+      !this.smithOpen &&
       !nearestNpc
     ) {
       closeQuestPopup()
@@ -434,6 +439,15 @@ export default class WorldScene extends Phaser.Scene {
     if (this.tradeOpen && !nearestNpc) {
       closeTradePanel()
       this.tradeOpen = false
+      this.popupOpen = false
+    }
+
+    // Walk-away closes the shop and the quest popup layered on top of it, so
+    // Brennan's jobs list never outlives the visit that opened it.
+    if (this.smithOpen && !nearestNpc) {
+      closeSmithPanel()
+      closeQuestPopup()
+      this.smithOpen = false
       this.popupOpen = false
     }
 
@@ -451,6 +465,7 @@ export default class WorldScene extends Phaser.Scene {
           effectiveStats(this.character.stats, getInventory()),
         )
         this.popupOpen = true
+        this.smithOpen = true
       } else {
         // Gear must be able to unlock stat-gated quests — the popup never shows
         // while the inventory is open, so this snapshot cannot go stale.
@@ -516,6 +531,13 @@ export default class WorldScene extends Phaser.Scene {
   private syncTradeFlag(): void {
     if (!this.tradeOpen || isTradePanelOpen()) return
     this.tradeOpen = false
+    this.popupOpen = false
+  }
+
+  /** Same DOM-existence reconciliation again, for the smith — Close button. */
+  private syncSmithFlag(): void {
+    if (!this.smithOpen || isSmithPanelOpen()) return
+    this.smithOpen = false
     this.popupOpen = false
   }
 
