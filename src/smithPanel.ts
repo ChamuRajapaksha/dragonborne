@@ -11,11 +11,21 @@ import {
   formatGold,
   formatSmithCost,
   getGold,
+  getSmithOffer,
   smithShortfall,
+  updateGold,
 } from './economy'
-import type { SmithOffer } from './economy'
-import { countItem, getItemById, getInventory } from './inventory'
+import type { SmithOffer, SmithShortfall } from './economy'
+import {
+  addItem,
+  countItem,
+  getItemById,
+  getInventory,
+  removeItemEverywhere,
+  updateInventory,
+} from './inventory'
 import type { NpcDefinition } from './story'
+import { showToast } from './toast'
 
 const PANEL_ID = 'smith-popup'
 
@@ -69,6 +79,55 @@ function wareView(offer: SmithOffer, gold: number, held: Record<string, number>)
   }
 }
 
+/** Human-readable toasts for a failed payment — coin short, then materials. */
+function nameShortfall(missing: SmithShortfall): string[] {
+  const messages: string[] = []
+  if (missing.gold > 0) messages.push(`Need ${missing.gold} more gold`)
+  for (const line of missing.items) {
+    messages.push(`Need ${line.quantity} more ${nameFor(line.itemId)}`)
+  }
+  return messages
+}
+
+/**
+ * Buys one ware. The whole payment is pre-validated, then the ware is added
+ * first — a full pack toasts and charges nothing — and gold plus materials are
+ * only deducted for a ware that actually landed.
+ */
+function buy(itemId: string): void {
+  const offer = getSmithOffer(itemId)
+  if (!offer) return
+
+  const missing = smithShortfall(getGold(), heldByMaterial(), offer)
+  if (missing) {
+    for (const message of nameShortfall(missing)) showToast(message)
+    return
+  }
+
+  let received = 0
+  updateInventory((current) => {
+    const intoHotbar = addItem(current, itemId, 1, 'hotbar')
+    const result =
+      intoHotbar.remainder > 0
+        ? addItem(intoHotbar.state, itemId, intoHotbar.remainder, 'slots')
+        : intoHotbar
+    received = result.added
+    return result.state
+  })
+
+  if (received <= 0) {
+    showToast('Your pack is full')
+    return
+  }
+
+  updateGold(-offer.cost.gold)
+  for (const line of offer.cost.items) {
+    updateInventory((current) => removeItemEverywhere(current, line.itemId, line.quantity).state)
+  }
+
+  showToast(`Bought ${nameFor(itemId)} for ${formatSmithCost(offer, nameFor)}`)
+}
+
 export function showSmithPanel(npc: NpcDefinition): void {
   closeSmithPanel()
 
@@ -108,6 +167,13 @@ export function showSmithPanel(npc: NpcDefinition): void {
         <button type="button" class="trade-close">Close</button>
       </div>
     `
+
+    overlay.querySelectorAll<HTMLButtonElement>('[data-smith-buy]').forEach((button) => {
+      button.addEventListener('click', () => {
+        buy(button.dataset.smithBuy!)
+        render()
+      })
+    })
 
     overlay.querySelector('.trade-close')!.addEventListener('click', () => {
       overlay.remove()
