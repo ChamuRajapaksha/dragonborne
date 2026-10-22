@@ -6,6 +6,7 @@ import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
 import { closeTradePanel, isTradePanelOpen, showTradePanel } from '../tradePanel'
+import { showSmithPanel } from '../smithPanel'
 import {
   addItem,
   effectiveStats,
@@ -441,6 +442,15 @@ export default class WorldScene extends Phaser.Scene {
         showTradePanel(nearestNpc)
         this.popupOpen = true
         this.tradeOpen = true
+      } else if (nearestNpc.service === 'smith') {
+        // Same stat snapshot reasoning as the quest popup: the pack cannot be
+        // opened over the shop, so gear bonuses cannot change mid-visit.
+        showSmithPanel(
+          nearestNpc,
+          this.character.classId,
+          effectiveStats(this.character.stats, getInventory()),
+        )
+        this.popupOpen = true
       } else {
         // Gear must be able to unlock stat-gated quests — the popup never shows
         // while the inventory is open, so this snapshot cannot go stale.
