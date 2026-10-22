@@ -276,6 +276,24 @@ body {
   background: #4a4a58;
 }
 
+#smith-popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/*
+ * Ten wares stack taller than the canvas, so the smith variant of the trade
+ * panel scrolls instead of pushing its Close button off-screen.
+ */
+.smith-panel {
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
 #intro-card {
   position: fixed;
   inset: 0;
