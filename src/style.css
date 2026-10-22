@@ -294,6 +294,12 @@ body {
   overflow-y: auto;
 }
 
+.smith-jobs {
+  display: block;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
 #intro-card {
   position: fixed;
   inset: 0;

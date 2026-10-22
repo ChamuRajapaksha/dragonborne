@@ -4,7 +4,8 @@
  * and material counts stay truthful without the scene re-driving it. Every ware
  * costs gold AND materials, so affordability folds through `smithShortfall`
  * before the buy button is even offered — the purchase flow never sees a cost
- * it cannot charge in full.
+ * it cannot charge in full. An "Ask about work" button layers his quest popup
+ * on top of the shop; closing quests lands back on the wares.
  */
 import {
   SMITH_OFFERS,
@@ -25,6 +26,7 @@ import {
   updateInventory,
 } from './inventory'
 import type { NpcDefinition } from './story'
+import { showQuestPopup } from './questPopup'
 import { showToast } from './toast'
 
 const PANEL_ID = 'smith-popup'
@@ -128,7 +130,11 @@ function buy(itemId: string): void {
   showToast(`Bought ${nameFor(itemId)} for ${formatSmithCost(offer, nameFor)}`)
 }
 
-export function showSmithPanel(npc: NpcDefinition): void {
+export function showSmithPanel(
+  npc: NpcDefinition,
+  classId: string,
+  stats: Record<string, number>,
+): void {
   closeSmithPanel()
 
   const overlay = document.createElement('div')
@@ -164,6 +170,7 @@ export function showSmithPanel(npc: NpcDefinition): void {
         </div>`,
           )
           .join('')}
+        <button type="button" class="smith-jobs">Ask about work</button>
         <button type="button" class="trade-close">Close</button>
       </div>
     `
@@ -173,6 +180,10 @@ export function showSmithPanel(npc: NpcDefinition): void {
         buy(button.dataset.smithBuy!)
         render()
       })
+    })
+
+    overlay.querySelector('.smith-jobs')!.addEventListener('click', () => {
+      showQuestPopup(npc, classId, stats)
     })
 
     overlay.querySelector('.trade-close')!.addEventListener('click', () => {
