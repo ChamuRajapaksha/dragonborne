@@ -21,6 +21,7 @@ export const NPCS: readonly NpcDefinition[] = [
     id: 'village-smith',
     name: 'Brennan the Smith',
     role: 'Smith',
+    service: 'smith',
     greeting:
       'Emberhold keeps itself armed and it keeps itself fed. Pick the work that suits your hands, not the work that sounds grandest.',
   },
