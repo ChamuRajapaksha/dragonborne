@@ -1,5 +1,5 @@
 /** What pressing E on this NPC opens. Defaults to the quest popup. */
-export type NpcService = 'quest' | 'trade'
+export type NpcService = 'quest' | 'trade' | 'smith'
 
 export interface NpcDefinition {
   id: string
