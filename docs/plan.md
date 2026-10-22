@@ -137,6 +137,23 @@ regrowth" out-of-scope entries in the two sign-off paragraphs above. Crafting, m
 combat and multiplayer remain banned; passive natural regrowth (no sapling) stays out of
 scope.
 
+**Signed off in `.agents/plans/plan.md` (Brennan's smithy — weapons & tools):** a second
+NPC service, `smith`, gives Brennan a dual role: pressing **E** opens a DOM shop panel
+(`src/smithPanel.ts`, mirroring the trader's) that sells ten existing catalog items —
+**Buy 1 only** — from a single tunable data table (`SMITH_OFFERS` in
+`src/economy/smith.ts`). Every ware costs **gold AND materials**, never either/or:
+iron-tier goods ask for `iron-ore` (the existing farmable village pickup), steel-tier
+goods (Iron Sword, Ember Staff) for a new `steel-ingot` resource. Payment is
+pre-validated by `smithShortfall` over gold plus material counts across slots and
+hotbar, so a purchase is all-or-nothing and a short payment toasts the exact
+shortfall. Steel enters the economy only through five one-time `onceFlag` ground
+pickups (two forest, three village) and `+2 steel-ingot` on each of Brennan's three
+class-filtered quests — no smelting, no crafting. An **Ask about work** button layers
+his existing quest popup on top of the shop (closing quests returns to the wares), and
+walk-away closes both, mirroring the trade panel's flags and DOM-existence sync. This
+sign-off covers **buying wares for gold + materials** only; smelting, mining, combat
+and multiplayer remain banned.
+
 ---
 
 ## 6. Step-by-step setup instructions for the agent
@@ -233,4 +250,5 @@ type Quest = {
 - Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); mining rocks/ore and crafting do not.
 - The forest layout redesign **has** explicit sign-off (see §5.5): a trail network with ~35–45 choppable trunks, map data pure in `src/world/maps.ts`, rules in `src/world/mapRules.ts`.
 - The forest regeneration & sapling loop **has** explicit sign-off (see §5.5): seeded procedural forest with full 2×2 walkable connectivity, a 12-gold sapling sold by the trader, and replanting felled stumps with **E** — which signs off *buying items* and *tree regrowth via saplings*, superseding those two out-of-scope entries above. Passive natural regrowth, mining, combat and multiplayer remain out of scope.
+- Brennan's smithy **has** explicit sign-off (see §5.5): a `smith` NPC service selling ten wares for gold AND iron-ore/steel-ingot from the data table in `src/economy/smith.ts`, steel fed only by five one-time pickups and quest rewards, with an **Ask about work** button layering his class-filtered quests on top. Smelting, mining, combat and multiplayer remain out of scope.
 - **Phaser version:** this project uses Phaser 4, not Phaser 3. Phaser 4 has a rebuilt WebGL renderer and a cleaner logic/rendering separation compared to Phaser 3 — use the project's Phaser 4 skill for engine-specific conventions rather than defaulting to older Phaser 3 patterns you may know from training data. If a Phaser 3 vs 4 API difference matters for a given step, flag it rather than guessing.

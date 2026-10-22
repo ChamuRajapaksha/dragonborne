@@ -37,11 +37,12 @@ the Vitest suite.
    east along the dirt track toward the purple portal.
 4. Step onto the portal and press **E** to travel to **Emberhold** — you arrive at the west
    gate. The waypoint line disappears here, because you have arrived.
-5. Walk up to a gold NPC marker — a "Press E" hint appears — and press **E**. Brennan the
-   Smith, Maerwyn the Archivist, and Odile the Host each greet you and offer their own
-   quests, filtered to **your class**. A Warrior sees different work from a Mage; create a
-   second character to compare. The Stranger in the forest gives every class the same first
-   errand: *The Road to Emberhold*.
+5. Walk up to a gold NPC marker — a "Press E" hint appears — and press **E**. Maerwyn the
+   Archivist and Odile the Host each greet you and offer their own quests, filtered to
+   **your class**. Brennan the Smith opens his smithy instead (see the smithy step below) —
+   his quests live behind its **Ask about work** button. A Warrior sees different work from
+   a Mage; create a second character to compare. The Stranger in the forest gives every
+   class the same first errand: *The Road to Emberhold*.
 6. Press **Complete (stub)** on a quest to mark it complete: it pays the quest's item
    rewards into your pack (a toast confirms what arrived) and the completed state persists.
    Quests with unmet stat requirements are listed but locked — bonuses from equipped gear
@@ -91,10 +92,19 @@ the Vitest suite.
     One sapling is consumed, the trunk comes back, and the stump no longer reappears on
     reload — so the loop closes: chop → sell wood → buy a sapling → replant → chop again.
     The hint reads "Need a sapling" when the wrong item is selected or you carry none.
-12. **Reload** the page: you come back in the area and at the coordinates you left, and the
+12. **Brennan's smithy:** press **E** at Brennan in the Emberhold market to open his shop
+    panel. Ten wares are listed, each priced in **gold AND materials** — iron-tier goods
+    cost gold + iron ore (farmable from village pickups), while the Iron Sword and Ember
+    Staff cost gold + steel ingots. **Buy 1** is disabled until you can cover the whole
+    price; a failed purchase toasts exactly what you are short of (e.g. "Need 2 more Steel
+    Ingot"). Steel is deliberately scarce: five one-time ground pickups (two in the
+    Thornwood, three in the village) plus **+2 Steel Ingot** on each of Brennan's three
+    class-filtered quests. **Ask about work** opens his quest list on top of the shop;
+    closing it returns you to the wares. Walk away and the shop closes.
+13. **Reload** the page: you come back in the area and at the coordinates you left, and the
     intro card does not reappear. Felled trees, gold, and everything else survive. Walk back
     west through the village portal to return to the Thornwood.
-13. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
+14. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
     `localStorage.removeItem('dragonborne.character')` sends you back to character creation;
     `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
     area, position, and intro-card flags, so the next load drops you back on the fire ring
@@ -106,14 +116,17 @@ the Vitest suite.
 ## Status
 
 The forest → village vertical slice, the inventory plan, the chopping/wood/trading
-plan, the forest layout redesign, **and** the forest regeneration loop are **complete**:
+plan, the forest layout redesign, the forest regeneration loop, **and** Brennan's
+smithy are **complete**:
 create character → wake in the forest → find the axe → chop trees for wood → carry it to
 Emberhold → sell it to Hollis the Trader for gold → buy a sapling back and replant the
 stump. You start with a traveller's kit, pick items up off the ground, and
 move stacks around a 9-slot hotbar and a 27-slot pack with click-to-pick-up/place,
 right-click half/single, or real drag & drop; wear gear in four equipment slots, and its
-stat bonuses feed into your character — enough to unlock stat-gated quests. The Thornwood
-is now grown procedurally from the seed stored in your save: randomised groves across an
+stat bonuses feed into your character — enough to unlock stat-gated quests. Brennan sells
+ten wares for gold + iron ore or steel ingots, paid all-or-nothing from a data-driven
+price table, and his quests (behind **Ask about work**) pay steel back. The Thornwood
+is grown procedurally from the seed stored in your save: randomised groves across an
 interior guaranteed to loop end to end, ~35–45 choppable trunks on the grove edges,
 tall-grass fringes at those edges, warm-toned rocks, and the hand-authored village as-is.
 Area, position, flags, inventory, gold, felled trees, and completed quests all survive a
@@ -122,7 +135,7 @@ reload. All placeholder visuals.
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
 forest/village world (`first_plan.md`), the 41-commit inventory/equipment/pickups plan
-(`second_plan.md`), and the forest regeneration & sapling loop plan (`plan.md`) —
+(`second_plan.md`), the forest regeneration & sapling loop, and Brennan's smithy —
 live locally (and untracked, like `.agents/` itself) at `.agents/plans/`.
 
 ## Current scope notes
@@ -152,6 +165,13 @@ live locally (and untracked, like `.agents/` itself) at `.agents/plans/`.
   regrowth** are signed off by the regeneration plan — but only via the sapling loop:
   purchase a sapling, select it at a stump, press **E**. **Still out of scope:** mining
   rocks/ore, crafting, durability, and passive regrowth that needs no sapling.
+- Brennan's smithy is in scope by explicit sign-off: a `smith` NPC service opens a shop
+  panel selling ten wares, each priced in **gold AND materials** from the data table in
+  `src/economy/smith.ts` (iron-tier goods cost iron ore, steel-tier goods cost steel
+  ingots), charged all-or-nothing via `smithShortfall`. Steel enters the economy only
+  through five one-time ground pickups and `+2` on each of Brennan's three quests — an
+  `iron-ore`/`steel-ingot` sink, not a source. **Still out of scope:** smelting or
+  crafting raw materials into steel, and any mining.
 - Persistence is localStorage only: `dragonborne.character` for the character,
   `dragonborne.progress` for area, position, and flags (including chop flags),
   `dragonborne.inventory` for the inventory (versioned schema), `dragonborne.wallet` for
@@ -178,12 +198,13 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/inventory/` — item types and catalog, pure inventory logic (add/move/split/equip,
   effective stats, remove-everywhere), versioned storage, and the subscribing store
   singleton
-- `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, and the
-  trader's buy/sell price tables
+- `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, the
+  trader's buy/sell price tables, and the smith's ware cost table + shortfall helpers
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress), `WorldScene`
   (movement, NPCs, portals, pickups, chopping, replanting, HUD)
-- `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts`, `src/tradePanel.ts` —
-  DOM overlays for character creation, quests, area intro text, and trading
+- `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts`, `src/tradePanel.ts`,
+  `src/smithPanel.ts` — DOM overlays for character creation, quests, area intro text,
+  trading, and the smithy
 - `src/hotbar.ts`, `src/inventoryPanel.ts`, `src/itemIcon.ts`, `src/itemTooltip.ts`,
   `src/toast.ts` — DOM overlays for the hotbar, the pack panel, item glyphs, hover
   tooltips, and transient messages
