@@ -6,6 +6,10 @@ import type {
   TilePoint,
 } from './maps'
 import {
+  CAVE_ITEMS,
+  CAVE_MAP,
+  CAVE_NPCS,
+  CAVE_SPAWN,
   FOREST_ITEMS,
   FOREST_NPCS,
   FOREST_PORTALS,
@@ -115,9 +119,22 @@ export const FOREST: AreaDefinition = {
   },
 }
 
+export const CAVE: AreaDefinition = {
+  id: 'cave',
+  name: 'The Crystal Cave',
+  backgroundColor: 0x12161c,
+  map: CAVE_MAP,
+  defaultSpawn: CAVE_SPAWN,
+  npcs: CAVE_NPCS,
+  portals: [],
+  items: CAVE_ITEMS,
+  waypointAreaId: 'forest',
+}
+
 export const AREAS: Readonly<Record<string, AreaDefinition>> = {
   forest: FOREST,
   village: VILLAGE,
+  cave: CAVE,
 }
 
 export function getAreaById(areaId: string): AreaDefinition {
