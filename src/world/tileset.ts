@@ -73,6 +73,25 @@ export function isStumpTile(tileIndex: number | undefined): boolean {
   return tileIndex === STUMP_TILE_INDEX
 }
 
+/** The iron ore (`o`) tile index — mining retiles this to a mined-out pocket. */
+export const IRON_ORE_INDEX = indexOfChar('o')
+
+/** The steel vein (`v`) tile index — mining retiles this to a mined-out pocket. */
+export const STEEL_VEIN_INDEX = indexOfChar('v')
+
+/** The mined-out pocket (`x`) left behind by a cleared vein; walkable. */
+export const MINED_OUT_INDEX = indexOfChar('x')
+
+/** True when a terrain tile is a mineable ore node (iron or steel). */
+export function isOreNodeTile(tileIndex: number | undefined): boolean {
+  return tileIndex === IRON_ORE_INDEX || tileIndex === STEEL_VEIN_INDEX
+}
+
+/** True when a terrain tile is a mined-out pocket left by a cleared vein. */
+export function isMinedOutTile(tileIndex: number | undefined): boolean {
+  return tileIndex === MINED_OUT_INDEX
+}
+
 const SHEET_COLUMNS = 4
 
 export function toCssColor(color: number): string {
