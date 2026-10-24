@@ -27,6 +27,9 @@ export const TILE_LEGEND: readonly TileLegendEntry[] = [
   { index: 10, char: 'f', name: 'floor', base: 0xa89880, detail: 0xbcaa92, collides: false },
   { index: 11, char: 'k', name: 'keep', base: 0x5f6470, detail: 0x717683, collides: true },
   { index: 12, char: 's', name: 'stump', base: 0x453022, detail: 0x574029, collides: false },
+  { index: 13, char: 'o', name: 'iron ore', base: 0x6b5344, detail: 0x8a6f5a, collides: true },
+  { index: 14, char: 'v', name: 'steel vein', base: 0x5a6a7a, detail: 0x8a9aaa, collides: true },
+  { index: 15, char: 'x', name: 'mined-out pocket', base: 0x2e2a26, detail: 0x3a3530, collides: false },
 ]
 
 export const TILE_BY_CHAR: ReadonlyMap<string, TileLegendEntry> = new Map(

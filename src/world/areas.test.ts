@@ -117,7 +117,7 @@ describe('findMapViolations shape rules', () => {
   })
 
   it('flags tile characters missing from the legend', () => {
-    expect(findMapViolations(['Tx'])).toEqual(["unknown tile char 'x' at 1,0"])
+    expect(findMapViolations(['Tz'])).toEqual(["unknown tile char 'z' at 1,0"])
   })
 })
 
