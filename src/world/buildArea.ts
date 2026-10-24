@@ -3,14 +3,16 @@ import type { AreaDefinition } from './areas'
 import { getAreaById, getAreaSize, parseAreaMap, resolveAreaRows, tileToWorld } from './areas'
 import { getNpcById } from '../story'
 import { getItemById } from '../inventory'
-import { chopFlagKey, getProgressFlag, pickupFlagKey } from './progress'
+import { chopFlagKey, getProgressFlag, mineFlagKey, pickupFlagKey } from './progress'
 import {
   COLLIDING_TILE_INDEXES,
+  MINED_OUT_INDEX,
   STUMP_TILE_INDEX,
   TILESET_KEY,
   TILE_SIZE,
   TREE_TRUNK_INDEX,
   ensureTileset,
+  isOreNodeTile,
   toCssColor,
 } from './tileset'
 
@@ -75,14 +77,21 @@ export function buildTerrain(
 
   layer.setCollision([...COLLIDING_TILE_INDEXES], true, true)
 
-  // Trees felled in a previous session come back as stumps, so the map reads
-  // identically to the live `putTileAt` change made when chopping.
+  // Trees felled in a previous session come back as stumps, and ore nodes
+  // mined out come back as walkable pockets, so the map reads identically to
+  // the live `putTileAt` changes made when chopping or mining.
   for (let y = 0; y < data.length; y += 1) {
     const row = data[y]
     for (let x = 0; x < row.length; x += 1) {
-      if (row[x] !== TREE_TRUNK_INDEX) continue
-      if (!getProgressFlag(chopFlagKey(area.id, x, y))) continue
-      layer.putTileAt(STUMP_TILE_INDEX, x, y)
+      if (row[x] === TREE_TRUNK_INDEX) {
+        if (getProgressFlag(chopFlagKey(area.id, x, y))) {
+          layer.putTileAt(STUMP_TILE_INDEX, x, y)
+        }
+      } else if (isOreNodeTile(row[x])) {
+        if (getProgressFlag(mineFlagKey(area.id, x, y))) {
+          layer.putTileAt(MINED_OUT_INDEX, x, y)
+        }
+      }
     }
   }
 
