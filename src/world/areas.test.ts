@@ -183,6 +183,36 @@ describe('findMapViolations reachability rules', () => {
     })
     expect(violations).toContain('trunk at 1,0 has no reachable walkable neighbour')
   })
+
+  it('flags an ore node with no reachable walkable neighbour', () => {
+    const violations = findMapViolations(['ToT', 'TTT', 'T.T'], {
+      spawn: { x: 1, y: 2 },
+      npcs: [],
+      portals: [],
+      items: [],
+    })
+    expect(violations).toContain('ore at 1,0 has no reachable walkable neighbour')
+  })
+
+  it('flags a steel vein with no reachable walkable neighbour', () => {
+    const violations = findMapViolations(['TvT', 'TTT', 'T.T'], {
+      spawn: { x: 1, y: 2 },
+      npcs: [],
+      portals: [],
+      items: [],
+    })
+    expect(violations).toContain('ore at 1,0 has no reachable walkable neighbour')
+  })
+
+  it('allows an ore node beside a reachable walkable tile', () => {
+    const violations = findMapViolations(['T.T', 'ToT', 'TTT'], {
+      spawn: { x: 1, y: 0 },
+      npcs: [],
+      portals: [],
+      items: [],
+    })
+    expect(violations).toEqual([])
+  })
 })
 
 describe('findMapViolations corridor rules', () => {
