@@ -224,6 +224,14 @@ const itemData = [
     maxStack: 1,
     icon: { glyph: 'Y', color: 0xcfd6dd },
   },
+  {
+    id: 'pickaxe',
+    name: "Miner's Pickaxe",
+    description: 'Iron-shod head on a short haft. Bit into a vein and swing until it gives.',
+    kind: 'tool',
+    maxStack: 1,
+    icon: { glyph: 'P', color: 0xb8c0c8 },
+  },
 ] as const satisfies readonly ItemDefinition[]
 
 export const ITEMS: readonly ItemDefinition[] = itemData
