@@ -5,6 +5,7 @@ import {
   getForestSeed,
   getProgressFlag,
   loadProgress,
+  mineFlagKey,
   saveProgress,
   setProgressFlag,
 } from './progress'
@@ -198,6 +199,54 @@ describe('replanting a felled tree', () => {
     })
 
     expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(false)
+    expect(getForestSeed()).toBe(seed)
+  })
+})
+
+describe('mine flags for depleted ore nodes', () => {
+  it('builds a mine flag key keyed by area and tile', () => {
+    expect(mineFlagKey('cave', 4, 12)).toBe('mine:cave:4,12')
+    expect(mineFlagKey('cave', 4, 12)).not.toBe(mineFlagKey('cave', 5, 12))
+    expect(mineFlagKey('cave', 4, 12)).not.toBe(mineFlagKey('forest', 4, 12))
+  })
+
+  it('reads false until the node is mined', () => {
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(false)
+  })
+
+  it('survives a save round trip so the pocket is redrawn on reload', () => {
+    setProgressFlag(mineFlagKey('cave', 4, 12))
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(true)
+
+    const reloaded = loadProgress()
+    expect(reloaded?.flags[mineFlagKey('cave', 4, 12)]).toBe(true)
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(true)
+  })
+
+  it('survives a position save the way the world scene writes them', () => {
+    setProgressFlag(mineFlagKey('cave', 4, 12))
+    const seed = getForestSeed()
+
+    saveProgress({
+      areaId: 'cave',
+      x: 64,
+      y: 192,
+      flags: loadProgress()?.flags ?? {},
+      seed: loadProgress()?.seed,
+    })
+
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(true)
+    expect(getForestSeed()).toBe(seed)
+  })
+
+  it('keeps sibling flags and chop flags intact', () => {
+    const seed = getForestSeed()
+    setProgressFlag(mineFlagKey('cave', 4, 12))
+    setProgressFlag(mineFlagKey('cave', 8, 12))
+    setProgressFlag(chopFlagKey('forest', 7, 3))
+
+    expect(getProgressFlag(mineFlagKey('cave', 8, 12))).toBe(true)
+    expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(true)
     expect(getForestSeed()).toBe(seed)
   })
 })
