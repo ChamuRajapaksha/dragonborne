@@ -43,6 +43,13 @@ describe('smith offers', () => {
     expect(getSmithOffer('sapling')).toBeUndefined()
     expect(getSmithOffer('')).toBeUndefined()
   })
+
+  it('stocks the pickaxe for 25 gold and 3 iron ore', () => {
+    expect(getSmithOffer('pickaxe')?.cost).toEqual({
+      gold: 25,
+      items: [{ itemId: 'iron-ore', quantity: 3 }],
+    })
+  })
 })
 
 describe('smithShortfall', () => {
