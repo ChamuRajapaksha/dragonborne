@@ -98,6 +98,15 @@ export function clearChopFlag(areaId: string, x: number, y: number): void {
   setProgressFlag(chopFlagKey(areaId, x, y), false)
 }
 
+/**
+ * Flag key for a depleted ore node, keyed by area and tile so the node reloads
+ * as a walkable mined-out pocket. Permanent — there is no clear function, so
+ * veins never regrow. Mirrors `chopFlagKey`.
+ */
+export function mineFlagKey(areaId: string, x: number, y: number): string {
+  return `mine:${areaId}:${x},${y}`
+}
+
 export function clearProgress(): void {
   localStorage.removeItem(STORAGE_KEY)
 }
