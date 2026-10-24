@@ -9,6 +9,7 @@ import {
   CAVE_ITEMS,
   CAVE_MAP,
   CAVE_NPCS,
+  CAVE_PORTALS,
   CAVE_SPAWN,
   FOREST_ITEMS,
   FOREST_NPCS,
@@ -126,7 +127,7 @@ export const CAVE: AreaDefinition = {
   map: CAVE_MAP,
   defaultSpawn: CAVE_SPAWN,
   npcs: CAVE_NPCS,
-  portals: [],
+  portals: CAVE_PORTALS,
   items: CAVE_ITEMS,
   waypointAreaId: 'forest',
 }

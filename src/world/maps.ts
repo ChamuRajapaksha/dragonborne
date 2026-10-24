@@ -105,6 +105,13 @@ export const FOREST_PORTALS: readonly Portal[] = [
     toSpawn: { x: 4, y: 37 },
     label: 'To Emberhold',
   },
+  {
+    x: 34,
+    y: 24,
+    toAreaId: 'cave',
+    toSpawn: { x: 6, y: 16 },
+    label: 'To the Crystal Cave',
+  },
 ]
 
 export const VILLAGE_PORTALS: readonly Portal[] = [
@@ -181,3 +188,13 @@ export const CAVE_SPAWN: TilePoint = { x: 4, y: 16 }
 export const CAVE_NPCS: readonly AreaNpcPlacement[] = []
 
 export const CAVE_ITEMS: readonly AreaItemPlacement[] = []
+
+export const CAVE_PORTALS: readonly Portal[] = [
+  {
+    x: 4,
+    y: 18,
+    toAreaId: 'forest',
+    toSpawn: { x: 33, y: 24 },
+    label: 'To the Thornwood',
+  },
+]
