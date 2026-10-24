@@ -49,6 +49,10 @@ const offerData = [
     cost: { gold: 20, items: [{ itemId: 'iron-ore', quantity: 3 }] },
   },
   {
+    itemId: 'pickaxe',
+    cost: { gold: 25, items: [{ itemId: 'iron-ore', quantity: 3 }] },
+  },
+  {
     itemId: 'shortbow',
     cost: { gold: 30, items: [{ itemId: 'iron-ore', quantity: 3 }] },
   },
