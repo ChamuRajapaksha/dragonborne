@@ -148,8 +148,8 @@ function findCorridorViolations(
   return violations
 }
 
-/** The legend char for a choppable tree trunk. */
-const TRUNK_CHAR = 't'
+/** Legend chars that must sit beside a reachable walkable tile to be interactable. */
+const MINEABLE_CHARS: ReadonlySet<string> = new Set(['t', 'o', 'v'])
 
 const ORTHOGONAL: readonly MapPoint[] = [
   { x: 0, y: -1 },
@@ -191,8 +191,8 @@ function spawnReachable(map: readonly string[], spawn: MapPoint): Set<string> {
 
 /**
  * Rules 3–4: a flood fill from the spawn over walkable tiles must reach every
- * placement, and every trunk must have at least one 4-neighbour that is both
- * walkable and inside that reachable set.
+ * placement, and every mineable tile (trunk or ore node) must have at least
+ * one 4-neighbour that is both walkable and inside that reachable set.
  */
 function findReachabilityViolations(
   map: readonly string[],
@@ -219,12 +219,14 @@ function findReachabilityViolations(
 
   map.forEach((row, y) => {
     for (let x = 0; x < row.length; x += 1) {
-      if (row[x] !== TRUNK_CHAR) continue
+      const char = row[x] ?? ''
+      if (!MINEABLE_CHARS.has(char)) continue
       const hasOpenNeighbour = ORTHOGONAL.some((step) =>
         reachable.has(`${x + step.x},${y + step.y}`),
       )
       if (!hasOpenNeighbour) {
-        violations.push(`trunk at ${x},${y} has no reachable walkable neighbour`)
+        const label = char === 't' ? 'trunk' : 'ore'
+        violations.push(`${label} at ${x},${y} has no reachable walkable neighbour`)
       }
     }
   })
