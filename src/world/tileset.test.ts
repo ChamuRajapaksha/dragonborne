@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import {
   COLLIDING_TILE_INDEXES,
+  IRON_ORE_INDEX,
+  MINED_OUT_INDEX,
   STUMP_TILE_INDEX,
+  STEEL_VEIN_INDEX,
   TILE_BY_CHAR,
   TREE_CHOP_HITS,
   TREE_TRUNK_INDEX,
   chopHitsRemaining,
+  isMinedOutTile,
+  isOreNodeTile,
   isStumpTile,
   isTreeTrunkTile,
 } from './tileset'
@@ -53,5 +58,43 @@ describe('chopHitsRemaining', () => {
 
   it('reaches zero, the felling swing, and can go negative if asked', () => {
     expect(chopHitsRemaining(0)).toBe(-1)
+  })
+})
+
+describe('ore tile indexes', () => {
+  it('gives iron, steel and the mined-out pocket distinct indexes from the legend', () => {
+    expect(IRON_ORE_INDEX).toBe(TILE_BY_CHAR.get('o')?.index)
+    expect(STEEL_VEIN_INDEX).toBe(TILE_BY_CHAR.get('v')?.index)
+    expect(MINED_OUT_INDEX).toBe(TILE_BY_CHAR.get('x')?.index)
+    expect(IRON_ORE_INDEX).not.toBe(STEEL_VEIN_INDEX)
+    expect(IRON_ORE_INDEX).not.toBe(MINED_OUT_INDEX)
+    expect(STEEL_VEIN_INDEX).not.toBe(MINED_OUT_INDEX)
+  })
+
+  it('keeps both ore nodes colliding and the mined-out pocket walkable', () => {
+    expect(COLLIDING_TILE_INDEXES).toContain(IRON_ORE_INDEX)
+    expect(COLLIDING_TILE_INDEXES).toContain(STEEL_VEIN_INDEX)
+    expect(COLLIDING_TILE_INDEXES).not.toContain(MINED_OUT_INDEX)
+  })
+})
+
+describe('isOreNodeTile', () => {
+  it('accepts iron and steel but not the pocket or other tiles', () => {
+    expect(isOreNodeTile(IRON_ORE_INDEX)).toBe(true)
+    expect(isOreNodeTile(STEEL_VEIN_INDEX)).toBe(true)
+    expect(isOreNodeTile(MINED_OUT_INDEX)).toBe(false)
+    expect(isOreNodeTile(TREE_TRUNK_INDEX)).toBe(false)
+    expect(isOreNodeTile(0)).toBe(false)
+    expect(isOreNodeTile(undefined)).toBe(false)
+  })
+})
+
+describe('isMinedOutTile', () => {
+  it('accepts only the mined-out pocket index', () => {
+    expect(isMinedOutTile(MINED_OUT_INDEX)).toBe(true)
+    expect(isMinedOutTile(IRON_ORE_INDEX)).toBe(false)
+    expect(isMinedOutTile(STEEL_VEIN_INDEX)).toBe(false)
+    expect(isMinedOutTile(0)).toBe(false)
+    expect(isMinedOutTile(undefined)).toBe(false)
   })
 })
