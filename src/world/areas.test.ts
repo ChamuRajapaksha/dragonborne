@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { generateForestMap } from './forestGen'
-import { findMapViolations } from './mapRules'
+import { findMapViolations, unreachedTiles } from './mapRules'
 import {
+  CAVE_MAP,
+  CAVE_SPAWN,
   FOREST_ITEMS,
   FOREST_NPCS,
   FOREST_PORTALS,
@@ -62,6 +64,43 @@ describe('area map shapes', () => {
 
   it('keeps the village a uniform shape of known characters', () => {
     expect(findMapViolations(VILLAGE_MAP)).toEqual([])
+  })
+
+  it('keeps the cave a uniform shape of known characters', () => {
+    expect(findMapViolations(CAVE_MAP)).toEqual([])
+    expect(CAVE_MAP).toHaveLength(32)
+    for (const row of CAVE_MAP) expect(row).toHaveLength(48)
+  })
+})
+
+describe('cave spawn', () => {
+  it('sits on a walkable tile the 2x2 player body can fully reach from', () => {
+    const violations = findMapViolations(CAVE_MAP, {
+      spawn: CAVE_SPAWN,
+      npcs: [],
+      portals: [],
+      items: [],
+    })
+    expect(violations).toEqual([])
+    expect(CAVE_MAP[CAVE_SPAWN.y]?.[CAVE_SPAWN.x]).toBe('-')
+    expect(unreachedTiles(CAVE_MAP, CAVE_SPAWN)).toEqual([])
+  })
+})
+
+describe('cave ore nodes', () => {
+  function countChar(rows: readonly string[], char: string): number {
+    let count = 0
+    for (const row of rows) {
+      for (const cell of row) {
+        if (cell === char) count += 1
+      }
+    }
+    return count
+  }
+
+  it('keeps at least 12 iron ore nodes and 4 steel veins', () => {
+    expect(countChar(CAVE_MAP, 'o')).toBeGreaterThanOrEqual(12)
+    expect(countChar(CAVE_MAP, 'v')).toBeGreaterThanOrEqual(4)
   })
 })
 
