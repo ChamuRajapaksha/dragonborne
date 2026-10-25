@@ -626,6 +626,7 @@ export default class WorldScene extends Phaser.Scene {
       y,
       flags: previous?.flags ?? {},
       seed: previous?.seed,
+      caveSeed: previous?.caveSeed,
     })
   }
 

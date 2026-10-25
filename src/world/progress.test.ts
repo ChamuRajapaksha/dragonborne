@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   chopFlagKey,
   clearChopFlag,
+  getCaveSeed,
   getForestSeed,
   getProgressFlag,
   loadProgress,
@@ -71,6 +72,18 @@ describe('loadProgress seed parsing', () => {
     expect(loadProgress()).toEqual(LEGACY_SAVE)
   })
 
+  it('reads a save that carries a cave seed', () => {
+    memory.setRaw(STORAGE_KEY, JSON.stringify({ ...LEGACY_SAVE, caveSeed: 777 }))
+    expect(loadProgress()).toEqual({ ...LEGACY_SAVE, caveSeed: 777 })
+  })
+
+  it('drops a malformed cave seed but keeps the rest of the save', () => {
+    memory.setRaw(STORAGE_KEY, JSON.stringify({ ...LEGACY_SAVE, caveSeed: 'lots' }))
+    expect(loadProgress()).toEqual(LEGACY_SAVE)
+    memory.setRaw(STORAGE_KEY, JSON.stringify({ ...LEGACY_SAVE, caveSeed: null }))
+    expect(loadProgress()).toEqual(LEGACY_SAVE)
+  })
+
   it('reads a missing save as null', () => {
     expect(loadProgress()).toBeNull()
   })
@@ -113,6 +126,67 @@ describe('getForestSeed', () => {
       seed: loadProgress()?.seed,
     })
     expect(getForestSeed()).toBe(seed)
+  })
+})
+
+describe('getCaveSeed', () => {
+  it('generates a cave seed and persists it on first use', () => {
+    vi.spyOn(Math, 'random').mockReturnValue(0.25)
+    const caveSeed = getCaveSeed()
+    expect(caveSeed).toBe(Math.floor(0.25 * 0x100000000))
+    expect(loadProgress()?.caveSeed).toBe(caveSeed)
+  })
+
+  it('returns the stored cave seed without rolling a new one', () => {
+    memory.setRaw(STORAGE_KEY, JSON.stringify({ ...LEGACY_SAVE, caveSeed: 4242 }))
+    const random = vi.spyOn(Math, 'random')
+    expect(getCaveSeed()).toBe(4242)
+    expect(random).not.toHaveBeenCalled()
+  })
+
+  it('keeps the rest of a legacy save intact when adding a cave seed', () => {
+    memory.setRaw(STORAGE_KEY, JSON.stringify(LEGACY_SAVE))
+    getCaveSeed()
+    expect(loadProgress()).toEqual({ ...LEGACY_SAVE, caveSeed: expect.any(Number) })
+  })
+
+  it('hands out the same cave seed on every later call', () => {
+    const first = getCaveSeed()
+    expect(getCaveSeed()).toBe(first)
+    expect(getCaveSeed()).toBe(first)
+  })
+
+  it('rolls a different seed from the forest one', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.25).mockReturnValueOnce(0.75)
+    const seed = getForestSeed()
+    const caveSeed = getCaveSeed()
+    expect(caveSeed).not.toBe(seed)
+    expect(loadProgress()?.seed).toBe(seed)
+    expect(loadProgress()?.caveSeed).toBe(caveSeed)
+  })
+
+  it('keeps an existing forest seed when it assigns the cave seed', () => {
+    memory.setRaw(STORAGE_KEY, JSON.stringify({ ...LEGACY_SAVE, seed: 99 }))
+    getCaveSeed()
+    expect(loadProgress()).toEqual({
+      ...LEGACY_SAVE,
+      seed: 99,
+      caveSeed: expect.any(Number),
+    })
+    expect(getForestSeed()).toBe(99)
+  })
+
+  it('stays stable across a position save the way the world scene writes them', () => {
+    const caveSeed = getCaveSeed()
+    saveProgress({
+      areaId: 'cave',
+      x: 64,
+      y: 256,
+      flags: loadProgress()?.flags ?? {},
+      seed: loadProgress()?.seed,
+      caveSeed: loadProgress()?.caveSeed,
+    })
+    expect(getCaveSeed()).toBe(caveSeed)
   })
 })
 

@@ -7,6 +7,8 @@ export interface WorldProgress {
   flags: Record<string, boolean>
   /** Seed of the procedural forest layout; assigned on first forest load. */
   seed?: number
+  /** Seed of the procedural crystal cave layout; assigned on first cave load. */
+  caveSeed?: number
 }
 
 function emptyProgress(): WorldProgress {
@@ -37,6 +39,7 @@ export function loadProgress(): WorldProgress | null {
       flags: isFlagRecord(parsed.flags) ? parsed.flags : {},
     }
     if (isSeed(parsed.seed)) progress.seed = parsed.seed
+    if (isSeed(parsed.caveSeed)) progress.caveSeed = parsed.caveSeed
     return progress
   } catch {
     return null
@@ -70,6 +73,21 @@ export function getForestSeed(): number {
   const seed = Math.floor(Math.random() * 0x100000000)
   saveProgress({ ...emptyProgress(), ...progress, seed })
   return seed
+}
+
+/**
+ * The seed the crystal cave layout is generated from. Kept apart from the
+ * forest seed so re-rolling one never disturbs the other, and for the same
+ * reason: `mine:cave:x,y` flags are coordinate-keyed, so a save's cave has to
+ * stay byte-for-byte identical for as long as that save exists.
+ */
+export function getCaveSeed(): number {
+  const progress = loadProgress()
+  if (progress && isSeed(progress.caveSeed)) return progress.caveSeed
+
+  const caveSeed = Math.floor(Math.random() * 0x100000000)
+  saveProgress({ ...emptyProgress(), ...progress, caveSeed })
+  return caveSeed
 }
 
 /**
