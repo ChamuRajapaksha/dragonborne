@@ -93,7 +93,7 @@ the Vitest suite.
     reload — so the loop closes: chop → sell wood → buy a sapling → replant → chop again.
     The hint reads "Need a sapling" when the wrong item is selected or you carry none.
 12. **Brennan's smithy:** press **E** at Brennan in the Emberhold market to open his shop
-    panel. Ten wares are listed, each priced in **gold AND materials** — iron-tier goods
+    panel. Eleven wares are listed, each priced in **gold AND materials** — iron-tier goods
     cost gold + iron ore (farmable from village pickups), while the Iron Sword and Ember
     Staff cost gold + steel ingots. **Buy 1** is disabled until you can cover the whole
     price; a failed purchase toasts exactly what you are short of (e.g. "Need 2 more Steel
@@ -101,10 +101,22 @@ the Vitest suite.
     Thornwood, three in the village) plus **+2 Steel Ingot** on each of Brennan's three
     class-filtered quests. **Ask about work** opens his quest list on top of the shop;
     closing it returns you to the wares. Walk away and the shop closes.
-13. **Reload** the page: you come back in the area and at the coordinates you left, and the
-    intro card does not reappear. Felled trees, gold, and everything else survive. Walk back
-    west through the village portal to return to the Thornwood.
-14. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
+13. **The Crystal Cave:** buy Brennan's **Miner's Pickaxe** (25 gold + 3 Iron Ore — ore lies
+    on the ground in the village and the Thornwood, so you can afford one before you ever
+    see a cave), select it in the hotbar, then follow the Thornwood's main path east to the
+    portal and press **E** to enter a third area, **the Crystal Cave** — a one-time intro
+    card sets the scene and the HUD waypoint points back at the forest. The walls here are
+    iron ore and steel veins, and they block your way. Stand next to one and press **E**:
+    iron takes three swings for **+2 Iron Ore**, steel takes four for **+1 Steel Ingot**
+    (a toast counts the swings down; the final swing is refused while your pack cannot hold
+    the whole yield, so ore is never lost). Without the pickaxe selected the hint reads
+    "Need a pickaxe". Mined nodes become walkable pockets **permanently** — they survive
+    reloads and never grow back, and the vein's swings-hits-yield balance is plain data in
+    `src/world/ore.ts`.
+14. **Reload** the page: you come back in the area and at the coordinates you left, and the
+    intro card does not reappear. Felled trees, mined veins, gold, and everything else
+    survive. Walk back west through the village portal to return to the Thornwood.
+15. To start over, clear the site's localStorage from DevTools. `clearCharacter` /
     `localStorage.removeItem('dragonborne.character')` sends you back to character creation;
     `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
     area, position, and intro-card flags, so the next load drops you back on the fire ring
@@ -116,38 +128,44 @@ the Vitest suite.
 ## Status
 
 The forest → village vertical slice, the inventory plan, the chopping/wood/trading
-plan, the forest layout redesign, the forest regeneration loop, **and** Brennan's
-smithy are **complete**:
+plan, the forest layout redesign, the forest regeneration loop, Brennan's smithy,
+**and** the mining plan are **complete**:
 create character → wake in the forest → find the axe → chop trees for wood → carry it to
 Emberhold → sell it to Hollis the Trader for gold → buy a sapling back and replant the
 stump. You start with a traveller's kit, pick items up off the ground, and
 move stacks around a 9-slot hotbar and a 27-slot pack with click-to-pick-up/place,
 right-click half/single, or real drag & drop; wear gear in four equipment slots, and its
 stat bonuses feed into your character — enough to unlock stat-gated quests. Brennan sells
-ten wares for gold + iron ore or steel ingots, paid all-or-nothing from a data-driven
-price table, and his quests (behind **Ask about work**) pay steel back. The Thornwood
+eleven wares for gold + iron ore or steel ingots, paid all-or-nothing from a data-driven
+price table, and his quests (behind **Ask about work**) pay steel back. Buy his **Miner's
+Pickaxe** and a portal on the Thornwood's main path opens **the Crystal Cave**, a third
+area full of iron ore and steel veins you swing out of the wall with **E** — each node
+depletes permanently into a walkable pocket that survives reloads. The Thornwood
 is grown procedurally from the seed stored in your save: randomised groves across an
 interior guaranteed to loop end to end, ~35–45 choppable trunks on the grove edges,
 tall-grass fringes at those edges, warm-toned rocks, and the hand-authored village as-is.
-Area, position, flags, inventory, gold, felled trees, and completed quests all survive a
-reload. All placeholder visuals.
+Area, position, flags, inventory, gold, felled trees, mined veins, and completed quests
+all survive a reload. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
 forest/village world (`first_plan.md`), the 41-commit inventory/equipment/pickups plan
-(`second_plan.md`), the forest regeneration & sapling loop, and Brennan's smithy —
-live locally (and untracked, like `.agents/` itself) at `.agents/plans/`.
+(`second_plan.md`), the forest regeneration & sapling loop, Brennan's smithy, and the
+mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itself) at
+`.agents/plans/`.
 
 ## Current scope notes
 
 - Placeholder art only (shapes/rectangles) — no final art in this phase.
-- Two areas (`forest`, `village`), each 64 × 48 tiles, rendered as a collidable tilemap and
-  linked by portals. The village stays hand-authored ASCII in `src/world/maps.ts`; the
+- Three areas (`forest`, `village`, `cave`), rendered as collidable tilemaps and linked by
+  portals: the forest and village are 64 × 48, the Crystal Cave 48 × 32. The village and
+  the cave stay hand-authored ASCII in `src/world/maps.ts`; the
   forest is **grown from a seed** in `src/world/forestGen.ts` (seed persisted in world
-  progress — same save, same forest). Both are pure data (no engine imports) and are
+  progress — same save, same forest). All are pure data (no engine imports) and are
   checked by unit tests (`src/world/mapRules.ts` + `areas.test.ts`): uniform shape,
-  walkable placements, spawn reachability to every placement and trunk, an obstruction-free
-  main corridor (rows 23–25), a minimum choppable-trunk count, and — for the forest —
+  walkable placements, spawn reachability to every placement and trunk/ore neighbour, an
+  obstruction-free main corridor (rows 23–25), minimum choppable-trunk and ore-node
+  counts, and — for the forest —
   every open tile reachable by the 2×2 player body. Adding an area is a data addition.
 - Class, quest and item systems are **data-driven**: `src/character/classes.ts`,
   `src/story/quests.ts`, `src/story/npcs.ts`, and `src/inventory/catalog.ts` are pure data.
@@ -163,20 +181,28 @@ live locally (and untracked, like `.agents/` itself) at `.agents/plans/`.
   sells saplings, both from data-driven tables (`src/economy/trade.ts`: 4 g per log, 12 g
   per sapling); gold persists in `dragonborne.wallet`. **Buying items** and **tree
   regrowth** are signed off by the regeneration plan — but only via the sapling loop:
-  purchase a sapling, select it at a stump, press **E**. **Still out of scope:** mining
-  rocks/ore, crafting, durability, and passive regrowth that needs no sapling.
+  purchase a sapling, select it at a stump, press **E**. **Still out of scope:** crafting,
+  durability, and passive regrowth that needs no sapling.
 - Brennan's smithy is in scope by explicit sign-off: a `smith` NPC service opens a shop
-  panel selling ten wares, each priced in **gold AND materials** from the data table in
+  panel selling eleven wares, each priced in **gold AND materials** from the data table in
   `src/economy/smith.ts` (iron-tier goods cost iron ore, steel-tier goods cost steel
-  ingots), charged all-or-nothing via `smithShortfall`. Steel enters the economy only
-  through five one-time ground pickups and `+2` on each of Brennan's three quests — an
-  `iron-ore`/`steel-ingot` sink, not a source. **Still out of scope:** smelting or
-  crafting raw materials into steel, and any mining.
+  ingots), charged all-or-nothing via `smithShortfall`. Steel reaches the economy through
+  five one-time ground pickups, `+2` on each of Brennan's three quests, and the steel
+  veins mined in the Crystal Cave — the smithy itself is an `iron-ore`/`steel-ingot` sink,
+  not a source. **Still out of scope:** smelting or crafting raw materials into steel.
+- Mining is in scope by explicit sign-off (`.agents/plans/plan.md`): the **Miner's
+  Pickaxe** sold by Brennan (25 gold + 3 iron ore), the `o`/`v`/`x` tiles in
+  `src/world/tileset.ts`, and a third area — the Crystal Cave — on a portal off the
+  Thornwood main path. Node hits, yields and item ids are pure data in `src/world/ore.ts`
+  (iron: 3 swings → **+2 Iron Ore**; steel: 4 swings → **+1 Steel Ingot**), and depletion
+  is permanent: `mine:area:x,y` flags in world progress restore each node as a walkable
+  pocket on reload, with no regrowth and no refining step. **Still out of scope:**
+  smelting, crafting, combat, and multiplayer.
 - Persistence is localStorage only: `dragonborne.character` for the character,
-  `dragonborne.progress` for area, position, and flags (including chop flags),
+  `dragonborne.progress` for area, position, and flags (including chop and mine flags),
   `dragonborne.inventory` for the inventory (versioned schema), `dragonborne.wallet` for
   gold (versioned schema), and `dragonborne.quests.completed` for quest state.
-- Explicitly out of scope: multiplayer, combat, crafting/building/mining, and branching
+- Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
 
 ## Still TBD
@@ -191,8 +217,9 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/story/` — `Quest`/`NpcDefinition` types, quest/npc data (including item rewards),
   class-availability and per-NPC filters, completion progress
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `maps.ts` (pure ASCII
-  village map + NPC/portal/item placements), `mapRules.ts` (pure map validation rules),
-  `forestGen.ts` (seeded procedural forest with 2×2 connectivity), `areas.ts` (area
+  village + Crystal Cave maps and NPC/portal/item placements), `mapRules.ts` (pure map
+  validation rules), `ore.ts` (ore node definitions: hits, yield, item id), `forestGen.ts`
+  (seeded procedural forest with 2×2 connectivity), `areas.ts` (area
   definitions composing the maps), `buildArea.ts` (terrain + markers + portals + pickups),
   `progress.ts` (world position/flag/seed save-load)
 - `src/inventory/` — item types and catalog, pure inventory logic (add/move/split/equip,
@@ -201,7 +228,7 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, the
   trader's buy/sell price tables, and the smith's ware cost table + shortfall helpers
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress), `WorldScene`
-  (movement, NPCs, portals, pickups, chopping, replanting, HUD)
+  (movement, NPCs, portals, pickups, chopping, replanting, mining, HUD)
 - `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts`, `src/tradePanel.ts`,
   `src/smithPanel.ts` — DOM overlays for character creation, quests, area intro text,
   trading, and the smithy

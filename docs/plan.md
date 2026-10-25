@@ -15,7 +15,7 @@ Plot summary:
 - **Quests and available storylines differ depending on class** — this is a core pillar, not a nice-to-have
 - Gameplay feel: top-down 2D, real-time movement and exploration, in the spirit of Terraria (tight controls, explorable world, action-driven interaction with the environment) rather than a static menu-driven visual novel
 
-**Assumption flagged:** "similar to Terraria" is being interpreted as *real-time top-down movement, exploration, and interacting with a live world*, not necessarily mining/building/crafting systems. If crafting/building is actually wanted, that's a separate system to scope later — flag this back if that assumption is wrong.
+**Assumption flagged:** "similar to Terraria" is being interpreted as *real-time top-down movement, exploration, and interacting with a live world*, not necessarily mining/building/crafting systems. If crafting/building is actually wanted, that's a separate system to scope later — flag this back if that assumption is wrong. (Mining has since been signed off separately — see §5.5.)
 
 ---
 
@@ -89,7 +89,7 @@ This is the only loop to build in this phase. No inventory/crafting, no combat, 
 ### 5.5 Explicitly not in scope this phase
 - Multiplayer (no networking code at all)
 - Combat system
-- Crafting, building, mining — no sign-off, and none planned
+- Crafting, building — no sign-off, and none planned (mining was signed off later; see the sign-off paragraphs below)
 - Full branching narrative content — one or two placeholder quests per class is enough
 
 **Signed off after v0.2:** inventory and equipment are **in scope** — a 9-slot hotbar, a
@@ -153,6 +153,25 @@ his existing quest popup on top of the shop (closing quests returns to the wares
 walk-away closes both, mirroring the trade panel's flags and DOM-existence sync. This
 sign-off covers **buying wares for gold + materials** only; smelting, mining, combat
 and multiplayer remain banned.
+
+**Signed off in `.agents/plans/plan.md` (mining — pickaxe, ore nodes, and the Crystal
+Cave):** breaking ore nodes with a pickaxe is **in scope**. Brennan adds an eleventh ware,
+a `pickaxe` (maxStack 1), for **25 gold + 3 iron-ore** — iron is obtainable pre-cave from
+the existing village and forest pickups, so there is no softlock. A third area, **The
+Crystal Cave** (`id: 'cave'`, a hand-authored 48×32 ASCII map in `src/world/maps.ts`), hangs
+off a portal on the Thornwood main path at (34, 24), with a waypoint back to the forest and
+a one-time intro card. Its walls hold iron ore nodes (`o`: 3 swings → **+2 Iron Ore**) and
+steel veins (`v`: 4 swings → **+1 Steel Ingot**); char, hits, yield and item id live as
+data in `src/world/ore.ts`, tunable without touching systems code. Mining mirrors chopping:
+the pickaxe must be the selected hotbar item, each swing toasts the swings remaining, the
+final swing is refused while the pack cannot hold the whole yield, and depletion is
+permanent — `mine:${areaId}:${x},${y}` flags in world progress restore every node as a
+walkable mined-out pocket on reload (no regrowth, no clear function).
+`src/world/mapRules.ts` now requires every mineable tile to have a reachable walkable
+neighbour, so no vein can be sealed inside rock. This sign-off **supersedes every
+"mining" out-of-scope entry above**; smelting (ore → ingot refining), crafting, combat and
+multiplayer remain banned — steel enters the economy as the `steel-ingot` a steel vein
+drops, with no refining step.
 
 ---
 
@@ -244,11 +263,12 @@ type Quest = {
 
 - Keep class/quest data structured (not hardcoded if/else chains) so adding classes and quests later is just data changes.
 - Use placeholder art (rectangles, circles, basic shapes) — do not spend time on final visuals.
-- Flag back if "Terraria-like" is expected to include crafting/building/mining — current scope assumes it does not.
+- Flag back if "Terraria-like" is expected to include crafting/building — current scope assumes it does not. Mining **is** in scope (see §5.5).
 - Do not add multiplayer or combat systems in this phase without explicit sign-off.
-- Inventory/equipment/world pickups **have** explicit sign-off and are implemented (see §5.5); crafting, building and mining do not.
-- Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); mining rocks/ore and crafting do not.
+- Inventory/equipment/world pickups **have** explicit sign-off and are implemented (see §5.5); crafting and building do not.
+- Tree felling and trading (sell wood for gold) **have** explicit sign-off and are implemented (see §5.5); crafting does not.
 - The forest layout redesign **has** explicit sign-off (see §5.5): a trail network with ~35–45 choppable trunks, map data pure in `src/world/maps.ts`, rules in `src/world/mapRules.ts`.
-- The forest regeneration & sapling loop **has** explicit sign-off (see §5.5): seeded procedural forest with full 2×2 walkable connectivity, a 12-gold sapling sold by the trader, and replanting felled stumps with **E** — which signs off *buying items* and *tree regrowth via saplings*, superseding those two out-of-scope entries above. Passive natural regrowth, mining, combat and multiplayer remain out of scope.
-- Brennan's smithy **has** explicit sign-off (see §5.5): a `smith` NPC service selling ten wares for gold AND iron-ore/steel-ingot from the data table in `src/economy/smith.ts`, steel fed only by five one-time pickups and quest rewards, with an **Ask about work** button layering his class-filtered quests on top. Smelting, mining, combat and multiplayer remain out of scope.
+- The forest regeneration & sapling loop **has** explicit sign-off (see §5.5): seeded procedural forest with full 2×2 walkable connectivity, a 12-gold sapling sold by the trader, and replanting felled stumps with **E** — which signs off *buying items* and *tree regrowth via saplings*, superseding those two out-of-scope entries above. Passive natural regrowth, combat and multiplayer remain out of scope.
+- Brennan's smithy **has** explicit sign-off (see §5.5): a `smith` NPC service selling eleven wares for gold AND iron-ore/steel-ingot from the data table in `src/economy/smith.ts`, steel fed by one-time pickups, quest rewards and mined steel veins, with an **Ask about work** button layering his class-filtered quests on top. Smelting, combat and multiplayer remain out of scope.
+- Mining **has** explicit sign-off (see §5.5): a pickaxe sold by Brennan (25 g + 3 iron-ore), ore definitions in `src/world/ore.ts`, `mine:` depletion flags in `src/world/progress.ts`, and the Crystal Cave as a third area off the Thornwood main path — which supersedes the "mining" out-of-scope entries above. Smelting (ore → ingot refining), crafting, combat and multiplayer remain banned.
 - **Phaser version:** this project uses Phaser 4, not Phaser 3. Phaser 4 has a rebuilt WebGL renderer and a cleaner logic/rendering separation compared to Phaser 3 — use the project's Phaser 4 skill for engine-specific conventions rather than defaulting to older Phaser 3 patterns you may know from training data. If a Phaser 3 vs 4 API difference matters for a given step, flag it rather than guessing.
