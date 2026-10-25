@@ -25,8 +25,17 @@ import { AREAS, getAreaById, getAreaSpawn, worldToTile } from '../world/areas'
 import type { AreaDefinition } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
-import { chopFlagKey, clearChopFlag, loadProgress, saveProgress, setProgressFlag } from '../world/progress'
+import { mineHitsRemaining, oreForTile } from '../world/ore'
 import {
+  chopFlagKey,
+  clearChopFlag,
+  loadProgress,
+  mineFlagKey,
+  saveProgress,
+  setProgressFlag,
+} from '../world/progress'
+import {
+  MINED_OUT_INDEX,
   STUMP_TILE_INDEX,
   TILE_SIZE,
   TREE_TRUNK_INDEX,
@@ -152,6 +161,8 @@ export default class WorldScene extends Phaser.Scene {
   private terrain!: Phaser.Tilemaps.TilemapLayerBase
   /** Transient hits remaining per tree tile, keyed `"x,y"`; never persisted. */
   private chopProgress = new Map<string, number>()
+  /** Transient swings remaining per ore tile, keyed `"x,y"`; never persisted. */
+  private mineProgress = new Map<string, number>()
   private popupOpen = false
   private introCardOpen = false
   private inventoryOpen = false
@@ -178,6 +189,7 @@ export default class WorldScene extends Phaser.Scene {
     this.portalMarkers = []
     this.itemMarkers = []
     this.chopProgress = new Map()
+    this.mineProgress = new Map()
     this.hotbarKeys = []
     this.waypoint = null
     this.popupOpen = false
@@ -499,6 +511,8 @@ export default class WorldScene extends Phaser.Scene {
       this.chopTree(nearestTree)
     } else if (nearestStump && interactPressed && !this.popupOpen) {
       this.replantStump(nearestStump)
+    } else if (nearestOre && interactPressed && !this.popupOpen) {
+      this.mineOre(nearestOre)
     }
   }
 
@@ -776,14 +790,14 @@ export default class WorldScene extends Phaser.Scene {
       return
     }
 
-    if (!this.canHoldWood()) {
+    if (!this.canHoldItem(WOOD_ITEM_ID, WOOD_YIELD)) {
       this.chopProgress.set(key, 1)
       showToast('Your pack is full')
       return
     }
 
     this.chopProgress.delete(key)
-    this.grantWood()
+    this.grantItem(WOOD_ITEM_ID, WOOD_YIELD)
     this.terrain.putTileAt(STUMP_TILE_INDEX, tree.tileX, tree.tileY)
     setProgressFlag(chopFlagKey(this.areaId, tree.tileX, tree.tileY))
     showToast(`+${WOOD_YIELD} Wood Log`)
@@ -814,21 +828,57 @@ export default class WorldScene extends Phaser.Scene {
     showToast('Sapling planted')
   }
 
-  private canHoldWood(): boolean {
+  /**
+   * Swings the selected pickaxe at an ore node. Each vein takes its `hits`
+   * swings; the final swing is refused — node held at one swing — while the pack
+   * cannot take the whole yield, so ore is never lost. Depletion is permanent:
+   * the tile reverts to a walkable pocket and the mine flag persists across
+   * reloads. The player must have a pickaxe selected in the hotbar.
+   */
+  private mineOre(ore: OreSpot): void {
+    if (this.selectedHotbarItemId() !== PICKAXE_ITEM_ID) return
+
+    const definition = oreForTile(this.terrain.getTileAt(ore.tileX, ore.tileY)?.index)
+    if (!definition) return
+
+    const key = `${ore.tileX},${ore.tileY}`
+    const remaining = mineHitsRemaining(this.mineProgress.get(key), definition)
+
+    if (remaining > 0) {
+      this.mineProgress.set(key, remaining)
+      showToast(`Ore: ${remaining} more ${remaining === 1 ? 'swing' : 'swings'}`)
+      return
+    }
+
+    if (!this.canHoldItem(definition.itemId, definition.yield)) {
+      this.mineProgress.set(key, 1)
+      showToast('Your pack is full')
+      return
+    }
+
+    this.mineProgress.delete(key)
+    this.grantItem(definition.itemId, definition.yield)
+    this.terrain.putTileAt(MINED_OUT_INDEX, ore.tileX, ore.tileY)
+    setProgressFlag(mineFlagKey(this.areaId, ore.tileX, ore.tileY))
+    const name = getItemById(definition.itemId)?.name ?? definition.itemId
+    showToast(`+${definition.yield} ${name}`)
+  }
+
+  private canHoldItem(itemId: string, quantity: number): boolean {
     const state = getInventory()
     return (
-      remainingCapacity(state, WOOD_ITEM_ID, 'hotbar') +
-        remainingCapacity(state, WOOD_ITEM_ID, 'slots') >=
-      WOOD_YIELD
+      remainingCapacity(state, itemId, 'hotbar') +
+        remainingCapacity(state, itemId, 'slots') >=
+      quantity
     )
   }
 
-  /** Fills the hotbar first so the logs are visible, then the pack. */
-  private grantWood(): void {
+  /** Fills the hotbar first so the result is visible, then the pack. */
+  private grantItem(itemId: string, quantity: number): void {
     updateInventory((current) => {
-      const intoHotbar = addItem(current, WOOD_ITEM_ID, WOOD_YIELD, 'hotbar')
+      const intoHotbar = addItem(current, itemId, quantity, 'hotbar')
       return intoHotbar.remainder > 0
-        ? addItem(intoHotbar.state, WOOD_ITEM_ID, intoHotbar.remainder, 'slots').state
+        ? addItem(intoHotbar.state, itemId, intoHotbar.remainder, 'slots').state
         : intoHotbar.state
     })
   }
