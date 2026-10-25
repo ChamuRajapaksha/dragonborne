@@ -98,3 +98,20 @@ describe('isMinedOutTile', () => {
     expect(isMinedOutTile(undefined)).toBe(false)
   })
 })
+
+describe('crystal decor tile', () => {
+  it('sits in the legend as walkable decor with its own index', () => {
+    const crystal = TILE_BY_CHAR.get('c')
+    expect(crystal).toBeDefined()
+    expect(crystal?.name).toBe('crystal cluster')
+    expect(crystal?.collides).toBe(false)
+    expect(crystal?.index).not.toBe(MINED_OUT_INDEX)
+    expect(COLLIDING_TILE_INDEXES).not.toContain(crystal?.index)
+  })
+
+  it('keeps every legend index unique and dense', () => {
+    const unique = new Set([...TILE_BY_CHAR.values()].map((entry) => entry.index))
+    expect(unique.size).toBe(TILE_BY_CHAR.size)
+    expect(Math.max(...unique)).toBe(TILE_BY_CHAR.size - 1)
+  })
+})
