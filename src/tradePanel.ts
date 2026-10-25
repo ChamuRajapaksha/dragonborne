@@ -94,10 +94,14 @@ function buy(itemId: string, quantity: number): void {
   showToast(`-${received * price} gold for ${received} ${name}`)
 }
 
+type TradeTab = 'buy' | 'sell'
+
 /**
  * DOM overlay for talking to a trader. Mirrors `questPopup`: a fixed-id overlay
  * whose inner `render` closure rewrites itself from live store state, so gold
- * and wood counts stay truthful without the scene re-driving it.
+ * and wood counts stay truthful without the scene re-driving it. The shell is
+ * a fixed header (role / name / greeting / gold), a Buy|Sell tab strip and a
+ * footer, with only the list body scrolling — so Close never leaves the screen.
  */
 export function showTradePanel(npc: NpcDefinition): void {
   closeTradePanel()
@@ -105,6 +109,8 @@ export function showTradePanel(npc: NpcDefinition): void {
   const overlay = document.createElement('div')
   overlay.id = PANEL_ID
   document.body.appendChild(overlay)
+
+  let tab: TradeTab = 'buy'
 
   const render = () => {
     const gold = getGold()
@@ -128,58 +134,80 @@ export function showTradePanel(npc: NpcDefinition): void {
 
     overlay.innerHTML = `
       <div class="trade-panel">
-        <p class="trade-npc-role">${npc.role}</p>
-        <h2>${npc.name}</h2>
-        <p class="trade-npc-greeting">${npc.greeting}</p>
-        <p class="trade-gold">${formatGold(gold)}</p>
-        <h3 class="trade-section-label">Buy</h3>
-        ${shop
-          .map(
-            (offer) => `
-        <div class="trade-card">
-          <h3>${offer.name}</h3>
-          <p>
-            <span class="trade-price">${offer.price} gold each</span>
-            <span class="trade-held">You hold ${offer.held}</span>
-          </p>
-          <div class="trade-actions">
-            <button type="button" data-buy="${offer.itemId}" data-qty="1" ${
-              offer.canBuy1 ? '' : 'disabled'
-            }>Buy 1</button>
-            <button type="button" data-buy="${offer.itemId}" data-qty="10" ${
-              offer.canBuy10 ? '' : 'disabled'
-            }>Buy 10</button>
-          </div>
-        </div>`,
-          )
-          .join('')}
-        <h3 class="trade-section-label">Sell</h3>
-        ${offers
-          .map(
-            (offer) => `
-        <div class="trade-card">
-          <h3>${offer.name}</h3>
-          <p>
-            <span class="trade-price">${offer.price} gold each</span>
-            <span class="trade-held">You hold ${offer.held}</span>
-          </p>
-          <div class="trade-actions">
-            <button type="button" data-sell="${offer.itemId}" data-qty="1" ${
-              offer.held < 1 ? 'disabled' : ''
-            }>Sell 1</button>
-            <button type="button" data-sell="${offer.itemId}" data-qty="10" ${
-              offer.held < 1 ? 'disabled' : ''
-            }>Sell 10</button>
-            <button type="button" data-sell="${offer.itemId}" data-qty="all" ${
-              offer.held < 1 ? 'disabled' : ''
-            }>Sell All</button>
-          </div>
-        </div>`,
-          )
-          .join('')}
-        <button type="button" class="trade-close">Close</button>
+        <div class="trade-header">
+          <p class="trade-npc-role">${npc.role}</p>
+          <h2>${npc.name}</h2>
+          <p class="trade-npc-greeting">${npc.greeting}</p>
+          <p class="trade-gold">${formatGold(gold)}</p>
+        </div>
+        <div class="trade-tabs">
+          <button type="button" class="trade-tab${
+            tab === 'buy' ? ' active' : ''
+          }" data-tab="buy">Buy</button>
+          <button type="button" class="trade-tab${
+            tab === 'sell' ? ' active' : ''
+          }" data-tab="sell">Sell</button>
+        </div>
+        <div class="trade-body">
+          ${
+            tab === 'buy'
+              ? shop
+                  .map(
+                    (offer) => `
+          <div class="trade-card">
+            <h3>${offer.name}</h3>
+            <p>
+              <span class="trade-price">${offer.price} gold each</span>
+              <span class="trade-held">You hold ${offer.held}</span>
+            </p>
+            <div class="trade-actions">
+              <button type="button" data-buy="${offer.itemId}" data-qty="1" ${
+                offer.canBuy1 ? '' : 'disabled'
+              }>Buy 1</button>
+              <button type="button" data-buy="${offer.itemId}" data-qty="10" ${
+                offer.canBuy10 ? '' : 'disabled'
+              }>Buy 10</button>
+            </div>
+          </div>`,
+                  )
+                  .join('')
+              : offers
+                  .map(
+                    (offer) => `
+          <div class="trade-card">
+            <h3>${offer.name}</h3>
+            <p>
+              <span class="trade-price">${offer.price} gold each</span>
+              <span class="trade-held">You hold ${offer.held}</span>
+            </p>
+            <div class="trade-actions">
+              <button type="button" data-sell="${offer.itemId}" data-qty="1" ${
+                offer.held < 1 ? 'disabled' : ''
+              }>Sell 1</button>
+              <button type="button" data-sell="${offer.itemId}" data-qty="10" ${
+                offer.held < 1 ? 'disabled' : ''
+              }>Sell 10</button>
+              <button type="button" data-sell="${offer.itemId}" data-qty="all" ${
+                offer.held < 1 ? 'disabled' : ''
+              }>Sell All</button>
+            </div>
+          </div>`,
+                  )
+                  .join('')
+          }
+        </div>
+        <div class="trade-footer">
+          <button type="button" class="trade-close">Close</button>
+        </div>
       </div>
     `
+
+    overlay.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        tab = button.dataset.tab === 'sell' ? 'sell' : 'buy'
+        render()
+      })
+    })
 
     overlay.querySelectorAll<HTMLButtonElement>('[data-buy]').forEach((button) => {
       button.addEventListener('click', () => {

@@ -169,7 +169,8 @@ body {
   background: #4a4a58;
 }
 
-#trade-popup {
+#trade-popup,
+#smith-popup {
   position: fixed;
   inset: 0;
   display: flex;
@@ -178,13 +179,28 @@ body {
   background: rgba(0, 0, 0, 0.5);
 }
 
+/*
+ * Shop shell: a fixed header (role / name / greeting / gold) and footer, with
+ * only `.trade-body` scrolling. The panel's max-height plus the body's own
+ * overflow replace the old whole-panel scroll, so Close and "Ask about work"
+ * can no longer be pushed off-screen.
+ */
 .trade-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 340px;
+  max-width: 560px;
+  max-height: calc(100vh - 32px);
+  overflow: hidden;
   background: #2b2b36;
   color: #e5e5ea;
-  padding: 20px 24px;
   border-radius: 8px;
-  min-width: 320px;
-  max-width: 460px;
+}
+
+.trade-header {
+  flex: 0 0 auto;
+  padding: 18px 20px 12px;
+  border-bottom: 1px solid #4a4a58;
 }
 
 .trade-npc-role {
@@ -196,8 +212,8 @@ body {
 }
 
 .trade-npc-greeting {
-  margin: 0 0 14px;
-  padding-bottom: 12px;
+  margin: 0 0 10px;
+  padding-bottom: 10px;
   border-bottom: 1px solid #4a4a58;
   font-size: 13px;
   line-height: 1.45;
@@ -206,34 +222,67 @@ body {
 }
 
 .trade-panel h2 {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
   font-size: 18px;
 }
 
 .trade-gold {
-  margin: 0 0 12px;
+  margin: 0;
   font-size: 15px;
   color: #ffd166;
 }
 
-.trade-section-label {
-  margin: 14px 0 8px;
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+.trade-tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #4a4a58;
+}
+
+.trade-panel .trade-tab {
+  display: inline-block;
+  padding: 5px 14px;
+  border: 1px solid #4a4a58;
+  border-radius: 4px;
+  background: #1d1d28;
   color: #b8b8c4;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.trade-panel .trade-tab.active {
+  background: #aa3bff;
+  border-color: #aa3bff;
+  color: #fff;
+}
+
+.trade-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 12px 20px;
+}
+
+.trade-footer {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 1px solid #4a4a58;
 }
 
 .trade-card {
   border: 1px solid #4a4a58;
   border-radius: 6px;
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
 }
 
 .trade-card h3 {
   margin: 0 0 6px;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .trade-card p {
@@ -271,33 +320,8 @@ body {
 }
 
 .trade-close {
-  display: block;
   margin-left: auto;
   background: #4a4a58;
-}
-
-#smith-popup {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0, 0, 0, 0.5);
-}
-
-/*
- * Ten wares stack taller than the canvas, so the smith variant of the trade
- * panel scrolls instead of pushing its Close button off-screen.
- */
-.smith-panel {
-  max-height: calc(100vh - 32px);
-  overflow-y: auto;
-}
-
-.smith-jobs {
-  display: block;
-  width: 100%;
-  margin-bottom: 8px;
 }
 
 #intro-card {

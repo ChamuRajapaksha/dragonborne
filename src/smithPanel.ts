@@ -147,15 +147,20 @@ export function showSmithPanel(
     const wares = SMITH_OFFERS.map((offer) => wareView(offer, gold, held))
 
     overlay.innerHTML = `
-      <div class="trade-panel smith-panel">
-        <p class="trade-npc-role">${npc.role}</p>
-        <h2>${npc.name}</h2>
-        <p class="trade-npc-greeting">${npc.greeting}</p>
-        <p class="trade-gold">${formatGold(gold)}</p>
-        <h3 class="trade-section-label">Wares</h3>
-        ${wares
-          .map(
-            (ware) => `
+      <div class="trade-panel">
+        <div class="trade-header">
+          <p class="trade-npc-role">${npc.role}</p>
+          <h2>${npc.name}</h2>
+          <p class="trade-npc-greeting">${npc.greeting}</p>
+          <p class="trade-gold">${formatGold(gold)}</p>
+        </div>
+        <div class="trade-tabs">
+          <span class="trade-tab active">Wares</span>
+        </div>
+        <div class="trade-body">
+          ${wares
+            .map(
+              (ware) => `
         <div class="trade-card">
           <h3>${ware.name}</h3>
           <p>
@@ -168,10 +173,13 @@ export function showSmithPanel(
             }>Buy 1</button>
           </div>
         </div>`,
-          )
-          .join('')}
-        <button type="button" class="smith-jobs">Ask about work</button>
-        <button type="button" class="trade-close">Close</button>
+            )
+            .join('')}
+        </div>
+        <div class="trade-footer">
+          <button type="button" class="smith-jobs">Ask about work</button>
+          <button type="button" class="trade-close">Close</button>
+        </div>
       </div>
     `
 
