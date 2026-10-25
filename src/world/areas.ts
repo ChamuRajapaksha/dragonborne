@@ -130,6 +130,14 @@ export const CAVE: AreaDefinition = {
   portals: CAVE_PORTALS,
   items: CAVE_ITEMS,
   waypointAreaId: 'forest',
+  intro: {
+    title: 'The Crystal Cave',
+    body: [
+      'The Thornwood track ends at a split in the rock, cold air breathing out of the dark.',
+      'Iron and steel glitter in the walls, but only a pickaxe will shift them.',
+      'Deeper in, the tunnel winds on into the dark — the forest waypoint still points home.',
+    ],
+  },
 }
 
 export const AREAS: Readonly<Record<string, AreaDefinition>> = {
