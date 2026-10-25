@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { CAVE_HEIGHT, CAVE_SKELETON, CAVE_WIDTH, generateCaveMap } from './caveGen'
 import { generateForestMap } from './forestGen'
 import { findMapViolations, unreachedTiles } from './mapRules'
 import {
-  CAVE_MAP,
   CAVE_PORTALS,
   CAVE_SPAWN,
   FOREST_ITEMS,
@@ -30,6 +30,9 @@ function forestRows(seed: number): readonly string[] {
   return rows
 }
 
+/** One cave per save, generated once: the same shape every rules run sees. */
+const CAVE_ROWS = generateCaveMap(4242)
+
 const FOREST_PLACEMENTS = {
   spawn: FOREST_SPAWN,
   npcs: FOREST_NPCS,
@@ -52,7 +55,7 @@ const CAVE_PLACEMENTS = {
 }
 
 function areaMapsFor(forest: readonly string[]): Record<string, readonly string[]> {
-  return { forest, village: VILLAGE_MAP, cave: CAVE_MAP }
+  return { forest, village: VILLAGE_MAP, cave: CAVE_ROWS }
 }
 
 const FOREST_MAIN_CORRIDOR = {
@@ -75,23 +78,28 @@ describe('area map shapes', () => {
   })
 
   it('keeps the cave a uniform shape of known characters', () => {
-    expect(findMapViolations(CAVE_MAP)).toEqual([])
-    expect(CAVE_MAP).toHaveLength(32)
-    for (const row of CAVE_MAP) expect(row).toHaveLength(48)
+    expect(findMapViolations(CAVE_ROWS)).toEqual([])
+    expect(CAVE_ROWS).toHaveLength(CAVE_HEIGHT)
+    for (const row of CAVE_ROWS) expect(row).toHaveLength(CAVE_WIDTH)
+  })
+
+  it('keeps the cave skeleton the same shape as its generated output', () => {
+    expect(CAVE_SKELETON).toHaveLength(CAVE_HEIGHT)
+    for (const row of CAVE_SKELETON) expect(row).toHaveLength(CAVE_WIDTH)
   })
 })
 
 describe('cave spawn', () => {
   it('sits on a walkable tile the 2x2 player body can fully reach from', () => {
-    const violations = findMapViolations(CAVE_MAP, {
+    const violations = findMapViolations(CAVE_ROWS, {
       spawn: CAVE_SPAWN,
       npcs: [],
       portals: [],
       items: [],
     })
     expect(violations).toEqual([])
-    expect(CAVE_MAP[CAVE_SPAWN.y]?.[CAVE_SPAWN.x]).toBe('-')
-    expect(unreachedTiles(CAVE_MAP, CAVE_SPAWN)).toEqual([])
+    expect(CAVE_ROWS[CAVE_SPAWN.y]?.[CAVE_SPAWN.x]).toBe('-')
+    expect(unreachedTiles(CAVE_ROWS, CAVE_SPAWN)).toEqual([])
   })
 })
 
@@ -107,8 +115,8 @@ describe('cave ore nodes', () => {
   }
 
   it('keeps at least 12 iron ore nodes and 4 steel veins', () => {
-    expect(countChar(CAVE_MAP, 'o')).toBeGreaterThanOrEqual(12)
-    expect(countChar(CAVE_MAP, 'v')).toBeGreaterThanOrEqual(4)
+    expect(countChar(CAVE_ROWS, 'o')).toBeGreaterThanOrEqual(12)
+    expect(countChar(CAVE_ROWS, 'v')).toBeGreaterThanOrEqual(4)
   })
 })
 
@@ -126,7 +134,7 @@ describe('area placements', () => {
         `village with forest seed ${seed}`,
       ).toEqual([])
       expect(
-        findMapViolations(CAVE_MAP, CAVE_PLACEMENTS, { areaMaps }),
+        findMapViolations(CAVE_ROWS, CAVE_PLACEMENTS, { areaMaps }),
         `cave with forest seed ${seed}`,
       ).toEqual([])
     }

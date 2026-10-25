@@ -7,7 +7,6 @@ import type {
 } from './maps'
 import {
   CAVE_ITEMS,
-  CAVE_MAP,
   CAVE_NPCS,
   CAVE_PORTALS,
   CAVE_SPAWN,
@@ -21,8 +20,9 @@ import {
   VILLAGE_PORTALS,
   VILLAGE_SPAWN,
 } from './maps'
+import { CAVE_SKELETON, generateCaveMap } from './caveGen'
 import { FOREST_SKELETON, generateForestMap } from './forestGen'
-import { getForestSeed } from './progress'
+import { getCaveSeed, getForestSeed } from './progress'
 import type { TileLegendEntry } from './tileset'
 import { TILE_BY_CHAR, TILE_SIZE } from './tileset'
 
@@ -124,7 +124,7 @@ export const CAVE: AreaDefinition = {
   id: 'cave',
   name: 'The Crystal Cave',
   backgroundColor: 0x12161c,
-  map: CAVE_MAP,
+  map: CAVE_SKELETON,
   defaultSpawn: CAVE_SPAWN,
   npcs: CAVE_NPCS,
   portals: CAVE_PORTALS,
@@ -154,22 +154,35 @@ export function getAreaById(areaId: string): AreaDefinition {
 
 /** Generated forest rows per seed, so re-entering the area never re-rolls it. */
 const FOREST_ROWS_BY_SEED = new Map<number, readonly string[]>()
+const CAVE_ROWS_BY_SEED = new Map<number, readonly string[]>()
 
 /**
- * The rows terrain is built from: the seeded forest layout for the forest
- * (cached per seed for the session), the hand-authored map everywhere else.
- * `AreaDefinition.map` holds the forest skeleton — same 64x48 shape — so map
- * sizing never depends on the save's seed. Chop flags stay coordinate-keyed,
- * and a stable seed keeps them valid across reloads.
+ * The rows terrain is built from: the seeded forest and cave layouts for
+ * those two areas (cached per seed for the session), the hand-authored map
+ * everywhere else. `AreaDefinition.map` holds the skeleton each generator
+ * starts from — same shape as its output — so map sizing never depends on the
+ * save's seed. Chop and mine flags stay coordinate-keyed, and a stable seed
+ * per save keeps them valid across reloads.
  */
 export function resolveAreaRows(area: AreaDefinition): readonly string[] {
-  if (area.id !== 'forest') return area.map
+  if (area.id === 'forest') {
+    return memoizedRows(FOREST_ROWS_BY_SEED, getForestSeed(), generateForestMap)
+  }
+  if (area.id === 'cave') {
+    return memoizedRows(CAVE_ROWS_BY_SEED, getCaveSeed(), generateCaveMap)
+  }
+  return area.map
+}
 
-  const seed = getForestSeed()
-  let rows = FOREST_ROWS_BY_SEED.get(seed)
+function memoizedRows(
+  cache: Map<number, readonly string[]>,
+  seed: number,
+  generate: (seed: number) => readonly string[],
+): readonly string[] {
+  let rows = cache.get(seed)
   if (!rows) {
-    rows = generateForestMap(seed)
-    FOREST_ROWS_BY_SEED.set(seed, rows)
+    rows = generate(seed)
+    cache.set(seed, rows)
   }
   return rows
 }
