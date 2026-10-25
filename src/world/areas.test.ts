@@ -3,6 +3,7 @@ import { generateForestMap } from './forestGen'
 import { findMapViolations, unreachedTiles } from './mapRules'
 import {
   CAVE_MAP,
+  CAVE_PORTALS,
   CAVE_SPAWN,
   FOREST_ITEMS,
   FOREST_NPCS,
@@ -43,8 +44,15 @@ const VILLAGE_PLACEMENTS = {
   items: VILLAGE_ITEMS,
 }
 
+const CAVE_PLACEMENTS = {
+  spawn: CAVE_SPAWN,
+  npcs: [],
+  portals: CAVE_PORTALS,
+  items: [],
+}
+
 function areaMapsFor(forest: readonly string[]): Record<string, readonly string[]> {
-  return { forest, village: VILLAGE_MAP }
+  return { forest, village: VILLAGE_MAP, cave: CAVE_MAP }
 }
 
 const FOREST_MAIN_CORRIDOR = {
@@ -116,6 +124,10 @@ describe('area placements', () => {
       expect(
         findMapViolations(VILLAGE_MAP, VILLAGE_PLACEMENTS, { areaMaps }),
         `village with forest seed ${seed}`,
+      ).toEqual([])
+      expect(
+        findMapViolations(CAVE_MAP, CAVE_PLACEMENTS, { areaMaps }),
+        `cave with forest seed ${seed}`,
       ).toEqual([])
     }
   })
