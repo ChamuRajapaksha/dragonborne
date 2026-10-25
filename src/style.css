@@ -273,36 +273,13 @@ body {
   border-top: 1px solid #4a4a58;
 }
 
-.trade-card {
-  border: 1px solid #4a4a58;
-  border-radius: 6px;
-  padding: 10px 12px;
-  margin-bottom: 10px;
+/* Component costs: green when you cover it, red when you are short. */
+.cost-met {
+  color: #7ee08a;
 }
 
-.trade-card h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
-}
-
-.trade-card p {
-  margin: 0 0 8px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
-.trade-price {
-  color: #ffd27f;
-  margin-right: 12px;
-}
-
-.trade-held {
-  color: #b8b8c4;
-}
-
-.trade-actions {
-  display: flex;
-  gap: 8px;
+.cost-short {
+  color: #ff9d9d;
 }
 
 /* Compact shop row: icon · name + effect · pay → get · have · buttons. */

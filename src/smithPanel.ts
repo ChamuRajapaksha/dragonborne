@@ -25,7 +25,10 @@ import {
   removeItemEverywhere,
   updateInventory,
 } from './inventory'
+import type { ItemKind, StatKey } from './inventory'
 import type { NpcDefinition } from './story'
+import { paintItemIcons } from './itemIcon'
+import { formatStatBonus } from './itemTooltipModel'
 import { showQuestPopup } from './questPopup'
 import { showToast } from './toast'
 
@@ -60,25 +63,91 @@ function heldByMaterial(): Record<string, number> {
   return held
 }
 
-interface SmithWareView {
-  itemId: string
-  name: string
-  cost: string
-  held: string
-  affordable: boolean
+/** The smith's category chips, in display order. `Materials` is the resource kind. */
+const CHIPS: readonly { id: ItemKind | 'all'; label: string }[] = [
+  { id: 'all', label: 'All' },
+  { id: 'weapon', label: 'Weapons' },
+  { id: 'armour', label: 'Armour' },
+  { id: 'tool', label: 'Tools' },
+  { id: 'resource', label: 'Materials' },
+]
+
+type SmithChip = ItemKind | 'all'
+
+/** What a ware does in one line: its stat bonuses, or its blurb otherwise. */
+function effectLine(itemId: string): string {
+  const item = getItemById(itemId)
+  if (!item) return ''
+  const bonuses = item.statBonuses
+    ? Object.entries(item.statBonuses)
+        .map(([key, value]) => formatStatBonus(key as StatKey, value))
+        .join(', ')
+    : ''
+  return bonuses || item.description
 }
 
-function wareView(offer: SmithOffer, gold: number, held: Record<string, number>): SmithWareView {
-  const missing = smithShortfall(gold, held, offer)
-  return {
-    itemId: offer.itemId,
-    name: nameFor(offer.itemId),
-    cost: formatSmithCost(offer, nameFor),
-    held: offer.cost.items
-      .map((line) => `You hold ${held[line.itemId] ?? 0} ${nameFor(line.itemId)}`)
-      .join(' · '),
-    affordable: missing === null,
+/**
+ * `50 gold + 2 Steel Ingot`, each component coloured by whether you cover it —
+ * green when owned, red when short, both decided by the same `smithShortfall`
+ * that gates the purchase.
+ */
+function costHtml(offer: SmithOffer, missing: SmithShortfall | null): string {
+  const shortGold = (missing?.gold ?? 0) > 0
+  const shortItems = new Set(missing?.items.map((line) => line.itemId) ?? [])
+  const parts = [
+    `<span class="${shortGold ? 'cost-short' : 'cost-met'}">${offer.cost.gold} gold</span>`,
+    ...offer.cost.items.map(
+      (line) =>
+        `<span class="${shortItems.has(line.itemId) ? 'cost-short' : 'cost-met'}">${
+          line.quantity
+        } ${nameFor(line.itemId)}</span>`,
+    ),
+  ]
+  return parts.join(' + ')
+}
+
+/** Why a ware is unaffordable: coin short first, then each material short. */
+function shortfallReason(
+  missing: SmithShortfall,
+  gold: number,
+  held: Readonly<Record<string, number>>,
+): string {
+  const parts: string[] = []
+  if (missing.gold > 0) parts.push(`needs ${missing.gold} more gold (you have ${gold})`)
+  for (const line of missing.items) {
+    parts.push(
+      `needs ${line.quantity} ${nameFor(line.itemId)} (you have ${held[line.itemId] ?? 0})`,
+    )
   }
+  return parts.join(', ')
+}
+
+function smithRowHtml(
+  offer: SmithOffer,
+  gold: number,
+  held: Readonly<Record<string, number>>,
+): string {
+  const itemId = offer.itemId
+  const missing = smithShortfall(gold, held, offer)
+  return `
+        <div class="trade-row${missing ? ' is-disabled' : ''}">
+          <span class="trade-row-icon"><span data-item-id="${itemId}"></span></span>
+          <span class="trade-row-main">
+            <span class="trade-row-name">${nameFor(itemId)}</span>
+            <span class="trade-row-effect">${effectLine(itemId)}</span>
+          </span>
+          <span class="trade-row-deal">${costHtml(offer, missing)}</span>
+          <span class="trade-row-actions">
+            <button type="button" data-smith-buy="${itemId}" ${
+              missing ? 'disabled' : ''
+            }>Buy</button>
+          </span>
+          ${
+            missing
+              ? `<span class="trade-row-reason">${shortfallReason(missing, gold, held)}</span>`
+              : ''
+          }
+        </div>`
 }
 
 /** Human-readable toasts for a failed payment — coin short, then materials. */
@@ -141,10 +210,14 @@ export function showSmithPanel(
   overlay.id = PANEL_ID
   document.body.appendChild(overlay)
 
+  let chip: SmithChip = 'all'
+
   const render = () => {
     const gold = getGold()
     const held = heldByMaterial()
-    const wares = SMITH_OFFERS.map((offer) => wareView(offer, gold, held))
+    const wares = SMITH_OFFERS.filter(
+      (offer) => chip === 'all' || (getItemById(offer.itemId)?.kind ?? 'resource') === chip,
+    )
 
     overlay.innerHTML = `
       <div class="trade-panel">
@@ -155,26 +228,19 @@ export function showSmithPanel(
           <p class="trade-gold">${formatGold(gold)}</p>
         </div>
         <div class="trade-tabs">
-          <span class="trade-tab active">Wares</span>
+          ${CHIPS.map(
+            (entry) => `
+          <button type="button" class="trade-tab${
+            chip === entry.id ? ' active' : ''
+          }" data-chip="${entry.id}">${entry.label}</button>`,
+          ).join('')}
         </div>
         <div class="trade-body">
-          ${wares
-            .map(
-              (ware) => `
-        <div class="trade-card">
-          <h3>${ware.name}</h3>
-          <p>
-            <span class="trade-price">${ware.cost}</span>
-            <span class="trade-held">${ware.held}</span>
-          </p>
-          <div class="trade-actions">
-            <button type="button" data-smith-buy="${ware.itemId}" ${
-              ware.affordable ? '' : 'disabled'
-            }>Buy 1</button>
-          </div>
-        </div>`,
-            )
-            .join('')}
+          ${
+            wares.length === 0
+              ? '<p class="trade-empty">Nothing in this category yet</p>'
+              : wares.map((offer) => smithRowHtml(offer, gold, held)).join('')
+          }
         </div>
         <div class="trade-footer">
           <button type="button" class="smith-jobs">Ask about work</button>
@@ -182,6 +248,15 @@ export function showSmithPanel(
         </div>
       </div>
     `
+
+    paintItemIcons(overlay)
+
+    overlay.querySelectorAll<HTMLButtonElement>('[data-chip]').forEach((button) => {
+      button.addEventListener('click', () => {
+        chip = (button.dataset.chip as SmithChip) ?? 'all'
+        render()
+      })
+    })
 
     overlay.querySelectorAll<HTMLButtonElement>('[data-smith-buy]').forEach((button) => {
       button.addEventListener('click', () => {
