@@ -106,7 +106,7 @@ export const FOREST_PORTALS: readonly Portal[] = [
     label: 'To Emberhold',
   },
   {
-    x: 34,
+    x: 5,
     y: 24,
     toAreaId: 'cave',
     toSpawn: { x: 6, y: 16 },
@@ -194,7 +194,7 @@ export const CAVE_PORTALS: readonly Portal[] = [
     x: 4,
     y: 18,
     toAreaId: 'forest',
-    toSpawn: { x: 33, y: 24 },
+    toSpawn: { x: 6, y: 24 },
     label: 'To the Thornwood',
   },
 ]
