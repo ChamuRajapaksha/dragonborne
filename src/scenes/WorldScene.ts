@@ -31,6 +31,7 @@ import {
   TILE_SIZE,
   TREE_TRUNK_INDEX,
   chopHitsRemaining,
+  isOreNodeTile,
   isStumpTile,
   isTreeTrunkTile,
 } from '../world/tileset'
@@ -56,6 +57,7 @@ const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const AXE_ITEM_ID = 'axe'
+const PICKAXE_ITEM_ID = 'pickaxe'
 const SAPLING_ITEM_ID = 'sapling'
 const WOOD_ITEM_ID = 'wood'
 const WOOD_YIELD = 3
@@ -109,6 +111,14 @@ interface TreeSpot {
 
 /** A felled stump, located by tile so a sapling can replant it. */
 interface StumpSpot {
+  tileX: number
+  tileY: number
+  x: number
+  y: number
+}
+
+/** A mineable ore node, located by tile so its progress can be keyed. */
+interface OreSpot {
   tileX: number
   tileY: number
   x: number
@@ -380,6 +390,7 @@ export default class WorldScene extends Phaser.Scene {
     const nearestItem = this.findNearestItem()
     const nearestTree = this.findNearestTree()
     const nearestStump = this.findNearestStump()
+    const nearestOre = this.findNearestOre()
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
@@ -414,6 +425,12 @@ export default class WorldScene extends Phaser.Scene {
           ? 'Press E \u2192 Plant sapling'
           : 'Need a sapling'
       this.showInteractHint(hint, nearestStump.x, nearestStump.y - 30)
+    } else if (nearestOre) {
+      const hint =
+        this.selectedHotbarItemId() === PICKAXE_ITEM_ID
+          ? 'Press E \u2192 Mine ore'
+          : 'Need a pickaxe'
+      this.showInteractHint(hint, nearestOre.x, nearestOre.y - 30)
     } else {
       this.interactHint.setVisible(false)
     }
@@ -703,6 +720,31 @@ export default class WorldScene extends Phaser.Scene {
       for (let tileX = origin.x - radius; tileX <= origin.x + radius; tileX += 1) {
         const tile = this.terrain.getTileAt(tileX, tileY)
         if (!tile || !isStumpTile(tile.index)) continue
+
+        const x = tileX * TILE_SIZE + TILE_SIZE / 2
+        const y = tileY * TILE_SIZE + TILE_SIZE / 2
+        const distance = Phaser.Math.Distance.Between(this.playerPoint.x, this.playerPoint.y, x, y)
+        if (distance <= nearestDistance) {
+          nearest = { tileX, tileY, x, y }
+          nearestDistance = distance
+        }
+      }
+    }
+
+    return nearest
+  }
+
+  /** Scans the terrain tiles within reach for a mineable ore node. */
+  private findNearestOre(): OreSpot | null {
+    const origin = worldToTile(this.playerPoint.x, this.playerPoint.y)
+    const radius = Math.ceil(INTERACT_RANGE / TILE_SIZE)
+    let nearest: OreSpot | null = null
+    let nearestDistance = INTERACT_RANGE
+
+    for (let tileY = origin.y - radius; tileY <= origin.y + radius; tileY += 1) {
+      for (let tileX = origin.x - radius; tileX <= origin.x + radius; tileX += 1) {
+        const tile = this.terrain.getTileAt(tileX, tileY)
+        if (!tile || !isOreNodeTile(tile.index)) continue
 
         const x = tileX * TILE_SIZE + TILE_SIZE / 2
         const y = tileY * TILE_SIZE + TILE_SIZE / 2
