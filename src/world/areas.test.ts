@@ -144,6 +144,29 @@ describe('forest main corridor', () => {
   })
 })
 
+describe('cave portal position', () => {
+  const cavePortal = FOREST_PORTALS.find((portal) => portal.toAreaId === 'cave')
+
+  it('sits west of the forest spawn', () => {
+    expect(cavePortal).toBeDefined()
+    expect(cavePortal?.x).toBeLessThan(FOREST_SPAWN.x)
+    expect(cavePortal?.y).toBe(FOREST_SPAWN.y)
+  })
+
+  it('lands on a walkable, reachable tile on every generated forest seed', () => {
+    expect(cavePortal).toBeDefined()
+    if (!cavePortal) return
+    const placements = { ...FOREST_PLACEMENTS, portals: [cavePortal] }
+    for (const seed of FOREST_SEEDS) {
+      const forest = forestRows(seed)
+      expect(
+        findMapViolations(forest, placements, { areaMaps: areaMapsFor(forest) }),
+        `forest seed ${seed}`,
+      ).toEqual([])
+    }
+  })
+})
+
 describe('forest choppable trunks', () => {
   it('keeps at least 30 reachable trunks in the woods on every seed', () => {
     for (const seed of FOREST_SEEDS) {
