@@ -32,7 +32,7 @@ export function closeTradePanel(): void {
   document.getElementById(PANEL_ID)?.remove()
 }
 
-/** Wood the player carries across the pack and the hotbar. */
+/** An item the player carries across the pack and the hotbar. */
 function countOffer(itemId: string): number {
   const state = getInventory()
   return countItem(state, itemId, 'slots') + countItem(state, itemId, 'hotbar')
@@ -160,29 +160,30 @@ function buyRows(gold: number): string {
   }).join('')
 }
 
-/** Sell rows: what the trader pays for a unit you carry. */
+/** Sell rows: only goods you actually carry — an empty pack shows an empty tab. */
 function sellRows(): string {
-  return TRADE_OFFERS.map((offer) => {
-    const name = getItemById(offer.itemId)?.name ?? offer.itemId
-    const held = countOffer(offer.itemId)
-    return tradeRowHtml({
-      itemId: offer.itemId,
-      name,
-      deal: `Cost: 1 ${name} → Get: ${offer.price} gold`,
-      reason: held >= 1 ? null : `needs 1 ${name} (you have 0)`,
-      held,
-      actions: `
-            <button type="button" data-sell="${offer.itemId}" data-qty="1" ${
-              held >= 1 ? '' : 'disabled'
-            } title="Sell 1">&#215;1</button>
-            <button type="button" data-sell="${offer.itemId}" data-qty="10" ${
-              held >= 1 ? '' : 'disabled'
-            } title="Sell 10">&#215;10</button>
-            <button type="button" data-sell="${offer.itemId}" data-qty="all" ${
-              held >= 1 ? '' : 'disabled'
-            }>All</button>`,
+  const carried = TRADE_OFFERS.filter((offer) => countOffer(offer.itemId) >= 1)
+  if (carried.length === 0) {
+    return '<p class="trade-empty">Nothing to sell yet</p>'
+  }
+
+  return carried
+    .map((offer) => {
+      const name = getItemById(offer.itemId)?.name ?? offer.itemId
+      const held = countOffer(offer.itemId)
+      return tradeRowHtml({
+        itemId: offer.itemId,
+        name,
+        deal: `Cost: 1 ${name} → Get: ${offer.price} gold`,
+        reason: null,
+        held,
+        actions: `
+            <button type="button" data-sell="${offer.itemId}" data-qty="1" title="Sell 1">&#215;1</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="10" title="Sell 10">&#215;10</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="all">All</button>`,
+      })
     })
-  }).join('')
+    .join('')
 }
 
 /**
