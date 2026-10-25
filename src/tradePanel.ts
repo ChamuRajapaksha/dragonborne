@@ -17,6 +17,9 @@ import {
   updateInventory,
 } from './inventory'
 import type { NpcDefinition } from './story'
+import type { StatKey } from './inventory'
+import { paintItemIcons } from './itemIcon'
+import { formatStatBonus } from './itemTooltipModel'
 import { showToast } from './toast'
 
 const PANEL_ID = 'trade-popup'
@@ -96,6 +99,92 @@ function buy(itemId: string, quantity: number): void {
 
 type TradeTab = 'buy' | 'sell'
 
+/** What an item does in one line: its stat bonuses for gear, its blurb otherwise. */
+function effectLine(itemId: string): string {
+  const item = getItemById(itemId)
+  if (!item) return ''
+  const bonuses = item.statBonuses
+    ? Object.entries(item.statBonuses)
+        .map(([key, value]) => formatStatBonus(key as StatKey, value))
+        .join(', ')
+    : ''
+  return bonuses || item.description
+}
+
+interface TradeRowView {
+  itemId: string
+  name: string
+  /** The explicit exchange, e.g. `Cost: 12 gold → Get: 1 Oak Sapling`. */
+  deal: string
+  /** Set when the row cannot be used; shown under the row instead of hidden in a toast. */
+  reason: string | null
+  held: number
+  actions: string
+}
+
+/** One compact shop row: icon · name + effect · what you pay → what you get · have · buttons. */
+function tradeRowHtml(view: TradeRowView): string {
+  return `
+        <div class="trade-row${view.reason ? ' is-disabled' : ''}">
+          <span class="trade-row-icon"><span data-item-id="${view.itemId}"></span></span>
+          <span class="trade-row-main">
+            <span class="trade-row-name">${view.name}</span>
+            <span class="trade-row-effect">${effectLine(view.itemId)}</span>
+          </span>
+          <span class="trade-row-deal">${view.deal}</span>
+          <span class="trade-row-have">Have ${view.held}</span>
+          <span class="trade-row-actions">${view.actions}</span>
+          ${view.reason ? `<span class="trade-row-reason">${view.reason}</span>` : ''}
+        </div>`
+}
+
+/** Buy rows: what each ware costs and how many you could afford right now. */
+function buyRows(gold: number): string {
+  return SHOP_OFFERS.map((offer) => {
+    const name = getItemById(offer.itemId)?.name ?? offer.itemId
+    const affordable = maxAffordable(gold, offer.price)
+    return tradeRowHtml({
+      itemId: offer.itemId,
+      name,
+      deal: `Cost: ${offer.price} gold → Get: 1 ${name}`,
+      reason: affordable >= 1 ? null : `needs ${offer.price} gold (you have ${gold})`,
+      held: countOffer(offer.itemId),
+      actions: `
+            <button type="button" data-buy="${offer.itemId}" data-qty="1" ${
+              affordable >= 1 ? '' : 'disabled'
+            } title="Buy 1">&#215;1</button>
+            <button type="button" data-buy="${offer.itemId}" data-qty="10" ${
+              affordable >= 10 ? '' : 'disabled'
+            } title="Buy 10">&#215;10</button>`,
+    })
+  }).join('')
+}
+
+/** Sell rows: what the trader pays for a unit you carry. */
+function sellRows(): string {
+  return TRADE_OFFERS.map((offer) => {
+    const name = getItemById(offer.itemId)?.name ?? offer.itemId
+    const held = countOffer(offer.itemId)
+    return tradeRowHtml({
+      itemId: offer.itemId,
+      name,
+      deal: `Cost: 1 ${name} → Get: ${offer.price} gold`,
+      reason: held >= 1 ? null : `needs 1 ${name} (you have 0)`,
+      held,
+      actions: `
+            <button type="button" data-sell="${offer.itemId}" data-qty="1" ${
+              held >= 1 ? '' : 'disabled'
+            } title="Sell 1">&#215;1</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="10" ${
+              held >= 1 ? '' : 'disabled'
+            } title="Sell 10">&#215;10</button>
+            <button type="button" data-sell="${offer.itemId}" data-qty="all" ${
+              held >= 1 ? '' : 'disabled'
+            }>All</button>`,
+    })
+  }).join('')
+}
+
 /**
  * DOM overlay for talking to a trader. Mirrors `questPopup`: a fixed-id overlay
  * whose inner `render` closure rewrites itself from live store state, so gold
@@ -114,23 +203,6 @@ export function showTradePanel(npc: NpcDefinition): void {
 
   const render = () => {
     const gold = getGold()
-    const shop = SHOP_OFFERS.map((offer) => {
-      const affordable = maxAffordable(gold, offer.price)
-      return {
-        itemId: offer.itemId,
-        name: getItemById(offer.itemId)?.name ?? offer.itemId,
-        price: offer.price,
-        held: countOffer(offer.itemId),
-        canBuy1: affordable >= 1,
-        canBuy10: affordable >= 10,
-      }
-    })
-    const offers = TRADE_OFFERS.map((offer) => ({
-      itemId: offer.itemId,
-      name: getItemById(offer.itemId)?.name ?? offer.itemId,
-      price: offer.price,
-      held: countOffer(offer.itemId),
-    }))
 
     overlay.innerHTML = `
       <div class="trade-panel">
@@ -149,58 +221,15 @@ export function showTradePanel(npc: NpcDefinition): void {
           }" data-tab="sell">Sell</button>
         </div>
         <div class="trade-body">
-          ${
-            tab === 'buy'
-              ? shop
-                  .map(
-                    (offer) => `
-          <div class="trade-card">
-            <h3>${offer.name}</h3>
-            <p>
-              <span class="trade-price">${offer.price} gold each</span>
-              <span class="trade-held">You hold ${offer.held}</span>
-            </p>
-            <div class="trade-actions">
-              <button type="button" data-buy="${offer.itemId}" data-qty="1" ${
-                offer.canBuy1 ? '' : 'disabled'
-              }>Buy 1</button>
-              <button type="button" data-buy="${offer.itemId}" data-qty="10" ${
-                offer.canBuy10 ? '' : 'disabled'
-              }>Buy 10</button>
-            </div>
-          </div>`,
-                  )
-                  .join('')
-              : offers
-                  .map(
-                    (offer) => `
-          <div class="trade-card">
-            <h3>${offer.name}</h3>
-            <p>
-              <span class="trade-price">${offer.price} gold each</span>
-              <span class="trade-held">You hold ${offer.held}</span>
-            </p>
-            <div class="trade-actions">
-              <button type="button" data-sell="${offer.itemId}" data-qty="1" ${
-                offer.held < 1 ? 'disabled' : ''
-              }>Sell 1</button>
-              <button type="button" data-sell="${offer.itemId}" data-qty="10" ${
-                offer.held < 1 ? 'disabled' : ''
-              }>Sell 10</button>
-              <button type="button" data-sell="${offer.itemId}" data-qty="all" ${
-                offer.held < 1 ? 'disabled' : ''
-              }>Sell All</button>
-            </div>
-          </div>`,
-                  )
-                  .join('')
-          }
+          ${tab === 'buy' ? buyRows(gold) : sellRows()}
         </div>
         <div class="trade-footer">
           <button type="button" class="trade-close">Close</button>
         </div>
       </div>
     `
+
+    paintItemIcons(overlay)
 
     overlay.querySelectorAll<HTMLButtonElement>('[data-tab]').forEach((button) => {
       button.addEventListener('click', () => {

@@ -189,7 +189,7 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 340px;
-  max-width: 560px;
+  max-width: 640px;
   max-height: calc(100vh - 32px);
   overflow: hidden;
   background: #2b2b36;
@@ -303,6 +303,85 @@ body {
 .trade-actions {
   display: flex;
   gap: 8px;
+}
+
+/* Compact shop row: icon · name + effect · pay → get · have · buttons. */
+.trade-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto auto;
+  gap: 4px 10px;
+  align-items: center;
+  padding: 8px 4px;
+  border-bottom: 1px solid #3a3a46;
+}
+
+.trade-row:last-child {
+  border-bottom: none;
+}
+
+.trade-row.is-disabled {
+  background: rgba(255, 130, 130, 0.06);
+}
+
+.trade-row-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #4a4a58;
+  border-radius: 4px;
+  background: #1d1d28;
+}
+
+.trade-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.trade-row-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.trade-row-effect {
+  font-size: 11px;
+  color: #8a8a96;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trade-row-deal {
+  font-size: 12px;
+  color: #ffd27f;
+  text-align: right;
+}
+
+.trade-row-have {
+  font-size: 11px;
+  color: #b8b8c4;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.trade-row-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.trade-row-actions button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.trade-row-reason {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: #ff9d9d;
 }
 
 .trade-panel button {
