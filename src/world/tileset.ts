@@ -31,6 +31,7 @@ export const TILE_LEGEND: readonly TileLegendEntry[] = [
   { index: 14, char: 'v', name: 'steel vein', base: 0x5a6a7a, detail: 0x8a9aaa, collides: true },
   { index: 15, char: 'x', name: 'mined-out pocket', base: 0x2e2a26, detail: 0x3a3530, collides: false },
   { index: 16, char: 'c', name: 'crystal cluster', base: 0x2c6f7a, detail: 0x63d7e0, collides: false },
+  { index: 17, char: 'd', name: 'door', base: 0x6b4a2b, detail: 0x8a6238, collides: true },
 ]
 
 export const TILE_BY_CHAR: ReadonlyMap<string, TileLegendEntry> = new Map(
@@ -91,6 +92,14 @@ export function isOreNodeTile(tileIndex: number | undefined): boolean {
 /** True when a terrain tile is a mined-out pocket left by a cleared vein. */
 export function isMinedOutTile(tileIndex: number | undefined): boolean {
   return tileIndex === MINED_OUT_INDEX
+}
+
+/** The door (`d`) tile index — solid until the player presses E at it. */
+export const DOOR_TILE_INDEX = indexOfChar('d')
+
+/** True when a terrain tile is a house door. */
+export function isDoorTile(tileIndex: number | undefined): boolean {
+  return tileIndex === DOOR_TILE_INDEX
 }
 
 const SHEET_COLUMNS = 4

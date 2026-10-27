@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   COLLIDING_TILE_INDEXES,
+  DOOR_TILE_INDEX,
   IRON_ORE_INDEX,
   MINED_OUT_INDEX,
   STUMP_TILE_INDEX,
@@ -9,6 +10,7 @@ import {
   TREE_CHOP_HITS,
   TREE_TRUNK_INDEX,
   chopHitsRemaining,
+  isDoorTile,
   isMinedOutTile,
   isOreNodeTile,
   isStumpTile,
@@ -96,6 +98,24 @@ describe('isMinedOutTile', () => {
     expect(isMinedOutTile(STEEL_VEIN_INDEX)).toBe(false)
     expect(isMinedOutTile(0)).toBe(false)
     expect(isMinedOutTile(undefined)).toBe(false)
+  })
+})
+
+describe('door tile', () => {
+  it('sits in the legend as a colliding tile with its own index', () => {
+    const door = TILE_BY_CHAR.get('d')
+    expect(door).toBeDefined()
+    expect(door?.name).toBe('door')
+    expect(door?.collides).toBe(true)
+    expect(DOOR_TILE_INDEX).toBe(door?.index)
+    expect(COLLIDING_TILE_INDEXES).toContain(DOOR_TILE_INDEX)
+  })
+
+  it('accepts only the door index', () => {
+    expect(isDoorTile(DOOR_TILE_INDEX)).toBe(true)
+    expect(isDoorTile(TREE_TRUNK_INDEX)).toBe(false)
+    expect(isDoorTile(0)).toBe(false)
+    expect(isDoorTile(undefined)).toBe(false)
   })
 })
 
