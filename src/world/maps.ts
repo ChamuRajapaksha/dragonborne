@@ -32,6 +32,16 @@ export interface AreaItemPlacement {
   onceFlag?: boolean
 }
 
+export interface AreaChestPlacement {
+  chestId: string
+  x: number // tile coords
+  y: number
+  /** Items contained in the chest */
+  loot: readonly { itemId: string; quantity?: number }[]
+  /** One-time open: hidden for good once opened */
+  onceFlag?: boolean
+}
+
 export const VILLAGE_MAP = [
 'TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT',
 'T......,.................b..................rrrrrrrrr......,...T',
