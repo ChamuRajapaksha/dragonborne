@@ -74,6 +74,20 @@ export interface AreaIntro {
   body: readonly string[]
 }
 
+export interface AreaRoomDoor {
+  x: number
+  y: number
+  outside: { x: number; y: number }
+}
+
+export interface AreaRoom {
+  id: string
+  name: string
+  bounds: { x: number; y: number; width: number; height: number }
+  spawn: { x: number; y: number }
+  doors: readonly AreaRoomDoor[]
+}
+
 export interface AreaDefinition {
   id: string
   name: string
@@ -87,6 +101,7 @@ export interface AreaDefinition {
   intro?: AreaIntro
   /** Area the HUD waypoint hint points at; must be the destination of one of `portals`. */
   waypointAreaId?: string
+  rooms?: readonly AreaRoom[]
 }
 
 export const VILLAGE: AreaDefinition = {
@@ -98,6 +113,43 @@ export const VILLAGE: AreaDefinition = {
   npcs: VILLAGE_NPCS,
   portals: VILLAGE_PORTALS,
   items: VILLAGE_ITEMS,
+  rooms: [
+    {
+      id: 'forge',
+      name: 'The Forge',
+      bounds: { x: 5, y: 10, width: 9, height: 6 },
+      spawn: { x: 9, y: 13 },
+      doors: [{ x: 9, y: 15, outside: { x: 9, y: 17 } }],
+    },
+    {
+      id: 'store',
+      name: 'The Store',
+      bounds: { x: 52, y: 19, width: 9, height: 6 },
+      spawn: { x: 56, y: 22 },
+      doors: [{ x: 56, y: 24, outside: { x: 56, y: 26 } }],
+    },
+    {
+      id: 'inn',
+      name: 'The Inn',
+      bounds: { x: 23, y: 39, width: 9, height: 6 },
+      spawn: { x: 27, y: 42 },
+      doors: [{ x: 27, y: 44, outside: { x: 27, y: 46 } }],
+    },
+    {
+      id: 'archive',
+      name: 'The Archive',
+      bounds: { x: 44, y: 1, width: 9, height: 6 },
+      spawn: { x: 48, y: 4 },
+      doors: [{ x: 48, y: 6, outside: { x: 48, y: 8 } }],
+    },
+    {
+      id: 'longhouse',
+      name: 'The Longhouse',
+      bounds: { x: 5, y: 28, width: 9, height: 6 },
+      spawn: { x: 9, y: 31 },
+      doors: [{ x: 9, y: 33, outside: { x: 9, y: 35 } }],
+    },
+  ],
 }
 
 export const FOREST: AreaDefinition = {
