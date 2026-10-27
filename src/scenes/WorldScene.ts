@@ -21,8 +21,8 @@ import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById } from '../story'
-import { AREAS, getAreaById, getAreaSpawn, worldToTile } from '../world/areas'
-import type { AreaDefinition } from '../world/areas'
+import { AREAS, getAreaById, getAreaSpawn, tileToWorld, worldToTile } from '../world/areas'
+import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
 import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { mineHitsRemaining, oreForTile } from '../world/ore'
@@ -175,6 +175,8 @@ export default class WorldScene extends Phaser.Scene {
   private spawnPx: { x: number; y: number } | null = null
   private idleSeconds = 0
   private savedPoint: { x: number; y: number } = { x: UNSAVED_POINT, y: UNSAVED_POINT }
+  private areaDef!: AreaDefinition
+  private dimRects: Phaser.GameObjects.Rectangle[] = []
 
   constructor() {
     super('world')
@@ -201,15 +203,18 @@ export default class WorldScene extends Phaser.Scene {
     this.unsubscribeGold = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
+    this.dimRects = []
   }
 
   create(): void {
     const area = getAreaById(this.areaId)
+    this.areaDef = area
     const spawn = this.spawnPx ?? getAreaSpawn(area)
 
     this.playerPoint = { x: spawn.x, y: spawn.y }
 
     this.terrain = buildTerrain(this, area)
+    this.createDimRects()
 
     this.player = this.add.rectangle(spawn.x, spawn.y, 32, 32, 0x22cc66)
     this.physics.add.existing(this.player)
@@ -265,7 +270,112 @@ export default class WorldScene extends Phaser.Scene {
       this.unsubscribeGold?.()
       this.unsubscribeGold = null
       destroyHotbar()
+      for (const rect of this.dimRects) rect.destroy()
+      this.dimRects = []
     })
+  }
+
+  private createDimRects(): void {
+    for (let i = 0; i < 4; i += 1) {
+      const rect = this.add
+        .rectangle(0, 0, 0, 0, 0x000000, 0.45)
+        .setScrollFactor(0)
+        .setDepth(8)
+        .setVisible(false)
+      this.dimRects.push(rect)
+    }
+  }
+
+  private currentRoom(): AreaRoom | null {
+    const rooms = this.areaDef.rooms
+    if (!rooms) return null
+    const tx = Math.floor(this.playerPoint.x / TILE_SIZE)
+    const ty = Math.floor(this.playerPoint.y / TILE_SIZE)
+    for (const room of rooms) {
+      if (
+        tx >= room.bounds.x &&
+        ty >= room.bounds.y &&
+        tx < room.bounds.x + room.bounds.width &&
+        ty < room.bounds.y + room.bounds.height
+      ) {
+        return room
+      }
+    }
+    return null
+  }
+
+  private updateRoomDim(room: AreaRoom | null): void {
+    const [top, bottom, left, right] = this.dimRects
+    if (!room) {
+      for (const rect of this.dimRects) rect.setVisible(false)
+      return
+    }
+    const cam = this.cameras.main
+    const b = room.bounds
+    const rx1 = b.x * TILE_SIZE - cam.scrollX
+    const ry1 = b.y * TILE_SIZE - cam.scrollY
+    const rw = b.width * TILE_SIZE
+    const rh = b.height * TILE_SIZE
+    const w = this.scale.width
+    const h = this.scale.height
+
+    top.setPosition(w / 2, ry1 / 2).setSize(w, Math.max(0, ry1)).setVisible(true)
+    bottom
+      .setPosition(w / 2, ry1 + rh + Math.max(0, h - (ry1 + rh)) / 2)
+      .setSize(w, Math.max(0, h - (ry1 + rh)))
+      .setVisible(true)
+    left.setPosition(rx1 / 2, h / 2).setSize(Math.max(0, rx1), h).setVisible(true)
+    right
+      .setPosition(rx1 + rw + Math.max(0, w - (rx1 + rw)) / 2, h / 2)
+      .setSize(Math.max(0, w - (rx1 + rw)), h)
+      .setVisible(true)
+  }
+
+  private findDoor(): { door: AreaRoomDoor; room: AreaRoom } | null {
+    const rooms = this.areaDef.rooms
+    if (!rooms) return null
+    for (const room of rooms) {
+      for (const door of room.doors) {
+        const dx = (door.x * TILE_SIZE + TILE_SIZE / 2) - this.playerPoint.x
+        const dy = (door.y * TILE_SIZE + TILE_SIZE / 2) - this.playerPoint.y
+        if (Math.sqrt(dx * dx + dy * dy) <= INTERACT_RANGE) {
+          return { door, room }
+        }
+      }
+    }
+    return null
+  }
+
+  private useDoor(entry: { door: AreaRoomDoor; room: AreaRoom }): void {
+    const room = this.currentRoom()
+    if (room) {
+      this.teleportTo(tileToWorld(entry.door.outside))
+      this.refreshHudAreaName(this.areaDef.name)
+      return
+    }
+    this.teleportTo(tileToWorld(entry.room.spawn))
+    this.refreshHudAreaName(`${this.areaDef.name} — ${entry.room.name}`)
+  }
+
+  private teleportTo(point: { x: number; y: number }): void {
+    this.saveCurrentProgress()
+    this.player.setPosition(point.x, point.y)
+    this.playerPoint = { x: point.x, y: point.y }
+    this.playerBody.setVelocity(0, 0)
+    this.cameras.main.centerOn(point.x, point.y)
+    this.saveCurrentProgress()
+  }
+
+  private refreshHudAreaName(name: string): void {
+    // HUD area name is set once in buildHud; simplest is to update via the text object
+    // We'll search by recreating isn't trivial; just update if we can find it
+    const children = this.children.list as Phaser.GameObjects.GameObject[]
+    for (const child of children) {
+      if ((child as Phaser.GameObjects.Text).text === this.areaDef.name || (child as Phaser.GameObjects.Text).text?.startsWith(this.areaDef.name + ' —')) {
+        ;(child as Phaser.GameObjects.Text).setText(name)
+        return
+      }
+    }
   }
 
   private buildHud(area: AreaDefinition): void {
@@ -372,6 +482,8 @@ export default class WorldScene extends Phaser.Scene {
     this.syncInventoryFlag()
     this.syncTradeFlag()
     this.syncSmithFlag()
+    const currentRoom = this.currentRoom()
+    this.updateRoomDim(currentRoom)
 
     let vx = 0
     let vy = 0
@@ -404,6 +516,7 @@ export default class WorldScene extends Phaser.Scene {
     const nearestStump = this.findNearestStump()
     const nearestOre = this.findNearestOre()
     const nearestNpc = nearest ? getNpcById(nearest.npcId) : undefined
+    const doorEntry = this.findDoor()
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
     const inventoryPressed = Phaser.Input.Keyboard.JustDown(this.inventoryKey)
@@ -416,9 +529,19 @@ export default class WorldScene extends Phaser.Scene {
       this.usePortal(portal)
       return
     }
+    if (doorEntry && interactPressed && !this.popupOpen) {
+      this.useDoor(doorEntry)
+      return
+    }
 
     if (portal) {
       this.showInteractHint(`Press E \u2192 ${portal.toAreaName}`, portal.x, portal.y - 30)
+    } else if (doorEntry) {
+      if (currentRoom) {
+        this.showInteractHint(`Press E \u2192 Leave`, doorEntry.door.x * TILE_SIZE + TILE_SIZE / 2, doorEntry.door.y * TILE_SIZE + TILE_SIZE / 2 - 30)
+      } else {
+        this.showInteractHint(`Press E \u2192 Enter the ${doorEntry.room.name.replace('The ', '')}`, doorEntry.door.x * TILE_SIZE + TILE_SIZE / 2, doorEntry.door.y * TILE_SIZE + TILE_SIZE / 2 - 30)
+      }
     } else if (nearest) {
       this.showInteractHint(NPC_INTERACT_HINT, nearest.x, nearest.y - 30)
     } else if (nearestItem) {
