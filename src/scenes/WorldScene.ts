@@ -23,8 +23,8 @@ import { showToast } from '../toast'
 import { getNpcById } from '../story'
 import { AREAS, getAreaById, getAreaSpawn, tileToWorld, worldToTile } from '../world/areas'
 import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
-import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker } from '../world/buildArea'
-import { buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
+import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker, AreaChestMarker } from '../world/buildArea'
+import { buildChests, buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { mineHitsRemaining, oreForTile } from '../world/ore'
 import {
   chopFlagKey,
@@ -158,6 +158,8 @@ export default class WorldScene extends Phaser.Scene {
   private portalMarkers: AreaPortalMarker[] = []
   /** Items lying in the area, kept live so pickups can remove them. */
   private itemMarkers: AreaItemMarker[] = []
+  /** Chests in the area, kept live so opening can remove them. */
+  private chestMarkers: AreaChestMarker[] = []
   private terrain!: Phaser.Tilemaps.TilemapLayerBase
   /** Transient hits remaining per tree tile, keyed `"x,y"`; never persisted. */
   private chopProgress = new Map<string, number>()
@@ -190,6 +192,7 @@ export default class WorldScene extends Phaser.Scene {
     this.npcMarkers = []
     this.portalMarkers = []
     this.itemMarkers = []
+    this.chestMarkers = []
     this.chopProgress = new Map()
     this.mineProgress = new Map()
     this.hotbarKeys = []
@@ -242,6 +245,7 @@ export default class WorldScene extends Phaser.Scene {
     this.npcMarkers = buildMarkers(this, area)
     this.portalMarkers = buildPortals(this, area)
     this.itemMarkers = buildItems(this, area)
+    this.chestMarkers = buildChests(this, area)
     this.waypoint = this.resolveWaypoint(area)
 
     this.interactHint = this.add
@@ -512,6 +516,7 @@ export default class WorldScene extends Phaser.Scene {
     const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()
     const nearestItem = this.findNearestItem()
+    const nearestChest = this.findNearestChest()
     const nearestTree = this.findNearestTree()
     const nearestStump = this.findNearestStump()
     const nearestOre = this.findNearestOre()
@@ -550,6 +555,8 @@ export default class WorldScene extends Phaser.Scene {
           ? `${nearestItem.name} \u00d7 ${nearestItem.quantity}`
           : nearestItem.name
       this.showInteractHint(`Press E \u2192 ${label}`, nearestItem.x, nearestItem.y - 30)
+    } else if (nearestChest) {
+      this.showInteractHint(`Press E \u2192 Open chest`, nearestChest.x, nearestChest.y - 30)
     } else if (nearestTree) {
       const hint =
         this.selectedHotbarItemId() === AXE_ITEM_ID ? 'Press E \u2192 Chop tree' : 'Need an axe'
@@ -630,6 +637,8 @@ export default class WorldScene extends Phaser.Scene {
       }
     } else if (nearestItem && interactPressed && !this.popupOpen) {
       this.pickupItem(nearestItem)
+    } else if (nearestChest && interactPressed && !this.popupOpen) {
+      this.openChest(nearestChest)
     } else if (nearestTree && interactPressed && !this.popupOpen) {
       this.chopTree(nearestTree)
     } else if (nearestStump && interactPressed && !this.popupOpen) {
@@ -669,6 +678,40 @@ export default class WorldScene extends Phaser.Scene {
     if (marker.flagKey) setProgressFlag(marker.flagKey)
     marker.object.destroy()
     this.itemMarkers = this.itemMarkers.filter((entry) => entry !== marker)
+  }
+
+  private openChest(marker: AreaChestMarker): void {
+    if (marker.loot.length === 0) {
+      if (marker.flagKey) setProgressFlag(marker.flagKey)
+      marker.object.destroy()
+      this.chestMarkers = this.chestMarkers.filter((entry) => entry !== marker)
+      showToast('Empty chest')
+      return
+    }
+
+    let allGained = true
+    for (const loot of marker.loot) {
+      const quantity = loot.quantity ?? 1
+      if (!this.canHoldItem(loot.itemId, quantity)) {
+        allGained = false
+      }
+    }
+
+    if (!allGained) {
+      showToast('Your pack is full')
+      return
+    }
+
+    for (const loot of marker.loot) {
+      const quantity = loot.quantity ?? 1
+      this.grantItem(loot.itemId, quantity)
+      const name = getItemById(loot.itemId)?.name ?? loot.itemId
+      showToast(`+${quantity} ${name}`)
+    }
+
+    if (marker.flagKey) setProgressFlag(marker.flagKey)
+    marker.object.destroy()
+    this.chestMarkers = this.chestMarkers.filter((entry) => entry !== marker)
   }
 
   /**
@@ -807,6 +850,26 @@ export default class WorldScene extends Phaser.Scene {
     let nearestDistance = INTERACT_RANGE
 
     for (const marker of this.itemMarkers) {
+      const distance = Phaser.Math.Distance.Between(
+        this.playerPoint.x,
+        this.playerPoint.y,
+        marker.x,
+        marker.y,
+      )
+      if (distance <= nearestDistance) {
+        nearest = marker
+        nearestDistance = distance
+      }
+    }
+
+    return nearest
+  }
+
+  private findNearestChest(): AreaChestMarker | null {
+    let nearest: AreaChestMarker | null = null
+    let nearestDistance = INTERACT_RANGE
+
+    for (const marker of this.chestMarkers) {
       const distance = Phaser.Math.Distance.Between(
         this.playerPoint.x,
         this.playerPoint.y,
