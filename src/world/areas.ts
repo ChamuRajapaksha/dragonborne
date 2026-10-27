@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import type {
+  AreaChestPlacement,
   AreaItemPlacement,
   AreaNpcPlacement,
   Portal,
@@ -26,7 +27,7 @@ import { getCaveSeed, getForestSeed } from './progress'
 import type { TileLegendEntry } from './tileset'
 import { TILE_BY_CHAR, TILE_SIZE } from './tileset'
 
-export type { AreaItemPlacement, AreaNpcPlacement, Portal, TilePoint } from './maps'
+export type { AreaChestPlacement, AreaItemPlacement, AreaNpcPlacement, Portal, TilePoint } from './maps'
 
 export function parseAreaMap(
   rows: readonly string[],
@@ -98,6 +99,8 @@ export interface AreaDefinition {
   portals: readonly Portal[]
   /** Items lying on the ground; respawn on re-entry unless `onceFlag` is set. */
   items?: readonly AreaItemPlacement[]
+  /** Chests placed in the area. */
+  chests?: readonly AreaChestPlacement[]
   intro?: AreaIntro
   /** Area the HUD waypoint hint points at; must be the destination of one of `portals`. */
   waypointAreaId?: string
