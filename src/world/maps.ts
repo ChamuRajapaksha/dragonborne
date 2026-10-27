@@ -157,6 +157,59 @@ export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = [
   { itemId: 'steel-ingot', x: 42, y: 40, onceFlag: true },
 ]
 
+export const VILLAGE_CHESTS: readonly AreaChestPlacement[] = [
+  {
+    chestId: 'forge-chest',
+    x: 7,
+    y: 12,
+    onceFlag: true,
+    loot: [
+      { itemId: 'steel-ingot', quantity: 2 },
+      { itemId: 'iron-ore', quantity: 3 },
+    ],
+  },
+  {
+    chestId: 'store-chest',
+    x: 54,
+    y: 21,
+    onceFlag: true,
+    loot: [
+      { itemId: 'coil-rope', quantity: 2 },
+      { itemId: 'bog-reed', quantity: 2 },
+    ],
+  },
+  {
+    chestId: 'inn-chest',
+    x: 25,
+    y: 41,
+    onceFlag: true,
+    loot: [
+      { itemId: 'heath-herb', quantity: 3 },
+      { itemId: 'rough-hides', quantity: 2 },
+    ],
+  },
+  {
+    chestId: 'archive-chest',
+    x: 46,
+    y: 3,
+    onceFlag: true,
+    loot: [
+      { itemId: 'leather-cap' },
+      { itemId: 'heath-herb', quantity: 2 },
+    ],
+  },
+  {
+    chestId: 'longhouse-chest',
+    x: 7,
+    y: 30,
+    onceFlag: true,
+    loot: [
+      { itemId: 'rough-hides', quantity: 3 },
+      { itemId: 'oak-kindling', quantity: 3 },
+    ],
+  },
+]
+
 export const CAVE_SPAWN: TilePoint = { x: 4, y: 16 }
 
 export const CAVE_NPCS: readonly AreaNpcPlacement[] = []

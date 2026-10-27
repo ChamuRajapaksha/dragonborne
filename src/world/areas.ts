@@ -15,6 +15,7 @@ import {
   FOREST_NPCS,
   FOREST_PORTALS,
   FOREST_SPAWN,
+  VILLAGE_CHESTS,
   VILLAGE_ITEMS,
   VILLAGE_MAP,
   VILLAGE_NPCS,
@@ -116,6 +117,7 @@ export const VILLAGE: AreaDefinition = {
   npcs: VILLAGE_NPCS,
   portals: VILLAGE_PORTALS,
   items: VILLAGE_ITEMS,
+  chests: VILLAGE_CHESTS,
   rooms: [
     {
       id: 'forge',
