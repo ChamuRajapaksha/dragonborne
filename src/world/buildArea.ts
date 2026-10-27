@@ -47,6 +47,18 @@ export interface AreaItemMarker {
   flagKey: string | null
 }
 
+export interface AreaChestMarker {
+  chestId: string
+  /** Items to give when opened */
+  loot: readonly { itemId: string; quantity?: number }[]
+  x: number // px
+  y: number // px
+  /** The rendered placeholder, so opening removes it. */
+  object: Phaser.GameObjects.Rectangle
+  /** Progress flag to record once opened; null = respawns. */
+  flagKey: string | null
+}
+
 export function buildTerrain(
   scene: Phaser.Scene,
   area: AreaDefinition,
@@ -194,6 +206,41 @@ export function buildItems(
       itemId: item.id,
       name: item.name,
       quantity: placement.quantity ?? 1,
+      x,
+      y,
+      object,
+      flagKey,
+    }
+  })
+}
+
+export function buildChests(
+  scene: Phaser.Scene,
+  area: AreaDefinition,
+): AreaChestMarker[] {
+  return (area.chests ?? []).flatMap((placement) => {
+    for (const loot of placement.loot) {
+      const item = getItemById(loot.itemId)
+      if (!item) {
+        throw new Error(
+          `Area '${area.id}' chest '${placement.chestId}' places unknown item '${loot.itemId}'`,
+        )
+      }
+    }
+
+    const flagKey = placement.onceFlag ? `chest:${area.id}:${placement.chestId}` : null
+    if (flagKey && getProgressFlag(flagKey)) return []
+
+    const { x, y } = tileToWorld(placement)
+
+    const object = scene.add
+      .rectangle(x, y, 18, 18, 0x8b4513)
+      .setStrokeStyle(2, 0x4a2c17)
+      .setDepth(1)
+
+    return {
+      chestId: placement.chestId,
+      loot: placement.loot,
       x,
       y,
       object,
