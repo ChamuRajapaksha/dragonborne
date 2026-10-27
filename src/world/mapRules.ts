@@ -93,6 +93,7 @@ function findPlacementViolations(
       violations.push(`${label} at ${point.x},${point.y} is outside the map`)
       return
     }
+    if (char === 'd') return
     const tile = TILE_BY_CHAR.get(char)
     if (!tile) {
       violations.push(`${label} at ${point.x},${point.y} sits on unknown char '${char}'`)
@@ -158,14 +159,23 @@ const ORTHOGONAL: readonly MapPoint[] = [
   { x: 1, y: 0 },
 ]
 
+function isPassableForConnectivity(char: string): boolean {
+  if (char === 'd') return true
+  const tile = TILE_BY_CHAR.get(char)
+  return tile ? !tile.collides : false
+}
+
 function spawnReachable(map: readonly string[], spawn: MapPoint): Set<string> {
   const width = map[0]?.length ?? 0
   const height = map.length
   const reachable = new Set<string>()
 
   const startChar = map[spawn.y]?.[spawn.x]
-  const startTile = startChar === undefined ? undefined : TILE_BY_CHAR.get(startChar)
-  if (!startTile || startTile.collides) return reachable
+  if (startChar === undefined) return reachable
+  if (startChar !== 'd') {
+    const startTile = TILE_BY_CHAR.get(startChar)
+    if (!startTile || startTile.collides) return reachable
+  }
 
   reachable.add(`${spawn.x},${spawn.y}`)
   const queue: MapPoint[] = [spawn]
@@ -179,8 +189,7 @@ function spawnReachable(map: readonly string[], spawn: MapPoint): Set<string> {
       const key = `${x},${y}`
       if (reachable.has(key)) continue
       const char = map[y]?.[x] ?? ''
-      const tile = TILE_BY_CHAR.get(char)
-      if (!tile || tile.collides) continue
+      if (!isPassableForConnectivity(char)) continue
       reachable.add(key)
       queue.push({ x, y })
     }
