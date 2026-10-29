@@ -1,4 +1,9 @@
-import type { AreaItemPlacement, AreaNpcPlacement, Portal } from './maps'
+import type {
+  AreaChestPlacement,
+  AreaItemPlacement,
+  AreaNpcPlacement,
+  Portal,
+} from './maps'
 import { TILE_BY_CHAR } from './tileset'
 
 export interface MapPoint {
@@ -11,6 +16,7 @@ export interface MapPlacements {
   npcs: readonly AreaNpcPlacement[]
   portals: readonly Portal[]
   items: readonly AreaItemPlacement[]
+  chests?: readonly AreaChestPlacement[]
 }
 
 export interface MapCorridor {
@@ -108,6 +114,9 @@ function findPlacementViolations(
   }
   for (const item of placements.items) {
     requireWalkable(`item '${item.itemId}'`, map, item)
+  }
+  for (const chest of placements.chests ?? []) {
+    requireWalkable(`chest '${chest.chestId}'`, map, chest)
   }
   for (const portal of placements.portals) {
     requireWalkable(`portal to '${portal.toAreaId}'`, map, portal)
@@ -221,6 +230,9 @@ function findReachabilityViolations(
   }
   for (const item of placements.items) {
     requireReached(`item '${item.itemId}'`, item)
+  }
+  for (const chest of placements.chests ?? []) {
+    requireReached(`chest '${chest.chestId}'`, chest)
   }
   for (const portal of placements.portals) {
     requireReached(`portal to '${portal.toAreaId}'`, portal)
