@@ -232,6 +232,19 @@ export const CAVE_NPCS: readonly AreaNpcPlacement[] = []
 
 export const CAVE_ITEMS: readonly AreaItemPlacement[] = []
 
+export const CAVE_CHESTS: readonly AreaChestPlacement[] = [
+  {
+    chestId: 'cave-entry',
+    x: 7,
+    y: 17,
+    onceFlag: true,
+    loot: [
+      { itemId: 'torch', quantity: 2 },
+      { itemId: 'steel-ingot' },
+    ],
+  },
+]
+
 export const CAVE_PORTALS: readonly Portal[] = [
   {
     x: 4,

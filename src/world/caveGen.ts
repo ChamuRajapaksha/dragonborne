@@ -9,6 +9,7 @@
  */
 import type { TilePoint } from './maps'
 import {
+  CAVE_CHESTS,
   CAVE_ITEMS,
   CAVE_NPCS,
   CAVE_PORTALS,
@@ -45,6 +46,7 @@ const HALL_BOTTOM = 19
 const ENTRY_POINTS: readonly TilePoint[] = [
   CAVE_SPAWN,
   ...CAVE_PORTALS.map(({ x, y }) => ({ x, y })),
+  ...CAVE_CHESTS,
   ...FOREST_PORTALS.filter((portal) => portal.toAreaId === 'cave').map(
     (portal) => portal.toSpawn,
   ),
@@ -542,6 +544,7 @@ const CAVE_PLACEMENTS = {
   npcs: CAVE_NPCS,
   portals: CAVE_PORTALS,
   items: CAVE_ITEMS,
+  chests: CAVE_CHESTS,
 }
 
 /** Everything the shared map rules plus the 2x2 body require of a cave. */

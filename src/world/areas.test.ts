@@ -3,6 +3,7 @@ import { CAVE_HEIGHT, CAVE_SKELETON, CAVE_WIDTH, generateCaveMap } from './caveG
 import { generateForestMap } from './forestGen'
 import { findMapViolations, unreachedTiles } from './mapRules'
 import {
+  CAVE_CHESTS,
   CAVE_PORTALS,
   CAVE_SPAWN,
   FOREST_CHESTS,
@@ -56,6 +57,7 @@ const CAVE_PLACEMENTS = {
   npcs: [],
   portals: CAVE_PORTALS,
   items: [],
+  chests: CAVE_CHESTS,
 }
 
 function areaMapsFor(forest: readonly string[]): Record<string, readonly string[]> {

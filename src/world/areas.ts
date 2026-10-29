@@ -7,6 +7,7 @@ import type {
   TilePoint,
 } from './maps'
 import {
+  CAVE_CHESTS,
   CAVE_ITEMS,
   CAVE_NPCS,
   CAVE_PORTALS,
@@ -141,6 +142,7 @@ export const CAVE: AreaDefinition = {
   npcs: CAVE_NPCS,
   portals: CAVE_PORTALS,
   items: CAVE_ITEMS,
+  chests: CAVE_CHESTS,
   waypointAreaId: 'forest',
   intro: {
     title: 'The Crystal Cave',

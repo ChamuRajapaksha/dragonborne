@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { CAVE_HEIGHT, CAVE_SKELETON, CAVE_WIDTH, generateCaveMap } from './caveGen'
 import { findMapViolations, unreachedTiles } from './mapRules'
-import { CAVE_PORTALS, CAVE_SPAWN, FOREST_PORTALS } from './maps'
+import { CAVE_CHESTS, CAVE_PORTALS, CAVE_SPAWN, FOREST_PORTALS } from './maps'
 import { TILE_BY_CHAR } from './tileset'
 
 const ENTRY_POINTS = [
   CAVE_SPAWN,
   ...CAVE_PORTALS.map(({ x, y }) => ({ x, y })),
+  ...CAVE_CHESTS,
   ...FOREST_PORTALS.filter((portal) => portal.toAreaId === 'cave').map(
     (portal) => portal.toSpawn,
   ),
@@ -17,6 +18,7 @@ const CAVE_PLACEMENTS = {
   npcs: [],
   portals: CAVE_PORTALS,
   items: [],
+  chests: CAVE_CHESTS,
 }
 
 const CAVE_SEEDS = [1, 7, 42, 1337, 20260]
