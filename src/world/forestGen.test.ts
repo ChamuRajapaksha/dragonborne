@@ -9,6 +9,7 @@ import {
 } from './forestGen'
 import { findMapViolations, unreachedTiles } from './mapRules'
 import {
+  FOREST_CHESTS,
   FOREST_ITEMS,
   FOREST_NPCS,
   FOREST_PORTALS,
@@ -21,6 +22,7 @@ const FOREST_PLACEMENTS = {
   npcs: FOREST_NPCS,
   portals: FOREST_PORTALS,
   items: FOREST_ITEMS,
+  chests: FOREST_CHESTS,
 }
 
 const AREA_MAPS = {

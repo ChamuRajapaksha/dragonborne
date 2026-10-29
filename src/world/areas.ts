@@ -11,6 +11,7 @@ import {
   CAVE_NPCS,
   CAVE_PORTALS,
   CAVE_SPAWN,
+  FOREST_CHESTS,
   FOREST_ITEMS,
   FOREST_NPCS,
   FOREST_PORTALS,
@@ -120,6 +121,7 @@ export const FOREST: AreaDefinition = {
   waypointAreaId: 'village',
   portals: FOREST_PORTALS,
   items: FOREST_ITEMS,
+  chests: FOREST_CHESTS,
   intro: {
     title: 'The Thornwood',
     body: [

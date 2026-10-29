@@ -146,6 +146,22 @@ export const FOREST_ITEMS: readonly AreaItemPlacement[] = [
   { itemId: 'steel-ingot', x: 59, y: 26, onceFlag: true },
 ]
 
+export const FOREST_CHESTS: readonly AreaChestPlacement[] = [
+  {
+    chestId: 'forest-logging-camp',
+    x: 33,
+    y: 42,
+    onceFlag: true,
+    loot: [
+      { itemId: 'axe' },
+      { itemId: 'torch', quantity: 2 },
+      { itemId: 'oak-kindling', quantity: 5 },
+      { itemId: 'heath-herb', quantity: 3 },
+      { itemId: 'rough-hides' },
+    ],
+  },
+]
+
 export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = [
   { itemId: 'iron-ore', x: 38, y: 10, quantity: 5 },
   { itemId: 'bog-reed', x: 7, y: 16, quantity: 3 },

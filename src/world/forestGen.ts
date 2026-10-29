@@ -5,7 +5,13 @@
  * the generator unit-testable.
  */
 import type { TilePoint } from './maps'
-import { FOREST_ITEMS, FOREST_NPCS, FOREST_PORTALS, FOREST_SPAWN } from './maps'
+import {
+  FOREST_CHESTS,
+  FOREST_ITEMS,
+  FOREST_NPCS,
+  FOREST_PORTALS,
+  FOREST_SPAWN,
+} from './maps'
 import { unreachedGridTiles, unreachedTiles, walkableGrid } from './mapRules'
 import type { Rng } from './rng'
 import { mulberry32, randomInt, randomPick, shuffle } from './rng'
@@ -83,6 +89,7 @@ const RESERVED_POINTS: readonly TilePoint[] = [
   ...FOREST_NPCS,
   ...FOREST_PORTALS,
   ...FOREST_ITEMS,
+  ...FOREST_CHESTS,
 ]
 
 /** True when a grove may not grow on this tile (corridor or near a placement). */
