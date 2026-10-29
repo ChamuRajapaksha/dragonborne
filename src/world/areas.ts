@@ -25,10 +25,13 @@ import {
 import { CAVE_SKELETON, generateCaveMap } from './caveGen'
 import { FOREST_SKELETON, generateForestMap } from './forestGen'
 import { getCaveSeed, getForestSeed } from './progress'
+import type { AreaRoom } from './rooms'
+import { VILLAGE_ROOMS } from './rooms'
 import type { TileLegendEntry } from './tileset'
 import { TILE_BY_CHAR, TILE_SIZE } from './tileset'
 
 export type { AreaChestPlacement, AreaItemPlacement, AreaNpcPlacement, Portal, TilePoint } from './maps'
+export type { AreaRoom, AreaRoomDoor } from './rooms'
 
 export function parseAreaMap(
   rows: readonly string[],
@@ -76,20 +79,6 @@ export interface AreaIntro {
   body: readonly string[]
 }
 
-export interface AreaRoomDoor {
-  x: number
-  y: number
-  outside: { x: number; y: number }
-}
-
-export interface AreaRoom {
-  id: string
-  name: string
-  bounds: { x: number; y: number; width: number; height: number }
-  spawn: { x: number; y: number }
-  doors: readonly AreaRoomDoor[]
-}
-
 export interface AreaDefinition {
   id: string
   name: string
@@ -118,43 +107,7 @@ export const VILLAGE: AreaDefinition = {
   portals: VILLAGE_PORTALS,
   items: VILLAGE_ITEMS,
   chests: VILLAGE_CHESTS,
-  rooms: [
-    {
-      id: 'forge',
-      name: 'The Forge',
-      bounds: { x: 4, y: 9, width: 11, height: 8 },
-      spawn: { x: 9, y: 13 },
-      doors: [{ x: 9, y: 16, outside: { x: 9, y: 18 } }],
-    },
-    {
-      id: 'store',
-      name: 'The Store',
-      bounds: { x: 51, y: 18, width: 11, height: 8 },
-      spawn: { x: 56, y: 22 },
-      doors: [{ x: 56, y: 25, outside: { x: 56, y: 27 } }],
-    },
-    {
-      id: 'inn',
-      name: 'The Inn',
-      bounds: { x: 22, y: 38, width: 11, height: 8 },
-      spawn: { x: 27, y: 42 },
-      doors: [{ x: 27, y: 45, outside: { x: 27, y: 47 } }],
-    },
-    {
-      id: 'archive',
-      name: 'The Archive',
-      bounds: { x: 43, y: 0, width: 11, height: 8 },
-      spawn: { x: 48, y: 4 },
-      doors: [{ x: 48, y: 7, outside: { x: 48, y: 9 } }],
-    },
-    {
-      id: 'longhouse',
-      name: 'The Longhouse',
-      bounds: { x: 4, y: 27, width: 11, height: 8 },
-      spawn: { x: 9, y: 31 },
-      doors: [{ x: 9, y: 34, outside: { x: 9, y: 36 } }],
-    },
-  ],
+  rooms: VILLAGE_ROOMS,
 }
 
 export const FOREST: AreaDefinition = {
