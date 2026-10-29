@@ -55,4 +55,11 @@ export const VILLAGE_ROOMS: readonly AreaRoom[] = [
     spawn: { x: 9, y: 31 },
     doors: [{ x: 9, y: 33, outside: { x: 9, y: 34 } }],
   },
+  {
+    id: 'cottage',
+    name: 'The Cottage',
+    bounds: { x: 6, y: 21, width: 8, height: 3 },
+    spawn: { x: 9, y: 22 },
+    doors: [{ x: 9, y: 24, outside: { x: 9, y: 25 } }],
+  },
 ]
