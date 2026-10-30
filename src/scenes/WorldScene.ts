@@ -212,12 +212,12 @@ export default class WorldScene extends Phaser.Scene {
   create(): void {
     const area = getAreaById(this.areaId)
     this.areaDef = area
-    const spawn = this.spawnPx ?? getAreaSpawn(area)
-
-    this.playerPoint = { x: spawn.x, y: spawn.y }
 
     this.terrain = buildTerrain(this, area)
     this.createDimRects()
+
+    const spawn = this.resolveSpawn(area, this.spawnPx)
+    this.playerPoint = { x: spawn.x, y: spawn.y }
 
     this.player = this.add.rectangle(spawn.x, spawn.y, 32, 32, 0x22cc66)
     this.physics.add.existing(this.player)
@@ -277,6 +277,20 @@ export default class WorldScene extends Phaser.Scene {
       for (const rect of this.dimRects) rect.destroy()
       this.dimRects = []
     })
+  }
+
+  /**
+   * A saved or portal spawn can end up inside rock after a layout change (the
+   * cave was resized). Fall back to the area's default spawn when it does.
+   */
+  private resolveSpawn(
+    area: AreaDefinition,
+    requested: { x: number; y: number } | null,
+  ): { x: number; y: number } {
+    if (!requested) return getAreaSpawn(area)
+    const tile = worldToTile(requested.x, requested.y)
+    if (this.terrain.getTileAt(tile.x, tile.y)?.collides) return getAreaSpawn(area)
+    return requested
   }
 
   private createDimRects(): void {
