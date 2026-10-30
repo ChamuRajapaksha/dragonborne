@@ -34,7 +34,7 @@ function countChar(rows: readonly string[], char: string): number {
 }
 
 describe('cave skeleton', () => {
-  it('is a uniform 64x40 grid of known characters', () => {
+  it('is a uniform 96x64 grid of known characters', () => {
     expect(CAVE_SKELETON).toHaveLength(CAVE_HEIGHT)
     for (const row of CAVE_SKELETON) expect(row).toHaveLength(CAVE_WIDTH)
     expect(findMapViolations(CAVE_SKELETON)).toEqual([])
@@ -60,7 +60,7 @@ describe('cave skeleton', () => {
 })
 
 describe('generateCaveMap', () => {
-  it('returns a uniform 64x40 grid of known characters', () => {
+  it('returns a uniform 96x64 grid of known characters', () => {
     for (const seed of CAVE_SEEDS) {
       const rows = generateCaveMap(seed)
       expect(rows, `seed ${seed}`).toHaveLength(CAVE_HEIGHT)
@@ -150,7 +150,7 @@ function floodFill(rows: readonly string[]): Set<string> {
 }
 
 describe('generated caves across twenty-five seeds', () => {
-  it('keeps every cave a uniform 64x40 grid of known characters', () => {
+  it('keeps every cave a uniform 96x64 grid of known characters', () => {
     for (const seed of RULE_SEEDS) {
       const rows = generateCaveMap(seed)
       expect(rows, `seed ${seed}`).toHaveLength(CAVE_HEIGHT)

@@ -21,8 +21,8 @@ import type { Rng } from './rng'
 import { mulberry32, randomInt, randomPick, shuffle } from './rng'
 import { TILE_BY_CHAR } from './tileset'
 
-export const CAVE_WIDTH = 64
-export const CAVE_HEIGHT = 40
+export const CAVE_WIDTH = 96
+export const CAVE_HEIGHT = 64
 
 const WALL_CHAR = '#'
 const FLOOR_CHAR = '-'
