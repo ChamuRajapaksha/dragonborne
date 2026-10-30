@@ -78,7 +78,7 @@ describe('forest reserved tiles', () => {
     expect(isReservedForestTile(11, 24)).toBe(true) // spawn
     expect(isReservedForestTile(12, 23)).toBe(true) // spawn, diagonal margin
     expect(isReservedForestTile(17, 21)).toBe(true) // guide, diagonal margin
-    expect(isReservedForestTile(5, 15)).toBe(true) // emberglass item
+    expect(isReservedForestTile(33, 42)).toBe(true) // logging-camp chest
     expect(isReservedForestTile(63, 24)).toBe(true) // portal column
   })
 

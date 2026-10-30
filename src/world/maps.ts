@@ -134,17 +134,7 @@ export const VILLAGE_PORTALS: readonly Portal[] = [
   },
 ]
 
-export const FOREST_ITEMS: readonly AreaItemPlacement[] = [
-  { itemId: 'torch', x: 7, y: 24 },
-  { itemId: 'heath-herb', x: 13, y: 27, quantity: 3 },
-  { itemId: 'oak-kindling', x: 26, y: 17, quantity: 5 },
-  { itemId: 'rough-hides', x: 42, y: 8 },
-  { itemId: 'emberglass', x: 6, y: 16, onceFlag: true },
-  { itemId: 'worn-dagger', x: 57, y: 26, onceFlag: true },
-  { itemId: 'axe', x: 58, y: 24, onceFlag: true },
-  { itemId: 'steel-ingot', x: 8, y: 15, onceFlag: true },
-  { itemId: 'steel-ingot', x: 59, y: 26, onceFlag: true },
-]
+export const FOREST_ITEMS: readonly AreaItemPlacement[] = []
 
 export const FOREST_CHESTS: readonly AreaChestPlacement[] = [
   {
