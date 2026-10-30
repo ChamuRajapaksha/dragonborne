@@ -120,9 +120,9 @@ describe('cave ore nodes', () => {
     return count
   }
 
-  it('keeps at least 12 iron ore nodes and 4 steel veins', () => {
-    expect(countChar(CAVE_ROWS, 'o')).toBeGreaterThanOrEqual(12)
-    expect(countChar(CAVE_ROWS, 'v')).toBeGreaterThanOrEqual(4)
+  it('keeps at least 32 iron ore nodes and 10 steel veins', () => {
+    expect(countChar(CAVE_ROWS, 'o')).toBeGreaterThanOrEqual(32)
+    expect(countChar(CAVE_ROWS, 'v')).toBeGreaterThanOrEqual(10)
   })
 })
 

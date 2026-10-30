@@ -35,6 +35,8 @@ function countChar(rows: readonly string[], char: string): number {
 
 describe('cave skeleton', () => {
   it('is a uniform 96x64 grid of known characters', () => {
+    expect(CAVE_WIDTH).toBe(96)
+    expect(CAVE_HEIGHT).toBe(64)
     expect(CAVE_SKELETON).toHaveLength(CAVE_HEIGHT)
     for (const row of CAVE_SKELETON) expect(row).toHaveLength(CAVE_WIDTH)
     expect(findMapViolations(CAVE_SKELETON)).toEqual([])
@@ -174,11 +176,20 @@ describe('generated caves across twenty-five seeds', () => {
     }
   })
 
-  it('keeps at least 16 iron ore tiles and 5 steel vein tiles', () => {
+  it('keeps at least 32 iron ore tiles and 10 steel vein tiles', () => {
     for (const seed of RULE_SEEDS) {
       const rows = generateCaveMap(seed)
-      expect(countChar(rows, 'o'), `seed ${seed} iron`).toBeGreaterThanOrEqual(16)
-      expect(countChar(rows, 'v'), `seed ${seed} steel`).toBeGreaterThanOrEqual(5)
+      expect(countChar(rows, 'o'), `seed ${seed} iron`).toBeGreaterThanOrEqual(32)
+      expect(countChar(rows, 'v'), `seed ${seed} steel`).toBeGreaterThanOrEqual(10)
+    }
+  })
+
+  it('keeps the open floor dense enough for the larger cave without filling it', () => {
+    for (const seed of RULE_SEEDS) {
+      const rows = generateCaveMap(seed)
+      const open = countChar(rows, '-')
+      expect(open, `seed ${seed} open floor`).toBeGreaterThanOrEqual(1200)
+      expect(open, `seed ${seed} open floor`).toBeLessThanOrEqual(4096)
     }
   })
 
