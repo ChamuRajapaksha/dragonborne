@@ -121,34 +121,34 @@ function boxOrigins(rows: readonly (readonly string[])[]): TilePoint[] {
   return origins
 }
 
-const TUNNEL_COUNT = 6
-const TUNNEL_STEPS_MIN = 90
-const TUNNEL_STEPS_MAX = 170
+const TUNNEL_COUNT = 12
+const TUNNEL_STEPS_MIN = 140
+const TUNNEL_STEPS_MAX = 260
 const BLOCK_MIN = 2
 const BLOCK_MAX = 3
 const PASSAGE_BIAS = 0.7
 const RESIZE_CHANCE = 0.12
 
 /**
- * One target per region of the cave — six regions in a 3x2 grid, visited in a
- * seeded shuffle. A plain random walk only gets about as far as the square
+ * One target per region of the cave — twelve regions in a 4x3 grid, visited in
+ * a seeded shuffle. A plain random walk only gets about as far as the square
  * root of its step count, so every tunnel is aimed at its own part of the map
  * instead of wandering out of the hall and back.
  */
 function pickTunnelTargets(rng: Rng): TilePoint[] {
   const regions: TilePoint[] = []
-  for (let column = 0; column < 3; column += 1) {
-    for (let row = 0; row < 2; row += 1) {
+  for (let column = 0; column < 4; column += 1) {
+    for (let row = 0; row < 3; row += 1) {
       regions.push({
-        x: Math.round(((column + 0.5) * CAVE_WIDTH) / 3),
-        y: Math.round(((row + 0.5) * CAVE_HEIGHT) / 2),
+        x: Math.round(((column + 0.5) * CAVE_WIDTH) / 4),
+        y: Math.round(((row + 0.5) * CAVE_HEIGHT) / 3),
       })
     }
   }
   const targets = shuffle(rng, regions)
   return targets.slice(0, TUNNEL_COUNT).map((target) => ({
-    x: target.x + randomInt(rng, -6, 7),
-    y: target.y + randomInt(rng, -5, 6),
+    x: target.x + randomInt(rng, -8, 9),
+    y: target.y + randomInt(rng, -6, 7),
   }))
 }
 
@@ -216,8 +216,8 @@ function carvePassage(
   }
 }
 
-const CHAMBER_MIN = 7
-const CHAMBER_MAX = 10
+const CHAMBER_MIN = 10
+const CHAMBER_MAX = 16
 const CHAMBER_WIDTH_MIN = 3
 const CHAMBER_WIDTH_MAX = 8
 const CHAMBER_HEIGHT_MIN = 3
@@ -248,10 +248,10 @@ function carveChamber(rows: string[][], rng: Rng, center: TilePoint): TilePoint[
   return carved
 }
 
-const LOOP_MIN = 2
-const LOOP_MAX = 3
-const LOOP_STEPS = 200
-const LOOP_MIN_DISTANCE = 24
+const LOOP_MIN = 3
+const LOOP_MAX = 5
+const LOOP_STEPS = 260
+const LOOP_MIN_DISTANCE = 32
 const LOOP_PAIR_ATTEMPTS = 12
 
 /** The step that closes the distance to `to` along the longer axis, if any. */
@@ -402,12 +402,12 @@ function growOreCluster(
   return cluster.length
 }
 
-const IRON_TARGET_TILES = 16
-const IRON_MIN_CLUSTERS = 4
-const IRON_MAX_CLUSTERS = 10
-const STEEL_TARGET_TILES = 5
-const STEEL_MIN_CLUSTERS = 1
-const STEEL_MAX_CLUSTERS = 4
+const IRON_TARGET_TILES = 40
+const IRON_MIN_CLUSTERS = 8
+const IRON_MAX_CLUSTERS = 24
+const STEEL_TARGET_TILES = 14
+const STEEL_MIN_CLUSTERS = 3
+const STEEL_MAX_CLUSTERS = 10
 
 /** Grow veins of `char` until the tile target and the cluster floor are met. */
 function placeOreVeins(
@@ -430,10 +430,10 @@ function placeOreVeins(
   }
 }
 
-const POOL_MIN = 2
-const POOL_MAX = 4
-const POOL_ATTEMPTS = 40
-const POOL_EXTRA_TILES = 3
+const POOL_MIN = 5
+const POOL_MAX = 9
+const POOL_ATTEMPTS = 64
+const POOL_EXTRA_TILES = 4
 
 /**
  * The structure a decor tile has to leave behind: the whole open map still
@@ -489,10 +489,10 @@ function placeWater(rows: string[][], rng: Rng, chamberFloor: readonly TilePoint
   }
 }
 
-const CRYSTAL_CLUSTERS_MIN = 3
-const CRYSTAL_CLUSTERS_MAX = 6
+const CRYSTAL_CLUSTERS_MIN = 8
+const CRYSTAL_CLUSTERS_MAX = 14
 const CRYSTAL_TILES_MIN = 2
-const CRYSTAL_TILES_MAX = 5
+const CRYSTAL_TILES_MAX = 6
 
 /**
  * Clusters of the walkable crystal decor (`c`) over the open floor. Being
