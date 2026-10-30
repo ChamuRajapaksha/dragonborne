@@ -162,16 +162,7 @@ export const FOREST_CHESTS: readonly AreaChestPlacement[] = [
   },
 ]
 
-export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = [
-  { itemId: 'iron-ore', x: 38, y: 10, quantity: 5 },
-  { itemId: 'bog-reed', x: 7, y: 16, quantity: 3 },
-  { itemId: 'coil-rope', x: 17, y: 19 },
-  { itemId: 'rough-hides', x: 40, y: 39, quantity: 2 },
-  { itemId: 'leather-cap', x: 15, y: 35, onceFlag: true },
-  { itemId: 'steel-ingot', x: 38, y: 12, onceFlag: true },
-  { itemId: 'steel-ingot', x: 17, y: 36, onceFlag: true },
-  { itemId: 'steel-ingot', x: 42, y: 40, onceFlag: true },
-]
+export const VILLAGE_ITEMS: readonly AreaItemPlacement[] = []
 
 export const VILLAGE_CHESTS: readonly AreaChestPlacement[] = [
   {
@@ -222,6 +213,49 @@ export const VILLAGE_CHESTS: readonly AreaChestPlacement[] = [
     loot: [
       { itemId: 'rough-hides', quantity: 3 },
       { itemId: 'oak-kindling', quantity: 3 },
+    ],
+  },
+  {
+    chestId: 'cottage-chest',
+    x: 7,
+    y: 22,
+    onceFlag: true,
+    loot: [
+      { itemId: 'leather-cap' },
+      { itemId: 'rough-hides', quantity: 2 },
+      { itemId: 'iron-ore', quantity: 3 },
+    ],
+  },
+  {
+    chestId: 'warehouse-chest',
+    x: 54,
+    y: 42,
+    onceFlag: true,
+    loot: [
+      { itemId: 'iron-ore', quantity: 2 },
+      { itemId: 'steel-ingot', quantity: 2 },
+      { itemId: 'coil-rope' },
+      { itemId: 'bog-reed', quantity: 3 },
+    ],
+  },
+  {
+    chestId: 'keep-chest',
+    x: 28,
+    y: 4,
+    onceFlag: true,
+    loot: [
+      { itemId: 'emberglass' },
+      { itemId: 'steel-ingot' },
+    ],
+  },
+  {
+    chestId: 'hall-chest',
+    x: 17,
+    y: 31,
+    onceFlag: true,
+    loot: [
+      { itemId: 'worn-dagger' },
+      { itemId: 'steel-ingot' },
     ],
   },
 ]
