@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  CAVE_LAYOUT_VERSION,
   chopFlagKey,
   clearChopFlag,
   getCaveSeed,
   getForestSeed,
   getProgressFlag,
   loadProgress,
+  migrateCaveLayout,
   mineFlagKey,
   saveProgress,
   setProgressFlag,
@@ -322,5 +324,91 @@ describe('mine flags for depleted ore nodes', () => {
     expect(getProgressFlag(mineFlagKey('cave', 8, 12))).toBe(true)
     expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(true)
     expect(getForestSeed()).toBe(seed)
+  })
+})
+
+describe('cave layout migration', () => {
+  it('clears cave mine flags and stamps the layout version on an old save', () => {
+    memory.setRaw(
+      STORAGE_KEY,
+      JSON.stringify({
+        areaId: 'cave',
+        x: 64,
+        y: 256,
+        caveSeed: 777,
+        flags: {
+          [mineFlagKey('cave', 4, 12)]: true,
+          [mineFlagKey('cave', 8, 20)]: true,
+        },
+      }),
+    )
+
+    migrateCaveLayout()
+
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(false)
+    expect(getProgressFlag(mineFlagKey('cave', 8, 20))).toBe(false)
+    expect(loadProgress()?.caveLayout).toBe(CAVE_LAYOUT_VERSION)
+  })
+
+  it('keeps forest and village flags while clearing cave ones', () => {
+    setProgressFlag(chopFlagKey('forest', 7, 3))
+    setProgressFlag(mineFlagKey('cave', 4, 12))
+    setProgressFlag('intro:village')
+
+    migrateCaveLayout()
+
+    expect(getProgressFlag(chopFlagKey('forest', 7, 3))).toBe(true)
+    expect(getProgressFlag('intro:village')).toBe(true)
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(false)
+  })
+
+  it('keeps the cave seed and position intact', () => {
+    memory.setRaw(
+      STORAGE_KEY,
+      JSON.stringify({
+        areaId: 'cave',
+        x: 64,
+        y: 256,
+        caveSeed: 4242,
+        flags: { [mineFlagKey('cave', 4, 12)]: true },
+      }),
+    )
+
+    migrateCaveLayout()
+
+    const progress = loadProgress()
+    expect(progress?.areaId).toBe('cave')
+    expect(progress?.x).toBe(64)
+    expect(progress?.y).toBe(256)
+    expect(progress?.caveSeed).toBe(4242)
+  })
+
+  it('only migrates once so new cave flags survive later boots', () => {
+    memory.setRaw(
+      STORAGE_KEY,
+      JSON.stringify({
+        ...LEGACY_SAVE,
+        caveLayout: CAVE_LAYOUT_VERSION,
+        flags: {},
+      }),
+    )
+    setProgressFlag(mineFlagKey('cave', 5, 5))
+
+    migrateCaveLayout()
+
+    expect(getProgressFlag(mineFlagKey('cave', 5, 5))).toBe(true)
+  })
+
+  it('stamps a save that has no cave flags without touching anything else', () => {
+    memory.setRaw(STORAGE_KEY, JSON.stringify(LEGACY_SAVE))
+
+    migrateCaveLayout()
+
+    expect(loadProgress()).toEqual({ ...LEGACY_SAVE, caveLayout: CAVE_LAYOUT_VERSION })
+  })
+
+  it('does nothing when there is no save', () => {
+    expect(() => migrateCaveLayout()).not.toThrow()
+    expect(loadProgress()).toBeNull()
   })
 })

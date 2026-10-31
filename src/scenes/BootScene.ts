@@ -5,7 +5,7 @@ import { showCreationScreen } from '../creationScreen'
 import { hydrateGold } from '../economy'
 import { hydrateInventory } from '../inventory'
 import { AREAS } from '../world/areas'
-import { loadProgress } from '../world/progress'
+import { loadProgress, migrateCaveLayout } from '../world/progress'
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -13,6 +13,7 @@ export default class BootScene extends Phaser.Scene {
   }
 
   create(): void {
+    migrateCaveLayout()
     hydrateInventory()
     hydrateGold()
     const saved = loadCharacter()

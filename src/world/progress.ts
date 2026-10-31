@@ -1,5 +1,13 @@
 const STORAGE_KEY = 'dragonborne.progress'
 
+/**
+ * Bumped whenever cave generation starts laying out tiles differently. Mined
+ * nodes are keyed by coordinate, so the flags from an older layout have to be
+ * dropped once — otherwise a depleted node would reappear, or worse, a solid
+ * tile would read as a walkable pocket.
+ */
+export const CAVE_LAYOUT_VERSION = 2
+
 export interface WorldProgress {
   areaId: string
   x: number
@@ -9,6 +17,8 @@ export interface WorldProgress {
   seed?: number
   /** Seed of the procedural crystal cave layout; assigned on first cave load. */
   caveSeed?: number
+  /** Generation version of the cave layout the mine flags were written against. */
+  caveLayout?: number
 }
 
 function emptyProgress(): WorldProgress {
@@ -40,6 +50,7 @@ export function loadProgress(): WorldProgress | null {
     }
     if (isSeed(parsed.seed)) progress.seed = parsed.seed
     if (isSeed(parsed.caveSeed)) progress.caveSeed = parsed.caveSeed
+    if (isSeed(parsed.caveLayout)) progress.caveLayout = parsed.caveLayout
     return progress
   } catch {
     return null
@@ -88,6 +99,24 @@ export function getCaveSeed(): number {
   const caveSeed = Math.floor(Math.random() * 0x100000000)
   saveProgress({ ...emptyProgress(), ...progress, caveSeed })
   return caveSeed
+}
+
+/**
+ * One-time cave migration. A save written before the layout version existed (or
+ * against an older version) keeps a seed that now generates different tiles, so
+ * every `mine:cave:*` coordinate is meaningless. Clears those flags once and
+ * stamps the current layout version; later boots do nothing.
+ */
+export function migrateCaveLayout(): void {
+  const progress = loadProgress()
+  if (!progress || progress.caveLayout === CAVE_LAYOUT_VERSION) return
+
+  const flags: Record<string, boolean> = {}
+  for (const [key, value] of Object.entries(progress.flags)) {
+    if (!key.startsWith('mine:cave:')) flags[key] = value
+  }
+
+  saveProgress({ ...progress, flags, caveLayout: CAVE_LAYOUT_VERSION })
 }
 
 /**
