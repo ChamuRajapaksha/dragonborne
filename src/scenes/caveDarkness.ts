@@ -1,9 +1,9 @@
 import Phaser from 'phaser'
+import type { TorchLightState } from '../world/torch'
+import { lightRadiusFor } from '../world/torch'
 
 /** How dark the cave sits away from the light; near-black, not pure black. */
 export const CAVE_DARKNESS_ALPHA = 0.94
-
-export type TorchLightState = 'none' | 'carried' | 'selected'
 
 const LIGHT_TEXTURE_PREFIX = 'cave-light-'
 const LIGHT_TEXTURE_STOPS: readonly (readonly [number, number])[] = [
@@ -11,15 +11,6 @@ const LIGHT_TEXTURE_STOPS: readonly (readonly [number, number])[] = [
   [0.55, 0.85],
   [1, 0],
 ]
-const LIGHT_RADII: Readonly<Record<TorchLightState, number>> = {
-  none: 72,
-  carried: 220,
-  selected: 280,
-}
-
-export function lightRadiusFor(state: TorchLightState): number {
-  return LIGHT_RADII[state]
-}
 
 function lightTextureKey(state: TorchLightState): string {
   return `${LIGHT_TEXTURE_PREFIX}${state}`
