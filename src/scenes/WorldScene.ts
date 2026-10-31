@@ -21,6 +21,7 @@ import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById } from '../story'
+import { CaveDarkness } from './caveDarkness'
 import { AREAS, getAreaById, getAreaSpawn, tileToWorld, worldToTile } from '../world/areas'
 import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker, AreaChestMarker } from '../world/buildArea'
@@ -179,6 +180,7 @@ export default class WorldScene extends Phaser.Scene {
   private savedPoint: { x: number; y: number } = { x: UNSAVED_POINT, y: UNSAVED_POINT }
   private areaDef!: AreaDefinition
   private dimRects: Phaser.GameObjects.Rectangle[] = []
+  private caveDarkness: CaveDarkness | null = null
 
   constructor() {
     super('world')
@@ -207,6 +209,7 @@ export default class WorldScene extends Phaser.Scene {
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
     this.dimRects = []
+    this.caveDarkness = null
   }
 
   create(): void {
@@ -255,6 +258,8 @@ export default class WorldScene extends Phaser.Scene {
     this.interactHint.setDepth(3)
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
+    this.caveDarkness =
+      area.id === 'cave' ? new CaveDarkness(this, this.scale.width, this.scale.height) : null
 
     this.buildHud(area)
 
@@ -276,6 +281,8 @@ export default class WorldScene extends Phaser.Scene {
       destroyHotbar()
       for (const rect of this.dimRects) rect.destroy()
       this.dimRects = []
+      this.caveDarkness?.destroy()
+      this.caveDarkness = null
     })
   }
 
@@ -523,6 +530,16 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
+    if (this.areaId === 'cave') {
+      this.caveDarkness?.update(
+        this.cameras.main,
+        this.playerPoint.x,
+        this.playerPoint.y,
+        'none',
+      )
+    } else {
+      this.caveDarkness?.hide()
+    }
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
