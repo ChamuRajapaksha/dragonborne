@@ -118,8 +118,9 @@ the Vitest suite.
     swings-hits-yield balance is plain data in `src/world/ore.ts`.
 14. **Light in the dark:** a **Pitch Torch** carried anywhere in the pack or hotbar lights
     itself while you are in the cave and burns for about **90 seconds**. The darkness is
-    near-total outside your light, and moving, mining, or opening the pack does not put it
-    out unless a panel pauses play. Select the torch in the hotbar for a wider radius. The
+    near-total outside your light. It keeps burning while you move or mine; opening the
+    pack, a shop, or the intro card pauses the burn. Select the torch in the hotbar for a
+    wider radius. The
     HUD shows `Torch: 1:12` while one is burning, and `Torch: none` once you have none.
     When the fuel runs out the spent torch is consumed; another torch in the pack relights
     automatically, and a fresh pickup lights from full. A warning toasts at about ten
