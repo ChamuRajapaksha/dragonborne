@@ -97,7 +97,12 @@ export function getCaveSeed(): number {
   if (progress && isSeed(progress.caveSeed)) return progress.caveSeed
 
   const caveSeed = Math.floor(Math.random() * 0x100000000)
-  saveProgress({ ...emptyProgress(), ...progress, caveSeed })
+  saveProgress({
+    ...emptyProgress(),
+    ...progress,
+    caveSeed,
+    caveLayout: CAVE_LAYOUT_VERSION,
+  })
   return caveSeed
 }
 

@@ -149,7 +149,11 @@ describe('getCaveSeed', () => {
   it('keeps the rest of a legacy save intact when adding a cave seed', () => {
     memory.setRaw(STORAGE_KEY, JSON.stringify(LEGACY_SAVE))
     getCaveSeed()
-    expect(loadProgress()).toEqual({ ...LEGACY_SAVE, caveSeed: expect.any(Number) })
+    expect(loadProgress()).toEqual({
+      ...LEGACY_SAVE,
+      caveSeed: expect.any(Number),
+      caveLayout: CAVE_LAYOUT_VERSION,
+    })
   })
 
   it('hands out the same cave seed on every later call', () => {
@@ -174,6 +178,7 @@ describe('getCaveSeed', () => {
       ...LEGACY_SAVE,
       seed: 99,
       caveSeed: expect.any(Number),
+      caveLayout: CAVE_LAYOUT_VERSION,
     })
     expect(getForestSeed()).toBe(99)
   })
@@ -189,6 +194,16 @@ describe('getCaveSeed', () => {
       caveSeed: loadProgress()?.caveSeed,
     })
     expect(getCaveSeed()).toBe(caveSeed)
+  })
+
+  it('stamps the current layout so a new save never loses its first cave flags', () => {
+    getCaveSeed()
+    expect(loadProgress()?.caveLayout).toBe(CAVE_LAYOUT_VERSION)
+
+    setProgressFlag(mineFlagKey('cave', 4, 12))
+    migrateCaveLayout()
+
+    expect(getProgressFlag(mineFlagKey('cave', 4, 12))).toBe(true)
   })
 })
 
