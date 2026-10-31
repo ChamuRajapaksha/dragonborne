@@ -9,6 +9,7 @@ import { closeTradePanel, isTradePanelOpen, showTradePanel } from '../tradePanel
 import { showSmithPanel, closeSmithPanel, isSmithPanelOpen } from '../smithPanel'
 import {
   addItem,
+  countItem,
   effectiveStats,
   getItemById,
   getInventory,
@@ -27,6 +28,9 @@ import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker, AreaChestMarker } from '../world/buildArea'
 import { buildChests, buildItems, buildMarkers, buildPortals, buildTerrain } from '../world/buildArea'
 import { mineHitsRemaining, oreForTile } from '../world/ore'
+import type { TorchLightState } from '../world/torch'
+import { TORCH_BURN_MS, burnFuel, formatTorchTime, isLowFuel } from '../world/torch'
+import { loadTorchFuel, saveTorchFuel } from '../world/torchFuel'
 import {
   chopFlagKey,
   clearChopFlag,
@@ -56,6 +60,8 @@ const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
 const HUD_PANEL_HEIGHT = 130
+const HUD_CAVE_PANEL_HEIGHT = 150
+const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
 const HUD_BACKGROUND_ALPHA = 0.5
 const HUD_PANEL_DEPTH = 10
@@ -66,6 +72,8 @@ const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
 const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
+const HUD_TORCH_STYLE = { color: '#ffb347', fontSize: '12px' } as const
+const TORCH_ITEM_ID = 'torch'
 const AXE_ITEM_ID = 'axe'
 const PICKAXE_ITEM_ID = 'pickaxe'
 const SAPLING_ITEM_ID = 'sapling'
@@ -154,6 +162,7 @@ export default class WorldScene extends Phaser.Scene {
   private waypointHint!: Phaser.GameObjects.Text
   private hudSelectedItem!: Phaser.GameObjects.Text
   private hudGold!: Phaser.GameObjects.Text
+  private hudTorch: Phaser.GameObjects.Text | null = null
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
@@ -181,6 +190,10 @@ export default class WorldScene extends Phaser.Scene {
   private areaDef!: AreaDefinition
   private dimRects: Phaser.GameObjects.Rectangle[] = []
   private caveDarkness: CaveDarkness | null = null
+  /** Remaining burn of the carried torch, in milliseconds. Persisted per save. */
+  private torchFuelMs = 0
+  private torchFuelSaveElapsed = 0
+  private lowFuelWarned = false
 
   constructor() {
     super('world')
@@ -210,6 +223,10 @@ export default class WorldScene extends Phaser.Scene {
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
     this.dimRects = []
     this.caveDarkness = null
+    this.hudTorch = null
+    this.torchFuelMs = 0
+    this.torchFuelSaveElapsed = 0
+    this.lowFuelWarned = false
   }
 
   create(): void {
@@ -258,6 +275,7 @@ export default class WorldScene extends Phaser.Scene {
     this.interactHint.setDepth(3)
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
+    this.torchFuelMs = loadTorchFuel()
     this.caveDarkness =
       area.id === 'cave' ? new CaveDarkness(this, this.scale.width, this.scale.height) : null
 
@@ -281,6 +299,7 @@ export default class WorldScene extends Phaser.Scene {
       destroyHotbar()
       for (const rect of this.dimRects) rect.destroy()
       this.dimRects = []
+      saveTorchFuel(this.torchFuelMs)
       this.caveDarkness?.destroy()
       this.caveDarkness = null
     })
@@ -404,8 +423,9 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   private buildHud(area: AreaDefinition): void {
+    const panelHeight = area.id === 'cave' ? HUD_CAVE_PANEL_HEIGHT : HUD_PANEL_HEIGHT
     this.add
-      .rectangle(0, 0, HUD_PANEL_WIDTH, HUD_PANEL_HEIGHT, HUD_BACKGROUND_COLOR, HUD_BACKGROUND_ALPHA)
+      .rectangle(0, 0, HUD_PANEL_WIDTH, panelHeight, HUD_BACKGROUND_COLOR, HUD_BACKGROUND_ALPHA)
       .setOrigin(0, 0)
       .setScrollFactor(0)
       .setDepth(HUD_PANEL_DEPTH)
@@ -438,6 +458,10 @@ export default class WorldScene extends Phaser.Scene {
 
     this.hudSelectedItem = addRow('', HUD_SELECTED_STYLE)
     this.refreshSelectedHud(getInventory())
+
+    if (area.id === 'cave') {
+      this.hudTorch = addRow(this.torchHudText(), HUD_TORCH_STYLE)
+    }
   }
 
   private refreshSelectedHud(state: InventoryState): void {
@@ -503,6 +527,101 @@ export default class WorldScene extends Phaser.Scene {
     })
   }
 
+  private torchCount(state: InventoryState = getInventory()): number {
+    return (
+      countItem(state, TORCH_ITEM_ID, 'hotbar') + countItem(state, TORCH_ITEM_ID, 'slots')
+    )
+  }
+
+  private torchLightState(): TorchLightState {
+    if (this.torchCount() === 0 || this.torchFuelMs <= 0) return 'none'
+    return this.selectedHotbarItemId() === TORCH_ITEM_ID ? 'selected' : 'carried'
+  }
+
+  private torchHudText(): string {
+    if (this.torchCount() === 0) return 'Torch: none'
+    return `Torch: ${formatTorchTime(this.torchFuelMs)}`
+  }
+
+  private refreshTorchHud(): void {
+    if (!this.hudTorch) return
+    const text = this.torchHudText()
+    if (this.hudTorch.text !== text) this.hudTorch.setText(text)
+  }
+
+  /**
+   * A carried torch lights itself in the cave and burns only while the player
+   * holds one and no panel pauses play. Selecting it widens the light; a fresh
+   * pickup relights a dead torch. The overlay follows whichever radius applies.
+   */
+  private updateTorch(delta: number): void {
+    const inCave = this.areaId === 'cave'
+    const held = this.torchCount()
+    const paused =
+      this.inventoryOpen || this.tradeOpen || this.smithOpen || this.introCardOpen
+
+    if (inCave && held > 0 && this.torchFuelMs <= 0) {
+      this.torchFuelMs = TORCH_BURN_MS
+      this.lowFuelWarned = false
+    }
+
+    if (inCave && held > 0 && !paused) {
+      const result = burnFuel(this.torchFuelMs, delta)
+      this.torchFuelMs = result.fuelMs
+
+      if (result.burnedOut) {
+        this.extinguishTorch()
+      } else if (isLowFuel(this.torchFuelMs) && !this.lowFuelWarned) {
+        this.lowFuelWarned = true
+        showToast('Torch burning low: under 10s')
+      }
+    }
+
+    if (inCave) this.persistTorchFuel(delta)
+    this.refreshTorchHud()
+
+    if (inCave) {
+      this.caveDarkness?.update(
+        this.cameras.main,
+        this.playerPoint.x,
+        this.playerPoint.y,
+        this.torchLightState(),
+      )
+    } else {
+      this.caveDarkness?.hide()
+    }
+  }
+
+  private persistTorchFuel(delta: number): void {
+    this.torchFuelSaveElapsed += delta
+    if (this.torchFuelSaveElapsed < TORCH_FUEL_SAVE_INTERVAL_MS) return
+
+    this.torchFuelSaveElapsed = 0
+    saveTorchFuel(this.torchFuelMs)
+  }
+
+  /** Consumes the spent torch, relighting the next one or reporting the dark. */
+  private extinguishTorch(): void {
+    let remaining = 0
+    updateInventory((current) => {
+      const result = removeItemEverywhere(current, TORCH_ITEM_ID, 1)
+      remaining = this.torchCount(result.state)
+      return result.state
+    })
+
+    if (remaining > 0) {
+      this.torchFuelMs = TORCH_BURN_MS
+      this.lowFuelWarned = false
+      showToast('Another torch is lit')
+    } else {
+      this.torchFuelMs = 0
+      showToast('Your torch has gone out')
+    }
+
+    this.torchFuelSaveElapsed = 0
+    saveTorchFuel(this.torchFuelMs)
+  }
+
   update(_time: number, delta: number): void {
     this.syncInventoryFlag()
     this.syncTradeFlag()
@@ -530,16 +649,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
     this.playerPoint = { x: this.player.x, y: this.player.y }
-    if (this.areaId === 'cave') {
-      this.caveDarkness?.update(
-        this.cameras.main,
-        this.playerPoint.x,
-        this.playerPoint.y,
-        'none',
-      )
-    } else {
-      this.caveDarkness?.hide()
-    }
+    this.updateTorch(delta)
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
@@ -830,6 +940,7 @@ export default class WorldScene extends Phaser.Scene {
 
   private usePortal(portal: AreaPortalMarker): void {
     this.saveCurrentProgress()
+    saveTorchFuel(this.torchFuelMs)
     this.scene.restart({
       character: this.character,
       areaId: portal.toAreaId,

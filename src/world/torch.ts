@@ -52,3 +52,12 @@ export function burnFuel(fuelMs: number, deltaMs: number): BurnResult {
 export function isLowFuel(fuelMs: number): boolean {
   return fuelMs > 0 && fuelMs <= TORCH_LOW_FUEL_MS
 }
+
+/** HUD clock, rounded up so a burning torch never reads `0:00` before it dies. */
+export function formatTorchTime(fuelMs: number): string {
+  const clamped = Number.isFinite(fuelMs) ? Math.max(0, fuelMs) : 0
+  const totalSeconds = Math.ceil(clamped / 1000)
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`
+}

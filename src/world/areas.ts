@@ -149,6 +149,7 @@ export const CAVE: AreaDefinition = {
     body: [
       'The Thornwood track ends at a split in the rock, cold air breathing out of the dark.',
       'Iron and steel glitter in the walls, but only a pickaxe will shift them.',
+      'A carried torch burns while you are down here; select it in the hotbar for a wider light.',
       'Deeper in, the tunnel winds on into the dark — the forest waypoint still points home.',
     ],
   },
