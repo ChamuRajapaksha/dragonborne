@@ -27,7 +27,9 @@ import {
   buildQuestLog,
   getCompletedQuestIds,
   getTrackedQuestId,
+  reconcileTrackedQuestId,
   resolveTrackedQuest,
+  setTrackedQuestId,
   trackedQuestHudLine,
 } from '../story'
 import { CaveDarkness } from './caveDarkness'
@@ -508,15 +510,26 @@ export default class WorldScene extends Phaser.Scene {
       return
     }
 
+    const completedIds = getCompletedQuestIds()
     const entries = buildQuestLog(
       this.character.classId,
       effectiveStats(this.character.stats, getInventory()),
-      getCompletedQuestIds(),
+      completedIds,
     )
-    const line = trackedQuestHudLine(
-      resolveTrackedQuest(entries, getTrackedQuestId()),
-    )
+    const trackedId = getTrackedQuestId()
+    const entry = resolveTrackedQuest(entries, trackedId)
 
+    // A finished or vanished quest must not stay pinned. Completion is worth a
+    // toast; an unknown id simply drops.
+    const reconciled = reconcileTrackedQuestId(entries, trackedId)
+    if (reconciled !== trackedId) {
+      setTrackedQuestId(reconciled)
+      if (trackedId && completedIds.includes(trackedId)) {
+        showToast('Tracked quest complete')
+      }
+    }
+
+    const line = trackedQuestHudLine(entry)
     if (this.hudTrackedQuest.text !== line) this.hudTrackedQuest.setText(line)
     this.hudTrackedQuest.setVisible(line.length > 0)
   }

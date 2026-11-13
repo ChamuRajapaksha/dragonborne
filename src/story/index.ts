@@ -24,6 +24,7 @@ export {
 } from './questTracking'
 export {
   canTrackQuest,
+  reconcileTrackedQuestId,
   resolveTrackedQuest,
   toggleTrackedQuest,
   trackedQuestHudLine,

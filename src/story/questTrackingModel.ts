@@ -25,6 +25,14 @@ export function resolveTrackedQuest(
   return entry
 }
 
+/** The id worth persisting: drops completed, unknown or untrackable quests. */
+export function reconcileTrackedQuestId(
+  entries: readonly QuestLogEntry[],
+  trackedId: string | null,
+): string | null {
+  return resolveTrackedQuest(entries, trackedId)?.quest.id ?? null
+}
+
 /** One short HUD line for the pinned quest, or an empty string when there is none. */
 export function trackedQuestHudLine(entry: QuestLogEntry | null): string {
   if (!entry) return ''
