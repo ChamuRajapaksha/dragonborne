@@ -247,6 +247,23 @@ body {
   margin: 0;
 }
 
+.quest-journal-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quest-journal-card-actions .quest-track {
+  padding: 3px 8px;
+  font-size: 11px;
+  background: #4a4a58;
+}
+
+.quest-card.tracked {
+  border-color: #aa3bff;
+  box-shadow: inset 3px 0 0 #aa3bff;
+}
+
 .quest-card .quest-journal-npc {
   margin: 0 0 8px;
   font-size: 11px;
