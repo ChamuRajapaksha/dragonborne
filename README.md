@@ -49,7 +49,10 @@ the Vitest suite.
    count toward them. Press **J** at any time to open the **Quest Journal**: every quest
    your class can see, grouped into **Available**, **Locked**, and **Completed**, each
    showing who offers it and any unmet stat requirements. Press **J** again or **Close**
-   to dismiss it; movement and torch burn pause while it is open.
+   to dismiss it; movement and torch burn pause while it is open. Click **Track** on any
+   non-completed quest to pin it: the HUD keeps one `Tracked:` line (marked `(locked)`
+   while stats are short), and the pin persists in `dragonborne.quests.tracked`. Click
+   **Untrack** or finish the quest to clear it.
 7. Your **hotbar** runs along the bottom of the screen; press **1**–**9** to select a slot
    and the HUD names the selected item. Press **I** to open the pack. The pack panel is the
    movement surface — it holds the same 9-slot hotbar row plus the 27 pack slots, and gear
@@ -138,9 +141,10 @@ the Vitest suite.
     `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
     area, position, and intro-card flags, so the next load drops you back on the fire ring
     in the Thornwood with the intro card showing again. `localStorage.removeItem('dragonborne.inventory')`,
-    `localStorage.removeItem('dragonborne.wallet')`, `localStorage.removeItem('dragonborne.torch')`, and
-    `localStorage.removeItem('dragonborne.quests.completed')` reset your gear, gold, torch
-    fuel, and quest progress. Clearing all of them is a full restart.
+    `localStorage.removeItem('dragonborne.wallet')`, `localStorage.removeItem('dragonborne.torch')`,
+    `localStorage.removeItem('dragonborne.quests.completed')`, and
+    `localStorage.removeItem('dragonborne.quests.tracked')` reset your gear, gold, torch
+    fuel, quest progress, and the pinned quest. Clearing all of them is a full restart.
 
 ## Status
 
@@ -160,7 +164,8 @@ third area full of iron ore and steel veins you swing out of the wall with **E**
 node depletes permanently into a walkable pocket that survives reloads. The cave is dark,
 and a carried Pitch Torch lights itself, burns down over about 90 seconds, and throws a
 wider light when selected in the hotbar. Press **J** for a class-aware **Quest Journal**
-that groups Available, Locked, and Completed work. The village's Cottage, Warehouse, Keep, and Hall
+that groups Available, Locked, and Completed work, and track one quest from it to keep a
+pinned `Tracked:` line on the HUD. The village's Cottage, Warehouse, Keep, and Hall
 are enterable rooms, each with a chest. The Thornwood
 is grown procedurally from the seed stored in your save: randomised groves across an
 interior guaranteed to loop end to end, ~35–45 choppable trunks on the grove edges,
@@ -234,8 +239,8 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
   `dragonborne.progress` for area, position, flags (including chop and mine flags), seeds,
   and the cave layout version, `dragonborne.inventory` for the inventory (versioned
   schema), `dragonborne.wallet` for gold (versioned schema), `dragonborne.torch` for
-  remaining torch fuel (versioned schema), and `dragonborne.quests.completed` for quest
-  state.
+  remaining torch fuel (versioned schema), `dragonborne.quests.completed` for quest
+  state, and `dragonborne.quests.tracked` for the pinned quest.
 - Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
 
@@ -249,8 +254,9 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/character/` — `Character`/`CharacterClass` types, class list data, creation,
   localStorage save/load
 - `src/story/` — `Quest`/`NpcDefinition` types, quest/npc data (including item rewards),
-  class-availability and per-NPC filters, completion progress, and pure quest-log
-  selection/grouping (`questLog.ts`)
+  class-availability and per-NPC filters, completion progress, pure quest-log
+  selection/grouping (`questLog.ts`), and tracked-quest storage + selectors
+  (`questTracking.ts`, `questTrackingModel.ts`)
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `maps.ts` (pure ASCII
   village map and NPC/portal/chest placements), `mapRules.ts` (pure map and chest
   validation rules), `rooms.ts` + `roomRules.ts` (village room bounds/doors and their pure
