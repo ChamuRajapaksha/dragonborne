@@ -46,7 +46,10 @@ the Vitest suite.
 6. Press **Complete (stub)** on a quest to mark it complete: it pays the quest's item
    rewards into your pack (a toast confirms what arrived) and the completed state persists.
    Quests with unmet stat requirements are listed but locked — bonuses from equipped gear
-   count toward them.
+   count toward them. Press **J** at any time to open the **Quest Journal**: every quest
+   your class can see, grouped into **Available**, **Locked**, and **Completed**, each
+   showing who offers it and any unmet stat requirements. Press **J** again or **Close**
+   to dismiss it; movement and torch burn pause while it is open.
 7. Your **hotbar** runs along the bottom of the screen; press **1**–**9** to select a slot
    and the HUD names the selected item. Press **I** to open the pack. The pack panel is the
    movement surface — it holds the same 9-slot hotbar row plus the 27 pack slots, and gear
@@ -156,7 +159,8 @@ Pickaxe** and a portal on the Thornwood's main path opens **the Crystal Cave**, 
 third area full of iron ore and steel veins you swing out of the wall with **E** — each
 node depletes permanently into a walkable pocket that survives reloads. The cave is dark,
 and a carried Pitch Torch lights itself, burns down over about 90 seconds, and throws a
-wider light when selected in the hotbar. The village's Cottage, Warehouse, Keep, and Hall
+wider light when selected in the hotbar. Press **J** for a class-aware **Quest Journal**
+that groups Available, Locked, and Completed work. The village's Cottage, Warehouse, Keep, and Hall
 are enterable rooms, each with a chest. The Thornwood
 is grown procedurally from the seed stored in your save: randomised groves across an
 interior guaranteed to loop end to end, ~35–45 choppable trunks on the grove edges,
@@ -245,7 +249,8 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/character/` — `Character`/`CharacterClass` types, class list data, creation,
   localStorage save/load
 - `src/story/` — `Quest`/`NpcDefinition` types, quest/npc data (including item rewards),
-  class-availability and per-NPC filters, completion progress
+  class-availability and per-NPC filters, completion progress, and pure quest-log
+  selection/grouping (`questLog.ts`)
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `maps.ts` (pure ASCII
   village map and NPC/portal/chest placements), `mapRules.ts` (pure map and chest
   validation rules), `rooms.ts` + `roomRules.ts` (village room bounds/doors and their pure
@@ -264,9 +269,9 @@ authoring approach, art style, and any backend beyond localStorage.
   cave-layout migration), `WorldScene` (movement, NPCs, portals, rooms/doors, chests,
   chopping, replanting, mining, torch fuel, HUD), `caveDarkness.ts` (render-texture
   darkness with a radial light hole)
-- `src/creationScreen.ts`, `src/questPopup.ts`, `src/introCard.ts`, `src/tradePanel.ts`,
-  `src/smithPanel.ts` — DOM overlays for character creation, quests, area intro text,
-  trading, and the smithy
+- `src/creationScreen.ts`, `src/questPopup.ts`, `src/questJournal.ts`, `src/introCard.ts`,
+  `src/tradePanel.ts`, `src/smithPanel.ts` — DOM overlays for character creation, quests,
+  the quest journal, area intro text, trading, and the smithy
 - `src/hotbar.ts`, `src/inventoryPanel.ts`, `src/itemIcon.ts`, `src/itemTooltip.ts`,
   `src/toast.ts` — DOM overlays for the hotbar, the pack panel, item glyphs, hover
   tooltips, and transient messages
