@@ -22,3 +22,9 @@ export {
   getTrackedQuestId,
   setTrackedQuestId,
 } from './questTracking'
+export {
+  canTrackQuest,
+  resolveTrackedQuest,
+  toggleTrackedQuest,
+  trackedQuestHudLine,
+} from './questTrackingModel'
