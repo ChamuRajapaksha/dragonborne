@@ -4,6 +4,7 @@ import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
+import { closeQuestJournal, isQuestJournalOpen, showQuestJournal } from '../questJournal'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
 import { closeTradePanel, isTradePanelOpen, showTradePanel } from '../tradePanel'
 import { showSmithPanel, closeSmithPanel, isSmithPanelOpen } from '../smithPanel'
@@ -59,8 +60,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 130
-const HUD_CAVE_PANEL_HEIGHT = 150
+const HUD_PANEL_HEIGHT = 150
+const HUD_CAVE_PANEL_HEIGHT = 170
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
 const HUD_BACKGROUND_ALPHA = 0.5
@@ -72,6 +73,7 @@ const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
 const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
+const HUD_JOURNAL_STYLE = { color: '#8a8a96', fontSize: '12px' } as const
 const HUD_TORCH_STYLE = { color: '#ffb347', fontSize: '12px' } as const
 const TORCH_ITEM_ID = 'torch'
 const AXE_ITEM_ID = 'axe'
@@ -157,6 +159,7 @@ export default class WorldScene extends Phaser.Scene {
   private wasd!: WasdKeys
   private interactKey!: Phaser.Input.Keyboard.Key
   private inventoryKey!: Phaser.Input.Keyboard.Key
+  private journalKey!: Phaser.Input.Keyboard.Key
   private hotbarKeys: Phaser.Input.Keyboard.Key[] = []
   private interactHint!: Phaser.GameObjects.Text
   private waypointHint!: Phaser.GameObjects.Text
@@ -180,6 +183,7 @@ export default class WorldScene extends Phaser.Scene {
   private inventoryOpen = false
   private tradeOpen = false
   private smithOpen = false
+  private journalOpen = false
   private unsubscribeInventory: (() => void) | null = null
   private unsubscribeGold: (() => void) | null = null
   private character: Character | undefined = undefined
@@ -217,6 +221,7 @@ export default class WorldScene extends Phaser.Scene {
     this.inventoryOpen = false
     this.tradeOpen = false
     this.smithOpen = false
+    this.journalOpen = false
     this.unsubscribeInventory = null
     this.unsubscribeGold = null
     this.idleSeconds = 0
@@ -249,6 +254,7 @@ export default class WorldScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I)
+    this.journalKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.J)
 
     this.hotbarKeys = [
       Phaser.Input.Keyboard.KeyCodes.ONE,
@@ -296,6 +302,7 @@ export default class WorldScene extends Phaser.Scene {
       this.unsubscribeInventory = null
       this.unsubscribeGold?.()
       this.unsubscribeGold = null
+      closeQuestJournal()
       destroyHotbar()
       for (const rect of this.dimRects) rect.destroy()
       this.dimRects = []
@@ -459,6 +466,8 @@ export default class WorldScene extends Phaser.Scene {
     this.hudSelectedItem = addRow('', HUD_SELECTED_STYLE)
     this.refreshSelectedHud(getInventory())
 
+    addRow('J: quest journal', HUD_JOURNAL_STYLE)
+
     if (area.id === 'cave') {
       this.hudTorch = addRow(this.torchHudText(), HUD_TORCH_STYLE)
     }
@@ -558,7 +567,11 @@ export default class WorldScene extends Phaser.Scene {
     const inCave = this.areaId === 'cave'
     const held = this.torchCount()
     const paused =
-      this.inventoryOpen || this.tradeOpen || this.smithOpen || this.introCardOpen
+      this.inventoryOpen ||
+      this.tradeOpen ||
+      this.smithOpen ||
+      this.journalOpen ||
+      this.introCardOpen
 
     if (inCave && held > 0 && this.torchFuelMs <= 0) {
       this.torchFuelMs = TORCH_BURN_MS
@@ -626,6 +639,7 @@ export default class WorldScene extends Phaser.Scene {
     this.syncInventoryFlag()
     this.syncTradeFlag()
     this.syncSmithFlag()
+    this.syncJournalFlag()
     const currentRoom = this.currentRoom()
     this.updateRoomDim(currentRoom)
 
@@ -637,7 +651,7 @@ export default class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1
     if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1
 
-    if (this.inventoryOpen || this.tradeOpen || this.smithOpen) {
+    if (this.inventoryOpen || this.tradeOpen || this.smithOpen || this.journalOpen) {
       vx = 0
       vy = 0
     }
@@ -666,9 +680,14 @@ export default class WorldScene extends Phaser.Scene {
 
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
     const inventoryPressed = Phaser.Input.Keyboard.JustDown(this.inventoryKey)
+    const journalPressed = Phaser.Input.Keyboard.JustDown(this.journalKey)
 
     if (inventoryPressed && (this.inventoryOpen || (!this.popupOpen && !this.introCardOpen))) {
       this.toggleInventory()
+    }
+
+    if (journalPressed && (this.journalOpen || (!this.popupOpen && !this.introCardOpen))) {
+      this.toggleJournal()
     }
 
     if (portal && interactPressed && !this.popupOpen) {
@@ -727,6 +746,7 @@ export default class WorldScene extends Phaser.Scene {
       !this.inventoryOpen &&
       !this.tradeOpen &&
       !this.smithOpen &&
+      !this.journalOpen &&
       !nearestNpc
     ) {
       closeQuestPopup()
@@ -877,6 +897,31 @@ export default class WorldScene extends Phaser.Scene {
     if (!this.smithOpen || isSmithPanelOpen()) return
     this.smithOpen = false
     this.popupOpen = false
+  }
+
+  /** The journal's Close button removes its DOM, so reconcile it the same way. */
+  private syncJournalFlag(): void {
+    if (!this.journalOpen || isQuestJournalOpen()) return
+    this.journalOpen = false
+    this.popupOpen = false
+  }
+
+  private toggleJournal(): void {
+    closeQuestJournal()
+    if (this.journalOpen) {
+      this.journalOpen = false
+      this.popupOpen = false
+      return
+    }
+
+    if (!this.character) return
+
+    showQuestJournal(
+      this.character.classId,
+      effectiveStats(this.character.stats, getInventory()),
+    )
+    this.journalOpen = true
+    this.popupOpen = true
   }
 
   private toggleInventory(): void {
