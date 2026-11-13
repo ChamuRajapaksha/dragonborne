@@ -17,3 +17,8 @@ export {
   questLogSummary,
   unmetQuestStats,
 } from './questLog'
+export {
+  clearTrackedQuest,
+  getTrackedQuestId,
+  setTrackedQuestId,
+} from './questTracking'
