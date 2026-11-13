@@ -23,6 +23,13 @@ import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById } from '../story'
+import {
+  buildQuestLog,
+  getCompletedQuestIds,
+  getTrackedQuestId,
+  resolveTrackedQuest,
+  trackedQuestHudLine,
+} from '../story'
 import { CaveDarkness } from './caveDarkness'
 import { AREAS, getAreaById, getAreaSpawn, tileToWorld, worldToTile } from '../world/areas'
 import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
@@ -60,8 +67,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 150
-const HUD_CAVE_PANEL_HEIGHT = 170
+const HUD_PANEL_HEIGHT = 170
+const HUD_CAVE_PANEL_HEIGHT = 190
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
 const HUD_BACKGROUND_ALPHA = 0.5
@@ -74,6 +81,7 @@ const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const HUD_JOURNAL_STYLE = { color: '#8a8a96', fontSize: '12px' } as const
+const HUD_TRACKED_STYLE = { color: '#c9a7ff', fontSize: '12px' } as const
 const HUD_TORCH_STYLE = { color: '#ffb347', fontSize: '12px' } as const
 const TORCH_ITEM_ID = 'torch'
 const AXE_ITEM_ID = 'axe'
@@ -166,6 +174,7 @@ export default class WorldScene extends Phaser.Scene {
   private hudSelectedItem!: Phaser.GameObjects.Text
   private hudGold!: Phaser.GameObjects.Text
   private hudTorch: Phaser.GameObjects.Text | null = null
+  private hudTrackedQuest!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
@@ -468,6 +477,9 @@ export default class WorldScene extends Phaser.Scene {
 
     addRow('J: quest journal', HUD_JOURNAL_STYLE)
 
+    this.hudTrackedQuest = addRow('', HUD_TRACKED_STYLE)
+    this.refreshTrackedQuestHud()
+
     if (area.id === 'cave') {
       this.hudTorch = addRow(this.torchHudText(), HUD_TORCH_STYLE)
     }
@@ -487,6 +499,26 @@ export default class WorldScene extends Phaser.Scene {
   private refreshGoldHud(gold: number): void {
     const text = formatGold(gold)
     if (this.hudGold.text !== text) this.hudGold.setText(text)
+  }
+
+  /** The journal's pinned quest, resolved against the character's current stats. */
+  private refreshTrackedQuestHud(): void {
+    if (!this.character) {
+      this.hudTrackedQuest.setVisible(false)
+      return
+    }
+
+    const entries = buildQuestLog(
+      this.character.classId,
+      effectiveStats(this.character.stats, getInventory()),
+      getCompletedQuestIds(),
+    )
+    const line = trackedQuestHudLine(
+      resolveTrackedQuest(entries, getTrackedQuestId()),
+    )
+
+    if (this.hudTrackedQuest.text !== line) this.hudTrackedQuest.setText(line)
+    this.hudTrackedQuest.setVisible(line.length > 0)
   }
 
   private resolveWaypoint(area: AreaDefinition): Waypoint | null {
@@ -751,6 +783,7 @@ export default class WorldScene extends Phaser.Scene {
     ) {
       closeQuestPopup()
       this.popupOpen = false
+      this.refreshTrackedQuestHud()
     }
 
     // The trade panel closes on walk-away like the quest popup, but only for
@@ -904,6 +937,7 @@ export default class WorldScene extends Phaser.Scene {
     if (!this.journalOpen || isQuestJournalOpen()) return
     this.journalOpen = false
     this.popupOpen = false
+    this.refreshTrackedQuestHud()
   }
 
   private toggleJournal(): void {
