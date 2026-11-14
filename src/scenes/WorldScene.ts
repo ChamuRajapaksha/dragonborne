@@ -41,6 +41,11 @@ import { mineHitsRemaining, oreForTile } from '../world/ore'
 import type { TorchLightState } from '../world/torch'
 import { TORCH_BURN_MS, burnFuel, formatTorchTime, isLowFuel } from '../world/torch'
 import { loadTorchFuel, saveTorchFuel } from '../world/torchFuel'
+import type { ClockState } from '../world/time'
+import { START_MINUTES, advanceClock } from '../world/time'
+import type { WeatherState } from '../world/weatherSchedule'
+import { advanceWeather, createWeatherState } from '../world/weatherSchedule'
+import { loadClockSave, saveClockSave } from '../world/clockStorage'
 import {
   chopFlagKey,
   clearChopFlag,
@@ -72,6 +77,7 @@ const HUD_PANEL_WIDTH = 300
 const HUD_PANEL_HEIGHT = 170
 const HUD_CAVE_PANEL_HEIGHT = 190
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
+const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
 const HUD_BACKGROUND_ALPHA = 0.5
 const HUD_PANEL_DEPTH = 10
@@ -209,6 +215,11 @@ export default class WorldScene extends Phaser.Scene {
   private torchFuelMs = 0
   private torchFuelSaveElapsed = 0
   private lowFuelWarned = false
+  /** Absolute game time; pauses while a modal UI is open. */
+  private clock: ClockState = { totalMinutes: START_MINUTES }
+  private weatherSeed = 0
+  private weather: WeatherState = { kind: 'clear', untilMinutes: 0, rollIndex: 0 }
+  private clockSaveElapsed = 0
 
   constructor() {
     super('world')
@@ -243,6 +254,10 @@ export default class WorldScene extends Phaser.Scene {
     this.torchFuelMs = 0
     this.torchFuelSaveElapsed = 0
     this.lowFuelWarned = false
+    this.clock = { totalMinutes: START_MINUTES }
+    this.weatherSeed = 0
+    this.weather = { kind: 'clear', untilMinutes: 0, rollIndex: 0 }
+    this.clockSaveElapsed = 0
   }
 
   create(): void {
@@ -293,6 +308,7 @@ export default class WorldScene extends Phaser.Scene {
 
     this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
     this.torchFuelMs = loadTorchFuel()
+    this.loadClock()
     this.caveDarkness =
       area.id === 'cave' ? new CaveDarkness(this, this.scale.width, this.scale.height) : null
 
@@ -318,6 +334,7 @@ export default class WorldScene extends Phaser.Scene {
       for (const rect of this.dimRects) rect.destroy()
       this.dimRects = []
       saveTorchFuel(this.torchFuelMs)
+      this.saveClock()
       this.caveDarkness?.destroy()
       this.caveDarkness = null
     })
@@ -680,11 +697,63 @@ export default class WorldScene extends Phaser.Scene {
     saveTorchFuel(this.torchFuelMs)
   }
 
+  /** Restores the clock + weather schedule, or starts a fresh seeded one. */
+  private loadClock(): void {
+    const saved = loadClockSave()
+    if (saved) {
+      this.clock = { totalMinutes: saved.totalMinutes }
+      this.weatherSeed = saved.seed
+      this.weather = {
+        kind: saved.weather,
+        untilMinutes: saved.weatherUntilMinutes,
+        rollIndex: saved.weatherRollIndex,
+      }
+      return
+    }
+
+    // A fresh clock starts at Day 1, 08:00 in clear weather. The seed is only
+    // written on the next save, so a reload before that simply re-rolls it.
+    this.clock = { totalMinutes: START_MINUTES }
+    this.weatherSeed = Math.floor(Math.random() * 0x100000000) >>> 0
+    this.weather = createWeatherState(this.weatherSeed, this.clock.totalMinutes)
+  }
+
+  private saveClock(): void {
+    saveClockSave({
+      totalMinutes: this.clock.totalMinutes,
+      seed: this.weatherSeed,
+      weather: this.weather.kind,
+      weatherUntilMinutes: this.weather.untilMinutes,
+      weatherRollIndex: this.weather.rollIndex,
+    })
+  }
+
+  /** Batches the clock save to once a second instead of every frame. */
+  private persistClock(delta: number): void {
+    this.clockSaveElapsed += delta
+    if (this.clockSaveElapsed < CLOCK_SAVE_INTERVAL_MS) return
+
+    this.clockSaveElapsed = 0
+    this.saveClock()
+  }
+
   update(_time: number, delta: number): void {
     this.syncInventoryFlag()
     this.syncTradeFlag()
     this.syncSmithFlag()
     this.syncJournalFlag()
+
+    // Time and weather pause behind any modal UI, exactly like movement.
+    if (!this.popupOpen) {
+      this.clock = advanceClock(this.clock, delta)
+      this.weather = advanceWeather(
+        this.weatherSeed,
+        this.weather,
+        this.clock.totalMinutes,
+      ).state
+    }
+    this.persistClock(delta)
+
     const currentRoom = this.currentRoom()
     this.updateRoomDim(currentRoom)
 
@@ -1033,6 +1102,7 @@ export default class WorldScene extends Phaser.Scene {
   private usePortal(portal: AreaPortalMarker): void {
     this.saveCurrentProgress()
     saveTorchFuel(this.torchFuelMs)
+    this.saveClock()
     this.scene.restart({
       character: this.character,
       areaId: portal.toAreaId,
