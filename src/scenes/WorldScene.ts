@@ -33,6 +33,7 @@ import {
   trackedQuestHudLine,
 } from '../story'
 import { CaveDarkness } from './caveDarkness'
+import { AmbientOverlay } from './ambientOverlay'
 import { AREAS, getAreaById, getAreaSpawn, tileToWorld, worldToTile } from '../world/areas'
 import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker, AreaChestMarker } from '../world/buildArea'
@@ -46,6 +47,7 @@ import { START_MINUTES, advanceClock } from '../world/time'
 import type { WeatherState } from '../world/weatherSchedule'
 import { advanceWeather, createWeatherState } from '../world/weatherSchedule'
 import { loadClockSave, saveClockSave } from '../world/clockStorage'
+import { ambientAt } from '../world/ambient'
 import {
   chopFlagKey,
   clearChopFlag,
@@ -211,6 +213,7 @@ export default class WorldScene extends Phaser.Scene {
   private areaDef!: AreaDefinition
   private dimRects: Phaser.GameObjects.Rectangle[] = []
   private caveDarkness: CaveDarkness | null = null
+  private ambientOverlay: AmbientOverlay | null = null
   /** Remaining burn of the carried torch, in milliseconds. Persisted per save. */
   private torchFuelMs = 0
   private torchFuelSaveElapsed = 0
@@ -250,6 +253,7 @@ export default class WorldScene extends Phaser.Scene {
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
     this.dimRects = []
     this.caveDarkness = null
+    this.ambientOverlay = null
     this.hudTorch = null
     this.torchFuelMs = 0
     this.torchFuelSaveElapsed = 0
@@ -311,6 +315,7 @@ export default class WorldScene extends Phaser.Scene {
     this.loadClock()
     this.caveDarkness =
       area.id === 'cave' ? new CaveDarkness(this, this.scale.width, this.scale.height) : null
+    this.ambientOverlay = new AmbientOverlay(this, this.scale.width, this.scale.height)
 
     this.buildHud(area)
 
@@ -337,6 +342,8 @@ export default class WorldScene extends Phaser.Scene {
       this.saveClock()
       this.caveDarkness?.destroy()
       this.caveDarkness = null
+      this.ambientOverlay?.destroy()
+      this.ambientOverlay = null
     })
   }
 
@@ -381,6 +388,16 @@ export default class WorldScene extends Phaser.Scene {
       }
     }
     return null
+  }
+
+  private updateAmbient(): void {
+    if (!this.ambientOverlay) return
+    // The cave owns its own darkness; day/night tint never reaches underground.
+    if (this.areaId === 'cave') {
+      this.ambientOverlay.hide()
+      return
+    }
+    this.ambientOverlay.update(ambientAt(this.clock.totalMinutes))
   }
 
   private updateRoomDim(room: AreaRoom | null): void {
@@ -756,6 +773,7 @@ export default class WorldScene extends Phaser.Scene {
 
     const currentRoom = this.currentRoom()
     this.updateRoomDim(currentRoom)
+    this.updateAmbient()
 
     let vx = 0
     let vy = 0
