@@ -14,7 +14,7 @@ the quests and storylines you uncover depend on the class of character you creat
 - **Phaser 4** — WebGL-rendered 2D game engine (not Phaser 3)
 - **TypeScript** — all source code
 - **Vite** — build tooling / dev server
-- **Vitest** — unit tests for the pure inventory logic
+- **Vitest** — unit tests for the pure game logic
 - **localStorage** — persistence (no backend)
 
 ## How to run locally
@@ -140,11 +140,42 @@ the Vitest suite.
     `localStorage.removeItem('dragonborne.character')` sends you back to character creation;
     `clearProgress` / `localStorage.removeItem('dragonborne.progress')` drops only your
     area, position, and intro-card flags, so the next load drops you back on the fire ring
-    in the Thornwood with the intro card showing again. `localStorage.removeItem('dragonborne.inventory')`,
+    in the Thornwood with the intro card showing again.     `localStorage.removeItem('dragonborne.inventory')`,
     `localStorage.removeItem('dragonborne.wallet')`, `localStorage.removeItem('dragonborne.torch')`,
+    `localStorage.removeItem('dragonborne.clock')`,
     `localStorage.removeItem('dragonborne.quests.completed')`, and
     `localStorage.removeItem('dragonborne.quests.tracked')` reset your gear, gold, torch
-    fuel, quest progress, and the pinned quest. Clearing all of them is a full restart.
+    fuel, clock/weather, quest progress, and the pinned quest. Clearing all of them is a
+    full restart.
+
+## Day/night, weather, and NPC schedules
+
+- **The clock:** one real second is one game minute, so a full day takes 24 real
+  minutes. A new character starts on **Day 1, 08:00**. The HUD adds two lines under
+  the area name: `Day 2 · 21:14 · night` and `Weather: rain`. Phases are `dawn`
+  (05:00–06:59), `day` (07:00–17:59), `dusk` (18:00–20:59), and `night` (21:00–04:59).
+- **Time pauses whenever a panel is open** — the inventory, trade panel, smithy,
+  quest journal, quest popup, or intro card — and resumes when it closes. Torch
+  burn stays independent of the clock.
+- **Ambient light:** the screen tints smoothly through the day and is visibly dark
+  at night but never unplayable. The HUD sits above the tint, so it is never tinted.
+  The Crystal Cave keeps its own darkness and shows no day/night tint.
+- **Weather:** five kinds — `clear`, `overcast`, `rain`, `fog`, and `storm` — change
+  every **2–6 game hours** (2–6 real minutes) from a saved seed. A fresh save always
+  starts `clear`. Rain and storms draw falling streaks, fog washes the screen, and
+  storms flash every 4–9 seconds. Weather is **hidden indoors and underground**; the
+  cave HUD reads `Weather: underground`.
+- **No gameplay effect:** weather is atmosphere only. It never touches stats, quests,
+  combat (none exists yet), or the economy.
+- **NPC schedules:** NPCs keep posted hours and hide when off duty. The Stranger in
+  the Thornwood is always present so the intro can never be blocked. Brennan works
+  06:00–20:00, Maerwyn 09:00–17:00, Odile 16:00–02:00, and Hollis 07:00–19:00.
+  **The Night Watch** stands at the Emberhold gate from 20:00–05:00 and offers
+  *Watch at the Gate* (all classes, one torch as pay). Off-duty NPCs cannot be
+  interacted with; an open panel closes by the usual walk-away rules.
+- **Persistence:** the clock and weather schedule live under their own versioned
+  key, `dragonborne.clock`, separate from world progress. Creating a new character
+  resets it to Day 1, 08:00, clear.
 
 ## Status
 
@@ -171,7 +202,11 @@ is grown procedurally from the seed stored in your save: randomised groves acros
 interior guaranteed to loop end to end, ~35–45 choppable trunks on the grove edges,
 tall-grass fringes at those edges, warm-toned rocks, and the hand-authored village as-is.
 Area, position, flags, inventory, gold, torch fuel, felled trees, mined veins, and
-completed quests all survive a reload. All placeholder visuals.
+completed quests all survive a reload. A world clock drives a day/night tint and a
+seeded weather cycle (clear / overcast / rain / fog / storm) that persists in
+`dragonborne.clock`; weather is hidden indoors and underground. NPCs now keep posted
+hours, and **The Night Watch** appears at the Emberhold gate from 20:00–05:00 with a
+quest of its own. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
@@ -239,7 +274,8 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
   `dragonborne.progress` for area, position, flags (including chop and mine flags), seeds,
   and the cave layout version, `dragonborne.inventory` for the inventory (versioned
   schema), `dragonborne.wallet` for gold (versioned schema), `dragonborne.torch` for
-  remaining torch fuel (versioned schema), `dragonborne.quests.completed` for quest
+  remaining torch fuel (versioned schema), `dragonborne.clock` for the world time and
+  weather schedule (versioned schema), `dragonborne.quests.completed` for quest
   state, and `dragonborne.quests.tracked` for the pinned quest.
 - Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
@@ -255,8 +291,9 @@ authoring approach, art style, and any backend beyond localStorage.
   localStorage save/load
 - `src/story/` — `Quest`/`NpcDefinition` types, quest/npc data (including item rewards),
   class-availability and per-NPC filters, completion progress, pure quest-log
-  selection/grouping (`questLog.ts`), and tracked-quest storage + selectors
-  (`questTracking.ts`, `questTrackingModel.ts`)
+  selection/grouping (`questLog.ts`), tracked-quest storage + selectors
+  (`questTracking.ts`, `questTrackingModel.ts`), and data-driven NPC on-duty hours
+  (`activeHours` + `isNpcActive` in `npcs.ts`)
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `maps.ts` (pure ASCII
   village map and NPC/portal/chest placements), `mapRules.ts` (pure map and chest
   validation rules), `rooms.ts` + `roomRules.ts` (village room bounds/doors and their pure
@@ -265,16 +302,20 @@ authoring approach, art style, and any backend beyond localStorage.
   connectivity, ore and density checks), `areas.ts` (area definitions composing the maps),
   `buildArea.ts` (terrain + markers + portals + chests), `progress.ts` (world
   position/flag/seed/cave-layout save-load), `torch.ts` (burn, radius and HUD clock) +
-  `torchFuel.ts` (versioned fuel storage)
+  `torchFuel.ts` (versioned fuel storage), and `time.ts` / `ambient.ts` / `weather.ts` /
+  `weatherSchedule.ts` / `clockStorage.ts` (world clock, day/night palette, weather
+  model + seeded schedule, and its versioned storage)
 - `src/inventory/` — item types and catalog, pure inventory logic (add/move/split/equip,
   effective stats, remove-everywhere), versioned storage, and the subscribing store
   singleton
 - `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, the
   trader's buy/sell price tables, and the smith's ware cost table + shortfall helpers
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress and runs the
-  cave-layout migration), `WorldScene` (movement, NPCs, portals, rooms/doors, chests,
-  chopping, replanting, mining, torch fuel, HUD), `caveDarkness.ts` (render-texture
-  darkness with a radial light hole)
+  cave-layout migration), `WorldScene` (movement, NPCs and their schedules, portals,
+  rooms/doors, chests, chopping, replanting, mining, torch fuel, clock/weather, HUD),
+  `caveDarkness.ts` (render-texture darkness with a radial light hole),
+  `ambientOverlay.ts` (day/night screen tint), and `weatherLayer.ts` (rain, fog, and
+  storm flash)
 - `src/creationScreen.ts`, `src/questPopup.ts`, `src/questJournal.ts`, `src/introCard.ts`,
   `src/tradePanel.ts`, `src/smithPanel.ts` — DOM overlays for character creation, quests,
   the quest journal, area intro text, trading, and the smithy
