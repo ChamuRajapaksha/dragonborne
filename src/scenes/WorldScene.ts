@@ -48,6 +48,7 @@ import { START_MINUTES, advanceClock, formatClock, phaseAt } from '../world/time
 import type { WeatherState } from '../world/weatherSchedule'
 import { advanceWeather, createWeatherState } from '../world/weatherSchedule'
 import type { WeatherKind } from '../world/weather'
+import { WEATHER } from '../world/weather'
 import { loadClockSave, saveClockSave } from '../world/clockStorage'
 import { ambientAt } from '../world/ambient'
 import {
@@ -805,11 +806,15 @@ export default class WorldScene extends Phaser.Scene {
     // Time and weather pause behind any modal UI, exactly like movement.
     if (!this.popupOpen) {
       this.clock = advanceClock(this.clock, delta)
-      this.weather = advanceWeather(
+      const weatherResult = advanceWeather(
         this.weatherSeed,
         this.weather,
         this.clock.totalMinutes,
-      ).state
+      )
+      this.weather = weatherResult.state
+      if (weatherResult.changed) {
+        showToast(`The weather turns: ${WEATHER[this.weather.kind].label}`)
+      }
     }
     this.persistClock(delta)
     this.refreshClockHud()
