@@ -79,8 +79,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 190
-const HUD_CAVE_PANEL_HEIGHT = 210
+const HUD_PANEL_HEIGHT = 210
+const HUD_CAVE_PANEL_HEIGHT = 230
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
@@ -91,6 +91,7 @@ const HUD_NAME_STYLE = { color: '#ffffff', fontSize: '16px', fontStyle: 'bold' }
 const HUD_CLASS_STYLE = { color: '#aa3bff', fontSize: '12px' } as const
 const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
 const HUD_TIME_STYLE = { color: '#cdd7ff', fontSize: '12px' } as const
+const HUD_WEATHER_STYLE = { color: '#9fb7d4', fontSize: '12px' } as const
 const HUD_GOLD_STYLE = { color: '#ffd166', fontSize: '12px' } as const
 const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
@@ -188,6 +189,7 @@ export default class WorldScene extends Phaser.Scene {
   private hudSelectedItem!: Phaser.GameObjects.Text
   private hudGold!: Phaser.GameObjects.Text
   private hudClock!: Phaser.GameObjects.Text
+  private hudWeather!: Phaser.GameObjects.Text
   private hudTorch: Phaser.GameObjects.Text | null = null
   private hudTrackedQuest!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
@@ -536,6 +538,7 @@ export default class WorldScene extends Phaser.Scene {
 
     addRow(area.name, HUD_AREA_STYLE)
     this.hudClock = addRow(this.clockHudText(), HUD_TIME_STYLE)
+    this.hudWeather = addRow(this.weatherHudText(), HUD_WEATHER_STYLE)
 
     this.hudGold = addRow(formatGold(getGold()), HUD_GOLD_STYLE)
 
@@ -578,6 +581,16 @@ export default class WorldScene extends Phaser.Scene {
   private refreshClockHud(): void {
     const text = this.clockHudText()
     if (this.hudClock.text !== text) this.hudClock.setText(text)
+  }
+
+  private weatherHudText(): string {
+    if (this.areaId === 'cave') return 'Weather: underground'
+    return `Weather: ${this.weather.kind}`
+  }
+
+  private refreshWeatherHud(): void {
+    const text = this.weatherHudText()
+    if (this.hudWeather.text !== text) this.hudWeather.setText(text)
   }
 
   /** The journal's pinned quest, resolved against the character's current stats. */
@@ -818,6 +831,7 @@ export default class WorldScene extends Phaser.Scene {
     }
     this.persistClock(delta)
     this.refreshClockHud()
+    this.refreshWeatherHud()
 
     const currentRoom = this.currentRoom()
     this.updateRoomDim(currentRoom)
