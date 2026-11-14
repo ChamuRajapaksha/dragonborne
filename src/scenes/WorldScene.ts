@@ -34,6 +34,7 @@ import {
 } from '../story'
 import { CaveDarkness } from './caveDarkness'
 import { AmbientOverlay } from './ambientOverlay'
+import { WeatherLayer } from './weatherLayer'
 import { AREAS, getAreaById, getAreaSpawn, tileToWorld, worldToTile } from '../world/areas'
 import type { AreaDefinition, AreaRoom, AreaRoomDoor } from '../world/areas'
 import type { AreaNpcMarker, AreaItemMarker, AreaPortalMarker, AreaChestMarker } from '../world/buildArea'
@@ -46,6 +47,7 @@ import type { ClockState } from '../world/time'
 import { START_MINUTES, advanceClock, formatClock, phaseAt } from '../world/time'
 import type { WeatherState } from '../world/weatherSchedule'
 import { advanceWeather, createWeatherState } from '../world/weatherSchedule'
+import type { WeatherKind } from '../world/weather'
 import { loadClockSave, saveClockSave } from '../world/clockStorage'
 import { ambientAt } from '../world/ambient'
 import {
@@ -216,6 +218,9 @@ export default class WorldScene extends Phaser.Scene {
   private dimRects: Phaser.GameObjects.Rectangle[] = []
   private caveDarkness: CaveDarkness | null = null
   private ambientOverlay: AmbientOverlay | null = null
+  private weatherLayer: WeatherLayer | null = null
+  private weatherLayerHidden = true
+  private weatherLayerKind: WeatherKind | null = null
   /** Remaining burn of the carried torch, in milliseconds. Persisted per save. */
   private torchFuelMs = 0
   private torchFuelSaveElapsed = 0
@@ -256,6 +261,9 @@ export default class WorldScene extends Phaser.Scene {
     this.dimRects = []
     this.caveDarkness = null
     this.ambientOverlay = null
+    this.weatherLayer = null
+    this.weatherLayerHidden = true
+    this.weatherLayerKind = null
     this.hudTorch = null
     this.torchFuelMs = 0
     this.torchFuelSaveElapsed = 0
@@ -318,6 +326,7 @@ export default class WorldScene extends Phaser.Scene {
     this.caveDarkness =
       area.id === 'cave' ? new CaveDarkness(this, this.scale.width, this.scale.height) : null
     this.ambientOverlay = new AmbientOverlay(this, this.scale.width, this.scale.height)
+    this.weatherLayer = new WeatherLayer(this, this.scale.width, this.scale.height)
 
     this.buildHud(area)
 
@@ -346,6 +355,8 @@ export default class WorldScene extends Phaser.Scene {
       this.caveDarkness = null
       this.ambientOverlay?.destroy()
       this.ambientOverlay = null
+      this.weatherLayer?.destroy()
+      this.weatherLayer = null
     })
   }
 
@@ -400,6 +411,25 @@ export default class WorldScene extends Phaser.Scene {
       return
     }
     this.ambientOverlay.update(ambientAt(this.clock.totalMinutes))
+  }
+
+  private updateWeatherLayer(room: AreaRoom | null): void {
+    if (!this.weatherLayer) return
+
+    // Rain, fog, and flashes are weather you can only see under open sky.
+    if (this.areaId === 'cave' || room !== null) {
+      if (!this.weatherLayerHidden) {
+        this.weatherLayer.hide()
+        this.weatherLayerHidden = true
+      }
+      return
+    }
+
+    if (this.weatherLayerHidden || this.weatherLayerKind !== this.weather.kind) {
+      this.weatherLayer.setWeather(this.weather.kind)
+      this.weatherLayerHidden = false
+      this.weatherLayerKind = this.weather.kind
+    }
   }
 
   private updateRoomDim(room: AreaRoom | null): void {
@@ -787,6 +817,8 @@ export default class WorldScene extends Phaser.Scene {
     const currentRoom = this.currentRoom()
     this.updateRoomDim(currentRoom)
     this.updateAmbient()
+    this.updateWeatherLayer(currentRoom)
+    this.weatherLayer?.update(delta)
 
     let vx = 0
     let vy = 0
