@@ -113,7 +113,7 @@ describe('questLogSummary', () => {
     const log = buildQuestLog('warrior', {}, ['road-to-emberhold'])
 
     expect(questLogSummary(log)).toEqual({
-      available: 1,
+      available: 2,
       locked: 1,
       completed: 1,
     })

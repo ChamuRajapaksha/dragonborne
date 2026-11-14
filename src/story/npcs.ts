@@ -63,6 +63,14 @@ export const NPCS: readonly NpcDefinition[] = [
     greeting:
       'Timber is timber and gold is gold, and Emberhold always needs more of the first to make the second.',
   },
+  {
+    id: 'night-watch',
+    name: 'The Night Watch',
+    role: 'Watch',
+    activeHours: { start: 20 * 60, end: 5 * 60 },
+    greeting:
+      'The gate is watched only after dark. Come back when the sun is down and I will find you work that suits the hour.',
+  },
 ]
 
 export function getNpcById(npcId: string): NpcDefinition | undefined {

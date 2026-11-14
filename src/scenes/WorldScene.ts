@@ -22,7 +22,7 @@ import {
 import type { InventoryState } from '../inventory'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
-import { getNpcById } from '../story'
+import { getNpcById, isNpcActive } from '../story'
 import {
   buildQuestLog,
   getCompletedQuestIds,
@@ -414,6 +414,17 @@ export default class WorldScene extends Phaser.Scene {
       return
     }
     this.ambientOverlay.update(ambientAt(this.clock.totalMinutes))
+  }
+
+  /** Hides and reveals NPC markers as the clock crosses their posted hours. */
+  private updateNpcSchedule(): void {
+    for (const marker of this.npcMarkers) {
+      const npc = getNpcById(marker.npcId)
+      const active = npc ? isNpcActive(npc, this.clock.totalMinutes) : false
+      if (marker.object.visible === active) continue
+      marker.object.setVisible(active)
+      marker.label.setVisible(active)
+    }
   }
 
   private updateWeatherLayer(room: AreaRoom | null): void {
@@ -863,6 +874,7 @@ export default class WorldScene extends Phaser.Scene {
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
+    this.updateNpcSchedule()
 
     const portal = this.findPortalUnderfoot()
     const nearest = this.findNearestNpc()
@@ -1217,6 +1229,8 @@ export default class WorldScene extends Phaser.Scene {
     let nearestDistance = INTERACT_RANGE
 
     for (const marker of this.npcMarkers) {
+      // Off-duty NPCs are hidden and cannot be interacted with.
+      if (!marker.object.visible) continue
       const distance = Phaser.Math.Distance.Between(
         this.playerPoint.x,
         this.playerPoint.y,

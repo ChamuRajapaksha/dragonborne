@@ -105,6 +105,7 @@ export const VILLAGE_NPCS: readonly AreaNpcPlacement[] = [
   { npcId: 'village-archivist', x: 48, y: 4 },
   { npcId: 'village-host', x: 27, y: 42 },
   { npcId: 'village-trader', x: 56, y: 22 },
+  { npcId: 'night-watch', x: 50, y: 36 },
 ]
 
 export const FOREST_PORTALS: readonly Portal[] = [

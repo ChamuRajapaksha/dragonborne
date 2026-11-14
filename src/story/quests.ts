@@ -105,6 +105,15 @@ const questData = [
     npcId: 'village-host',
     rewards: [{ itemId: 'emberglass', quantity: 2 }],
   },
+  {
+    id: 'watch-at-the-gate',
+    title: 'Watch at the Gate',
+    description:
+      'The night watch is one pair of eyes short. Take the gate until dawn, keep a torch lit, and log every shape that moves on the dark road.',
+    availableToClasses: ALL_CLASSES,
+    npcId: 'night-watch',
+    rewards: [{ itemId: 'torch' }],
+  },
 ] as const satisfies readonly Quest[]
 
 export const QUESTS: readonly Quest[] = questData

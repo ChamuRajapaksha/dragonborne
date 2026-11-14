@@ -23,6 +23,10 @@ export interface AreaNpcMarker {
   name: string
   x: number
   y: number
+  /** The rendered placeholder, kept so schedule changes can hide/show it. */
+  object: Phaser.GameObjects.Rectangle
+  /** The rendered name label, kept so schedule changes can hide/show it. */
+  label: Phaser.GameObjects.Text
 }
 
 export interface AreaPortalMarker {
@@ -129,17 +133,17 @@ export function buildMarkers(
 
     const { x, y } = tileToWorld(placement)
 
-    scene.add
+    const object = scene.add
       .rectangle(x, y, 28, 28, 0xccbb55)
       .setStrokeStyle(2, 0x221c0f)
       .setDepth(1)
 
-    scene.add
+    const label = scene.add
       .text(x, y + 14, npc.name, { color: '#ffd27f', fontSize: '12px' })
       .setOrigin(0.5, 0)
       .setDepth(2)
 
-    return [{ npcId: npc.id, name: npc.name, x, y }]
+    return [{ npcId: npc.id, name: npc.name, x, y, object, label }]
   })
 }
 
