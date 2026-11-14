@@ -2,6 +2,7 @@ import { CLASSES, createCharacter, saveCharacter } from './character'
 import type { Character } from './character'
 import { resetGold } from './economy'
 import { grantStartingKit, resetInventory, updateInventory } from './inventory'
+import { clearClockSave } from './world/clockStorage'
 
 export function showCreationScreen(onCreated: (character: Character) => void): void {
   const overlay = document.createElement('div')
@@ -46,6 +47,7 @@ export function showCreationScreen(onCreated: (character: Character) => void): v
     saveCharacter(character)
     resetInventory()
     resetGold()
+    clearClockSave()
     updateInventory(grantStartingKit)
     overlay.remove()
     onCreated(character)
