@@ -5,10 +5,12 @@
   availableToClasses: string[]
   npcId: string
   requiresStats?: Partial<Record<string, number>>
-  /** Granted once, on first completion. Pure data — ids resolve via the item catalog. */
+  /** Granted once, on first completion. Pure data - ids resolve via the item catalog. */
   rewards?: readonly ItemReward[]
   /** Standing changes, applied once on first completion. */
   reputation?: readonly { factionId: string; delta: number }[]
+  /** Standing gates, checked alongside `requiresStats`. */
+  requiresReputation?: readonly { factionId: string; min: number }[]
 }
 
 /** One entry of a quest's payout. `quantity` defaults to 1. */
