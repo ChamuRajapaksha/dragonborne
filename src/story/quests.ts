@@ -1,4 +1,4 @@
-export interface Quest {
+﻿export interface Quest {
   id: string
   title: string
   description: string
@@ -7,6 +7,8 @@ export interface Quest {
   requiresStats?: Partial<Record<string, number>>
   /** Granted once, on first completion. Pure data — ids resolve via the item catalog. */
   rewards?: readonly ItemReward[]
+  /** Standing changes, applied once on first completion. */
+  reputation?: readonly { factionId: string; delta: number }[]
 }
 
 /** One entry of a quest's payout. `quantity` defaults to 1. */
@@ -26,6 +28,7 @@ const questData = [
     availableToClasses: ALL_CLASSES,
     npcId: 'forest-guide',
     rewards: [{ itemId: 'heath-herb', quantity: 3 }],
+    reputation: [{ factionId: 'emberhold', delta: 5 }],
   },
   {
     id: 'guard-the-bridge',
@@ -38,6 +41,10 @@ const questData = [
     rewards: [
       { itemId: 'leather-cap' },
       { itemId: 'steel-ingot', quantity: 2 },
+    ],
+    reputation: [
+      { factionId: 'emberhold', delta: 8 },
+      { factionId: 'forge', delta: 4 },
     ],
   },
   {
@@ -52,6 +59,10 @@ const questData = [
       { itemId: 'bog-reed', quantity: 5 },
       { itemId: 'steel-ingot', quantity: 2 },
     ],
+    reputation: [
+      { factionId: 'traders', delta: 8 },
+      { factionId: 'emberhold', delta: -5 },
+    ],
   },
   {
     id: 'thornwood-briars',
@@ -65,6 +76,10 @@ const questData = [
       { itemId: 'oak-kindling', quantity: 5 },
       { itemId: 'steel-ingot', quantity: 2 },
     ],
+    reputation: [
+      { factionId: 'wardens', delta: 8 },
+      { factionId: 'traders', delta: 3 },
+    ],
   },
   {
     id: 'archivists-trove',
@@ -75,6 +90,7 @@ const questData = [
     npcId: 'village-archivist',
     requiresStats: { intellect: 4 },
     rewards: [{ itemId: 'emberglass' }],
+    reputation: [{ factionId: 'archive', delta: 8 }],
   },
   {
     id: 'silent-bell',
@@ -85,6 +101,10 @@ const questData = [
     npcId: 'village-archivist',
     requiresStats: { intellect: 4 },
     rewards: [{ itemId: 'flanged-mace' }],
+    reputation: [
+      { factionId: 'archive', delta: 6 },
+      { factionId: 'emberhold', delta: 4 },
+    ],
   },
   {
     id: 'bards-contest',
@@ -95,6 +115,7 @@ const questData = [
     npcId: 'village-host',
     requiresStats: { intellect: 3 },
     rewards: [{ itemId: 'heath-herb', quantity: 5 }],
+    reputation: [{ factionId: 'traders', delta: 5 }],
   },
   {
     id: 'the-midnight-fair',
@@ -104,6 +125,10 @@ const questData = [
     availableToClasses: ALL_CLASSES,
     npcId: 'village-host',
     rewards: [{ itemId: 'emberglass', quantity: 2 }],
+    reputation: [
+      { factionId: 'emberhold', delta: 4 },
+      { factionId: 'traders', delta: 4 },
+    ],
   },
   {
     id: 'watch-at-the-gate',
@@ -113,6 +138,10 @@ const questData = [
     availableToClasses: ALL_CLASSES,
     npcId: 'night-watch',
     rewards: [{ itemId: 'torch' }],
+    reputation: [
+      { factionId: 'emberhold', delta: 6 },
+      { factionId: 'wardens', delta: 3 },
+    ],
   },
 ] as const satisfies readonly Quest[]
 
