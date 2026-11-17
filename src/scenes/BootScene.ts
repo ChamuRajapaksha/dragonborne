@@ -3,6 +3,7 @@ import { loadCharacter } from '../character'
 import type { Character } from '../character'
 import { showCreationScreen } from '../creationScreen'
 import { hydrateGold } from '../economy'
+import { hydrateReputation } from '../factions'
 import { hydrateInventory } from '../inventory'
 import { AREAS } from '../world/areas'
 import { loadProgress, migrateCaveLayout } from '../world/progress'
@@ -16,6 +17,7 @@ export default class BootScene extends Phaser.Scene {
     migrateCaveLayout()
     hydrateInventory()
     hydrateGold()
+    hydrateReputation()
     const saved = loadCharacter()
     if (saved) {
       this.gotoWorld(saved)
