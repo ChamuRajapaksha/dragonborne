@@ -5,6 +5,11 @@ import { formatGold, getGold, subscribeGold } from '../economy'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeQuestJournal, isQuestJournalOpen, showQuestJournal } from '../questJournal'
+import {
+  closeReputationPanel,
+  isReputationPanelOpen,
+  showReputationPanel,
+} from '../reputationPanel'
 import { closeInventoryPanel, isInventoryPanelOpen, showInventoryPanel } from '../inventoryPanel'
 import { closeTradePanel, isTradePanelOpen, showTradePanel } from '../tradePanel'
 import { showSmithPanel, closeSmithPanel, isSmithPanelOpen } from '../smithPanel'
@@ -79,8 +84,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 210
-const HUD_CAVE_PANEL_HEIGHT = 230
+const HUD_PANEL_HEIGHT = 230
+const HUD_CAVE_PANEL_HEIGHT = 250
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
@@ -183,6 +188,7 @@ export default class WorldScene extends Phaser.Scene {
   private interactKey!: Phaser.Input.Keyboard.Key
   private inventoryKey!: Phaser.Input.Keyboard.Key
   private journalKey!: Phaser.Input.Keyboard.Key
+  private reputationKey!: Phaser.Input.Keyboard.Key
   private hotbarKeys: Phaser.Input.Keyboard.Key[] = []
   private interactHint!: Phaser.GameObjects.Text
   private waypointHint!: Phaser.GameObjects.Text
@@ -210,6 +216,7 @@ export default class WorldScene extends Phaser.Scene {
   private tradeOpen = false
   private smithOpen = false
   private journalOpen = false
+  private reputationOpen = false
   private unsubscribeInventory: (() => void) | null = null
   private unsubscribeGold: (() => void) | null = null
   private character: Character | undefined = undefined
@@ -257,6 +264,7 @@ export default class WorldScene extends Phaser.Scene {
     this.tradeOpen = false
     this.smithOpen = false
     this.journalOpen = false
+    this.reputationOpen = false
     this.unsubscribeInventory = null
     this.unsubscribeGold = null
     this.idleSeconds = 0
@@ -298,6 +306,7 @@ export default class WorldScene extends Phaser.Scene {
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I)
     this.journalKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.J)
+    this.reputationKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.F)
 
     this.hotbarKeys = [
       Phaser.Input.Keyboard.KeyCodes.ONE,
@@ -349,6 +358,7 @@ export default class WorldScene extends Phaser.Scene {
       this.unsubscribeGold?.()
       this.unsubscribeGold = null
       closeQuestJournal()
+      closeReputationPanel()
       destroyHotbar()
       for (const rect of this.dimRects) rect.destroy()
       this.dimRects = []
@@ -560,6 +570,7 @@ export default class WorldScene extends Phaser.Scene {
     this.refreshSelectedHud(getInventory())
 
     addRow('J: quest journal', HUD_JOURNAL_STYLE)
+    addRow('F: reputation', HUD_JOURNAL_STYLE)
 
     this.hudTrackedQuest = addRow('', HUD_TRACKED_STYLE)
     this.refreshTrackedQuestHud()
@@ -717,6 +728,7 @@ export default class WorldScene extends Phaser.Scene {
       this.tradeOpen ||
       this.smithOpen ||
       this.journalOpen ||
+      this.reputationOpen ||
       this.introCardOpen
 
     if (inCave && held > 0 && this.torchFuelMs <= 0) {
@@ -826,6 +838,7 @@ export default class WorldScene extends Phaser.Scene {
     this.syncTradeFlag()
     this.syncSmithFlag()
     this.syncJournalFlag()
+    this.syncReputationFlag()
 
     // Time and weather pause behind any modal UI, exactly like movement.
     if (!this.popupOpen) {
@@ -858,7 +871,13 @@ export default class WorldScene extends Phaser.Scene {
     if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1
     if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1
 
-    if (this.inventoryOpen || this.tradeOpen || this.smithOpen || this.journalOpen) {
+    if (
+      this.inventoryOpen ||
+      this.tradeOpen ||
+      this.smithOpen ||
+      this.journalOpen ||
+      this.reputationOpen
+    ) {
       vx = 0
       vy = 0
     }
@@ -889,6 +908,7 @@ export default class WorldScene extends Phaser.Scene {
     const interactPressed = Phaser.Input.Keyboard.JustDown(this.interactKey)
     const inventoryPressed = Phaser.Input.Keyboard.JustDown(this.inventoryKey)
     const journalPressed = Phaser.Input.Keyboard.JustDown(this.journalKey)
+    const reputationPressed = Phaser.Input.Keyboard.JustDown(this.reputationKey)
 
     if (inventoryPressed && (this.inventoryOpen || (!this.popupOpen && !this.introCardOpen))) {
       this.toggleInventory()
@@ -896,6 +916,13 @@ export default class WorldScene extends Phaser.Scene {
 
     if (journalPressed && (this.journalOpen || (!this.popupOpen && !this.introCardOpen))) {
       this.toggleJournal()
+    }
+
+    if (
+      reputationPressed &&
+      (this.reputationOpen || (!this.popupOpen && !this.introCardOpen))
+    ) {
+      this.toggleReputation()
     }
 
     if (portal && interactPressed && !this.popupOpen) {
@@ -955,6 +982,7 @@ export default class WorldScene extends Phaser.Scene {
       !this.tradeOpen &&
       !this.smithOpen &&
       !this.journalOpen &&
+      !this.reputationOpen &&
       !nearestNpc
     ) {
       closeQuestPopup()
@@ -1116,6 +1144,12 @@ export default class WorldScene extends Phaser.Scene {
     this.refreshTrackedQuestHud()
   }
 
+  private syncReputationFlag(): void {
+    if (!this.reputationOpen || isReputationPanelOpen()) return
+    this.reputationOpen = false
+    this.popupOpen = false
+  }
+
   private toggleJournal(): void {
     closeQuestJournal()
     if (this.journalOpen) {
@@ -1131,6 +1165,19 @@ export default class WorldScene extends Phaser.Scene {
       effectiveStats(this.character.stats, getInventory()),
     )
     this.journalOpen = true
+    this.popupOpen = true
+  }
+
+  private toggleReputation(): void {
+    closeReputationPanel()
+    if (this.reputationOpen) {
+      this.reputationOpen = false
+      this.popupOpen = false
+      return
+    }
+
+    showReputationPanel()
+    this.reputationOpen = true
     this.popupOpen = true
   }
 
