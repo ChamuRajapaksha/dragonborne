@@ -1,6 +1,7 @@
 import { CLASSES, createCharacter, saveCharacter } from './character'
 import type { Character } from './character'
 import { resetGold } from './economy'
+import { resetReputation } from './factions'
 import { grantStartingKit, resetInventory, updateInventory } from './inventory'
 import { clearClockSave } from './world/clockStorage'
 
@@ -47,6 +48,7 @@ export function showCreationScreen(onCreated: (character: Character) => void): v
     saveCharacter(character)
     resetInventory()
     resetGold()
+    resetReputation()
     clearClockSave()
     updateInventory(grantStartingKit)
     overlay.remove()
