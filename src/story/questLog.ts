@@ -1,3 +1,5 @@
+import { unmetReputation } from '../factions'
+import type { UnmetReputation } from '../factions'
 import { getNpcById } from './npcs'
 import { getQuestsForClass } from './quests'
 import type { Quest } from './quests'
@@ -16,6 +18,7 @@ export interface QuestLogEntry {
   status: QuestLogStatus
   npcName: string
   unmetStats: readonly UnmetStat[]
+  unmetReputation: readonly UnmetReputation[]
 }
 
 export interface QuestLogSection {
@@ -57,20 +60,23 @@ export function unmetQuestStats(
 
 /**
  * Every quest the character's class can ever see, tagged with its state.
- * Completion wins over unmet stats so a finished quest never reads as locked.
+ * Completion wins over unmet stats or standing so a finished quest never reads
+ * as locked.
  */
 export function buildQuestLog(
   classId: string,
   stats: Record<string, number>,
   completedIds: readonly string[],
+  reputation: Readonly<Record<string, number>> = {},
 ): QuestLogEntry[] {
   const completed = new Set(completedIds)
 
   return getQuestsForClass(classId).map((quest) => {
     const unmetStats = unmetQuestStats(quest, stats)
+    const unmetStanding = unmetReputation(quest.requiresReputation ?? [], reputation)
     const status: QuestLogStatus = completed.has(quest.id)
       ? 'completed'
-      : unmetStats.length > 0
+      : unmetStats.length > 0 || unmetStanding.length > 0
         ? 'locked'
         : 'available'
 
@@ -79,6 +85,7 @@ export function buildQuestLog(
       status,
       npcName: getNpcById(quest.npcId)?.name ?? 'Unknown',
       unmetStats,
+      unmetReputation: unmetStanding,
     }
   })
 }
