@@ -13,6 +13,7 @@ export type { SmithItemCost, SmithOffer, SmithShortfall } from './smith'
 export {
   SMITH_MATERIAL_IDS,
   SMITH_OFFERS,
+  discountedSmithOffer,
   formatSmithCost,
   getSmithOffer,
   smithShortfall,

@@ -4,6 +4,8 @@
  * `steel-ingot`. The panel and any future shop fold through these helpers;
  * affordability lives in `smithShortfall` so no charge can be partial.
  */
+import { buyPrice } from '../factions/prices'
+import type { ReputationTier } from '../factions/tiers'
 
 /** One material line of an offer's cost, e.g. `{ itemId: 'iron-ore', quantity: 3 }`. */
 export interface SmithItemCost {
@@ -75,6 +77,23 @@ export const SMITH_OFFERS: readonly SmithOffer[] = offerData
 /** What the smith charges for `itemId`, or `undefined` if he does not stock it. */
 export function getSmithOffer(itemId: string): SmithOffer | undefined {
   return SMITH_OFFERS.find((offer) => offer.itemId === itemId)
+}
+
+/**
+ * The same offer with only its gold line repriced for the smith's standing.
+ * Materials are deliberately untouched — standing buys coin, not iron.
+ */
+export function discountedSmithOffer(
+  offer: SmithOffer,
+  tier: ReputationTier,
+): SmithOffer {
+  return {
+    ...offer,
+    cost: {
+      ...offer.cost,
+      gold: buyPrice(offer.cost.gold, tier),
+    },
+  }
 }
 
 /** What is still missing to pay for an offer: coin short, then each material short. */

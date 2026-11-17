@@ -9,6 +9,7 @@
  */
 import {
   SMITH_OFFERS,
+  discountedSmithOffer,
   formatGold,
   formatSmithCost,
   getGold,
@@ -17,6 +18,7 @@ import {
   updateGold,
 } from './economy'
 import type { SmithOffer, SmithShortfall } from './economy'
+import { getReputation, tierFor } from './factions'
 import {
   addItem,
   countItem,
@@ -166,9 +168,10 @@ function nameShortfall(missing: SmithShortfall): string[] {
  * only deducted for a ware that actually landed.
  */
 function buy(itemId: string): void {
-  const offer = getSmithOffer(itemId)
-  if (!offer) return
+  const base = getSmithOffer(itemId)
+  if (!base) return
 
+  const offer = discountedSmithOffer(base, tierFor(getReputation('forge')))
   const missing = smithShortfall(getGold(), heldByMaterial(), offer)
   if (missing) {
     for (const message of nameShortfall(missing)) showToast(message)
@@ -215,9 +218,10 @@ export function showSmithPanel(
   const render = () => {
     const gold = getGold()
     const held = heldByMaterial()
+    const tier = tierFor(getReputation('forge'))
     const wares = SMITH_OFFERS.filter(
       (offer) => chip === 'all' || (getItemById(offer.itemId)?.kind ?? 'resource') === chip,
-    )
+    ).map((offer) => discountedSmithOffer(offer, tier))
 
     overlay.innerHTML = `
       <div class="trade-panel">
