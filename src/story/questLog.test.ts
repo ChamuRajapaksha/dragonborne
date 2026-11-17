@@ -3,6 +3,7 @@ import {
   buildQuestLog,
   formatUnmetStats,
   groupQuestLog,
+  questLogEntry,
   questLogSummary,
   unmetQuestStats,
 } from './questLog'
@@ -71,6 +72,40 @@ describe('buildQuestLog', () => {
     expect(guard?.unmetStats).toEqual([
       { stat: 'strength', required: 4, current: 0 },
     ])
+  })
+})
+
+describe('questLogEntry reputation gates', () => {
+  const gatedQuest: Quest = {
+    id: 'faction-gated',
+    title: 'A Faction Errand',
+    description: 'Only friends of Emberhold are trusted with this.',
+    availableToClasses: ['warrior'],
+    npcId: 'forest-guide',
+    requiresReputation: [{ factionId: 'emberhold', min: 20 }],
+  }
+
+  it('locks a quest while the required standing is unmet', () => {
+    const entry = questLogEntry(gatedQuest, {}, [], { emberhold: 5 })
+
+    expect(entry.status).toBe('locked')
+    expect(entry.unmetReputation).toEqual([
+      { factionId: 'emberhold', required: 20, current: 5 },
+    ])
+  })
+
+  it('opens the quest once the standing reaches the threshold', () => {
+    const entry = questLogEntry(gatedQuest, {}, [], { emberhold: 20 })
+
+    expect(entry.status).toBe('available')
+    expect(entry.unmetReputation).toEqual([])
+  })
+
+  it('lets completion win over unmet standing', () => {
+    const entry = questLogEntry(gatedQuest, {}, [gatedQuest.id], { emberhold: 0 })
+
+    expect(entry.status).toBe('completed')
+    expect(entry.unmetReputation).toHaveLength(1)
   })
 })
 

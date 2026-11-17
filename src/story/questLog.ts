@@ -59,35 +59,42 @@ export function unmetQuestStats(
 }
 
 /**
- * Every quest the character's class can ever see, tagged with its state.
- * Completion wins over unmet stats or standing so a finished quest never reads
- * as locked.
+ * One quest's live state. Completion wins over unmet stats or standing so a
+ * finished quest never reads as locked.
  */
+export function questLogEntry(
+  quest: Quest,
+  stats: Record<string, number>,
+  completedIds: readonly string[],
+  reputation: Readonly<Record<string, number>> = {},
+): QuestLogEntry {
+  const unmetStats = unmetQuestStats(quest, stats)
+  const unmetStanding = unmetReputation(quest.requiresReputation ?? [], reputation)
+  const status: QuestLogStatus = completedIds.includes(quest.id)
+    ? 'completed'
+    : unmetStats.length > 0 || unmetStanding.length > 0
+      ? 'locked'
+      : 'available'
+
+  return {
+    quest,
+    status,
+    npcName: getNpcById(quest.npcId)?.name ?? 'Unknown',
+    unmetStats,
+    unmetReputation: unmetStanding,
+  }
+}
+
+/** Every quest the character's class can ever see, tagged with its state. */
 export function buildQuestLog(
   classId: string,
   stats: Record<string, number>,
   completedIds: readonly string[],
   reputation: Readonly<Record<string, number>> = {},
 ): QuestLogEntry[] {
-  const completed = new Set(completedIds)
-
-  return getQuestsForClass(classId).map((quest) => {
-    const unmetStats = unmetQuestStats(quest, stats)
-    const unmetStanding = unmetReputation(quest.requiresReputation ?? [], reputation)
-    const status: QuestLogStatus = completed.has(quest.id)
-      ? 'completed'
-      : unmetStats.length > 0 || unmetStanding.length > 0
-        ? 'locked'
-        : 'available'
-
-    return {
-      quest,
-      status,
-      npcName: getNpcById(quest.npcId)?.name ?? 'Unknown',
-      unmetStats,
-      unmetReputation: unmetStanding,
-    }
-  })
+  return getQuestsForClass(classId).map((quest) =>
+    questLogEntry(quest, stats, completedIds, reputation),
+  )
 }
 
 /** Groups entries into the journal's fixed section order, empty sections included. */
