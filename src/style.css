@@ -350,6 +350,12 @@ body {
   font-size: 18px;
 }
 
+.trade-standing {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #c9a7ff;
+}
+
 .trade-gold {
   margin: 0;
   font-size: 15px;

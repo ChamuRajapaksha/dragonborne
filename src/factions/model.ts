@@ -1,4 +1,5 @@
 ﻿import { FACTIONS, getFactionById } from './data'
+import { priceModifierNote } from './prices'
 import { REPUTATION_MAX, REPUTATION_MIN, clampReputation, tierFor, tierLabel } from './tiers'
 import type { ReputationTier } from './tiers'
 
@@ -123,6 +124,14 @@ export function topStanding(
 export function formatStanding(factionId: string, value: number): string {
   const name = getFactionById(factionId)?.name ?? factionId
   return `${name} · ${tierLabel(tierFor(value))} (${value})`
+}
+
+/** Shop-header line: the trading tier, with its price note only when it matters. */
+export function formatShopStanding(factionId: string, value: number): string {
+  const name = getFactionById(factionId)?.name ?? factionId
+  const tier = tierFor(value)
+  const note = tier === 'neutral' ? '' : ` (${priceModifierNote(tier)})`
+  return `${name} · ${tierLabel(tier)}${note}`
 }
 
 export { REPUTATION_MAX, REPUTATION_MIN }

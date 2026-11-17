@@ -3,6 +3,7 @@ import {
   applyReputationDelta,
   formatReputationAward,
   formatReputationRewards,
+  formatShopStanding,
   formatStanding,
   formatUnmetReputation,
   isReputationMet,
@@ -51,6 +52,16 @@ describe('reputation model', () => {
   it('ignores unknown keys and formats standings', () => {
     expect(topStanding({ bandits: 99, archive: 10 })?.factionId).toBe('archive')
     expect(formatStanding('emberhold', 35)).toBe('Emberhold · Friendly (35)')
+  })
+
+  it('formats shop standings with notes only when prices move', () => {
+    expect(formatShopStanding('forge', 0)).toBe('The Deep Forge · Neutral')
+    expect(formatShopStanding('traders', 35)).toBe(
+      'Free Traders · Friendly (−10% buy, +10% sell)',
+    )
+    expect(formatShopStanding('traders', -35)).toBe(
+      'Free Traders · Hostile (+15% buy, −15% sell)',
+    )
   })
 })
 
