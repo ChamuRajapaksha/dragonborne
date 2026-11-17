@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest'
 import {
   SMITH_MATERIAL_IDS,
   SMITH_OFFERS,
+  discountedSmithOffer,
   formatSmithCost,
   getSmithOffer,
   smithShortfall,
 } from './smith'
 import { getItemById } from '../inventory/catalog'
+import type { ReputationTier } from '../factions/tiers'
 
 describe('smith offers', () => {
   it('keeps the price table unique by item id', () => {
@@ -49,6 +51,63 @@ describe('smith offers', () => {
       gold: 25,
       items: [{ itemId: 'iron-ore', quantity: 3 }],
     })
+  })
+})
+
+describe('discountedSmithOffer', () => {
+  const sword = getSmithOffer('iron-sword')!
+  const tiers: ReputationTier[] = [
+    'hated',
+    'hostile',
+    'neutral',
+    'friendly',
+    'honored',
+    'revered',
+  ]
+
+  it('leaves the base offer untouched', () => {
+    const discounted = discountedSmithOffer(sword, 'revered')
+    expect(sword.cost.gold).toBe(50)
+    expect(discounted).not.toBe(sword)
+    expect(discounted.cost).not.toBe(sword.cost)
+  })
+
+  it('is an identity at neutral standing', () => {
+    expect(discountedSmithOffer(sword, 'neutral')).toEqual(sword)
+  })
+
+  it('reprices only the gold line', () => {
+    for (const tier of tiers) {
+      const discounted = discountedSmithOffer(sword, tier)
+      expect(discounted.itemId).toBe(sword.itemId)
+      expect(discounted.cost.items).toEqual(sword.cost.items)
+      expect(discounted.cost.gold).toBeGreaterThan(0)
+    }
+  })
+
+  it('follows the tier multipliers with rounding', () => {
+    expect(discountedSmithOffer(sword, 'hated').cost.gold).toBe(63)
+    expect(discountedSmithOffer(sword, 'friendly').cost.gold).toBe(45)
+    expect(discountedSmithOffer(sword, 'revered').cost.gold).toBe(40)
+  })
+
+  it('keeps materials out of the discount for every ware', () => {
+    for (const offer of SMITH_OFFERS) {
+      const discounted = discountedSmithOffer(offer, 'revered')
+      expect(discounted.cost.items).toEqual(offer.cost.items)
+      expect(formatSmithCost(discounted, (itemId) => itemId)).toContain(
+        `${offer.cost.items[0].quantity} ${offer.cost.items[0].itemId}`,
+      )
+    }
+  })
+
+  it('still covers a shortfall against the discounted price', () => {
+    const discounted = discountedSmithOffer(sword, 'friendly')
+    expect(smithShortfall(45, { 'steel-ingot': 2 }, discounted)).toBeNull()
+    expect(smithShortfall(44, { 'steel-ingot': 2 }, discounted)?.gold).toBe(1)
+    expect(smithShortfall(45, { 'steel-ingot': 1 }, discounted)?.items).toEqual([
+      { itemId: 'steel-ingot', quantity: 1 },
+    ])
   })
 })
 
