@@ -16,8 +16,16 @@ import {
   removeItemEverywhere,
   updateInventory,
 } from './inventory'
-import { buyPrice, formatShopStanding, getReputation, sellPrice, tierFor } from './factions'
+import {
+  buyPrice,
+  formatShopStanding,
+  getAllReputation,
+  getReputation,
+  sellPrice,
+  tierFor,
+} from './factions'
 import type { ReputationTier } from './factions'
+import { npcGreeting } from './story'
 import type { NpcDefinition } from './story'
 import type { StatKey } from './inventory'
 import { paintItemIcons } from './itemIcon'
@@ -217,7 +225,7 @@ export function showTradePanel(npc: NpcDefinition): void {
         <div class="trade-header">
           <p class="trade-npc-role">${npc.role}</p>
           <h2>${npc.name}</h2>
-          <p class="trade-npc-greeting">${npc.greeting}</p>
+          <p class="trade-npc-greeting">${npcGreeting(npc, getAllReputation())}</p>
           <p class="trade-standing">${formatShopStanding('traders', getReputation('traders'))}</p>
           <p class="trade-gold">${formatGold(gold)}</p>
         </div>

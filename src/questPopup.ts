@@ -3,6 +3,7 @@ import {
   meetsQuestRequirements,
   completeQuest,
   isQuestCompleted,
+  npcGreeting,
 } from './story'
 import type { ItemReward, NpcDefinition, Quest } from './story'
 import {
@@ -98,7 +99,7 @@ export function showQuestPopup(
       <div class="quest-panel">
         <p class="quest-npc-role">${npc.role}</p>
         <h2>${npc.name}</h2>
-        <p class="quest-npc-greeting">${npc.greeting}</p>
+        <p class="quest-npc-greeting">${npcGreeting(npc, reputation)}</p>
         ${quests.length === 0
           ? '<p>Nothing here for someone of your class.</p>'
           : quests

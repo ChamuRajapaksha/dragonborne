@@ -18,7 +18,7 @@ import {
   updateGold,
 } from './economy'
 import type { SmithOffer, SmithShortfall } from './economy'
-import { formatShopStanding, getReputation, tierFor } from './factions'
+import { formatShopStanding, getAllReputation, getReputation, tierFor } from './factions'
 import {
   addItem,
   countItem,
@@ -28,6 +28,7 @@ import {
   updateInventory,
 } from './inventory'
 import type { ItemKind, StatKey } from './inventory'
+import { npcGreeting } from './story'
 import type { NpcDefinition } from './story'
 import { paintItemIcons } from './itemIcon'
 import { formatStatBonus } from './itemTooltipModel'
@@ -228,7 +229,7 @@ export function showSmithPanel(
         <div class="trade-header">
           <p class="trade-npc-role">${npc.role}</p>
           <h2>${npc.name}</h2>
-          <p class="trade-npc-greeting">${npc.greeting}</p>
+          <p class="trade-npc-greeting">${npcGreeting(npc, getAllReputation())}</p>
           <p class="trade-standing">${formatShopStanding('forge', getReputation('forge'))}</p>
           <p class="trade-gold">${formatGold(gold)}</p>
         </div>
