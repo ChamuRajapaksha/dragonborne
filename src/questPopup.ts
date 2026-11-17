@@ -5,7 +5,17 @@ import {
   isQuestCompleted,
 } from './story'
 import type { ItemReward, NpcDefinition, Quest } from './story'
-import { getAllReputation, getFactionById, isReputationMet, unmetReputation } from './factions'
+import {
+  applyReputation,
+  formatReputationAward,
+  formatReputationRewards,
+  getAllReputation,
+  getFactionById,
+  isReputationMet,
+  reputationAwardChanges,
+  unmetReputation,
+} from './factions'
+import type { ReputationReward } from './factions'
 import { addItem, getItemById, updateInventory } from './inventory'
 import { showToast } from './toast'
 
@@ -35,6 +45,15 @@ function grantQuestRewards(rewards: readonly ItemReward[]): void {
   if (shortfall > 0) showToast('Your pack is full')
 }
 
+/** Applies a quest's standing changes once and toasts each visible change. */
+function grantQuestReputation(rewards: readonly ReputationReward[]): void {
+  const before = getAllReputation()
+  applyReputation(rewards)
+  for (const change of reputationAwardChanges(rewards, before)) {
+    showToast(formatReputationAward(change))
+  }
+}
+
 export function closeQuestPopup(): void {
   document.getElementById('quest-popup')?.remove()
 }
@@ -53,6 +72,11 @@ function renderRequirements(
   const unmet = [...unmetStats, ...unmetStanding]
   if (unmet.length === 0) return ''
   return `<span class="quest-requirements">Requires: ${unmet.join(', ')}</span>`
+}
+
+function renderReputationRewards(q: Quest): string {
+  if (!q.reputation?.length) return ''
+  return `<span class="quest-rewards">Standing: ${formatReputationRewards(q.reputation)}</span>`
 }
 
 export function showQuestPopup(
@@ -89,6 +113,7 @@ export function showQuestPopup(
             <h3>${q.title}</h3>
             <p>${q.description}</p>
             ${renderRequirements(q, stats, reputation)}
+            ${renderReputationRewards(q)}
             ${
               completed
                 ? '<span class="quest-status">Completed</span>'
@@ -110,7 +135,10 @@ export function showQuestPopup(
           const questId = button.dataset.complete!
           const quest = quests.find((entry) => entry.id === questId)
           const firstCompletion = completeQuest(questId)
-          if (firstCompletion && quest?.rewards?.length) grantQuestRewards(quest.rewards)
+          if (firstCompletion) {
+            if (quest?.rewards?.length) grantQuestRewards(quest.rewards)
+            if (quest?.reputation?.length) grantQuestReputation(quest.reputation)
+          }
           render()
         })
       })

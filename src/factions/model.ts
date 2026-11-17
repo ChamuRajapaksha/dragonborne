@@ -18,8 +18,54 @@ export interface UnmetReputation {
   current: number
 }
 
+/** One faction's standing after a reward, ready to toast. */
+export interface ReputationAwardChange {
+  factionId: string
+  name: string
+  delta: number
+  previous: number
+  value: number
+  tier: ReputationTier
+}
+
 export function applyReputationDelta(current: number, delta: number): number {
   return clampReputation(current + delta)
+}
+
+/**
+ * The visible changes a reward list would make, computed in order so repeated
+ * factions accumulate exactly like the store will apply them.
+ */
+export function reputationAwardChanges(
+  rewards: readonly ReputationReward[],
+  values: Readonly<Record<string, number>>,
+): ReputationAwardChange[] {
+  const running: Record<string, number> = { ...values }
+  const changes: ReputationAwardChange[] = []
+
+  for (const reward of rewards) {
+    const faction = getFactionById(reward.factionId)
+    if (!faction || reward.delta === 0) continue
+
+    const previous = running[reward.factionId] ?? 0
+    const value = applyReputationDelta(previous, reward.delta)
+    running[reward.factionId] = value
+    changes.push({
+      factionId: faction.id,
+      name: faction.name,
+      delta: reward.delta,
+      previous,
+      value,
+      tier: tierFor(value),
+    })
+  }
+
+  return changes
+}
+
+export function formatReputationAward(change: ReputationAwardChange): string {
+  const sign = change.delta >= 0 ? '+' : ''
+  return `${change.name} ${sign}${change.delta} (${tierLabel(change.tier)})`
 }
 
 export function isReputationMet(
