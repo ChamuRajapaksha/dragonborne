@@ -2,6 +2,12 @@ import Phaser from 'phaser'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
+import {
+  formatStanding,
+  getAllReputation,
+  subscribeReputation,
+  topStanding,
+} from '../factions'
 import { showIntroCard } from '../introCard'
 import { showQuestPopup, closeQuestPopup } from '../questPopup'
 import { closeQuestJournal, isQuestJournalOpen, showQuestJournal } from '../questJournal'
@@ -84,8 +90,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 230
-const HUD_CAVE_PANEL_HEIGHT = 250
+const HUD_PANEL_HEIGHT = 250
+const HUD_CAVE_PANEL_HEIGHT = 270
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
@@ -102,6 +108,7 @@ const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const HUD_JOURNAL_STYLE = { color: '#8a8a96', fontSize: '12px' } as const
 const HUD_TRACKED_STYLE = { color: '#c9a7ff', fontSize: '12px' } as const
+const HUD_STANDING_STYLE = { color: '#9fb7d4', fontSize: '12px' } as const
 const HUD_TORCH_STYLE = { color: '#ffb347', fontSize: '12px' } as const
 const TORCH_ITEM_ID = 'torch'
 const AXE_ITEM_ID = 'axe'
@@ -198,6 +205,7 @@ export default class WorldScene extends Phaser.Scene {
   private hudWeather!: Phaser.GameObjects.Text
   private hudTorch: Phaser.GameObjects.Text | null = null
   private hudTrackedQuest!: Phaser.GameObjects.Text
+  private hudStanding!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private portalMarkers: AreaPortalMarker[] = []
@@ -219,6 +227,7 @@ export default class WorldScene extends Phaser.Scene {
   private reputationOpen = false
   private unsubscribeInventory: (() => void) | null = null
   private unsubscribeGold: (() => void) | null = null
+  private unsubscribeReputation: (() => void) | null = null
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
   private spawnPx: { x: number; y: number } | null = null
@@ -267,6 +276,7 @@ export default class WorldScene extends Phaser.Scene {
     this.reputationOpen = false
     this.unsubscribeInventory = null
     this.unsubscribeGold = null
+    this.unsubscribeReputation = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
     this.dimRects = []
@@ -348,6 +358,7 @@ export default class WorldScene extends Phaser.Scene {
       this.refreshSelectedHud(state)
     })
     this.unsubscribeGold = subscribeGold((gold) => this.refreshGoldHud(gold))
+    this.unsubscribeReputation = subscribeReputation((values) => this.refreshStandingHud(values))
 
     this.maybeShowIntroCard(area)
 
@@ -357,6 +368,8 @@ export default class WorldScene extends Phaser.Scene {
       this.unsubscribeInventory = null
       this.unsubscribeGold?.()
       this.unsubscribeGold = null
+      this.unsubscribeReputation?.()
+      this.unsubscribeReputation = null
       closeQuestJournal()
       closeReputationPanel()
       destroyHotbar()
@@ -575,6 +588,9 @@ export default class WorldScene extends Phaser.Scene {
     this.hudTrackedQuest = addRow('', HUD_TRACKED_STYLE)
     this.refreshTrackedQuestHud()
 
+    this.hudStanding = addRow('', HUD_STANDING_STYLE)
+    this.refreshStandingHud(getAllReputation())
+
     if (area.id === 'cave') {
       this.hudTorch = addRow(this.torchHudText(), HUD_TORCH_STYLE)
     }
@@ -644,6 +660,15 @@ export default class WorldScene extends Phaser.Scene {
     const line = trackedQuestHudLine(entry)
     if (this.hudTrackedQuest.text !== line) this.hudTrackedQuest.setText(line)
     this.hudTrackedQuest.setVisible(line.length > 0)
+  }
+
+  /** Top standing from the live reputation store, or Neutral for a fresh save. */
+  private refreshStandingHud(values: Readonly<Record<string, number>>): void {
+    const top = topStanding(values)
+    const text = top
+      ? `Standing: ${formatStanding(top.factionId, top.value)}`
+      : 'Standing: Neutral'
+    if (this.hudStanding.text !== text) this.hudStanding.setText(text)
   }
 
   private resolveWaypoint(area: AreaDefinition): Waypoint | null {
