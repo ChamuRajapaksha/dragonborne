@@ -858,3 +858,115 @@ body {
   font-size: 11px;
   color: #8a8a96;
 }
+
+#reputation-panel {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.reputation-panel {
+  display: flex;
+  flex-direction: column;
+  background: #2b2b36;
+  color: #e5e5ea;
+  padding: 20px 24px;
+  border-radius: 8px;
+  width: 480px;
+  max-width: calc(100vw - 32px);
+  max-height: 80vh;
+}
+
+.reputation-panel h2 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.reputation-summary {
+  margin: 0 0 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #4a4a58;
+  font-size: 12px;
+  color: #b8b8c4;
+}
+
+.reputation-body {
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.reputation-card {
+  border: 1px solid #4a4a58;
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.reputation-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reputation-card-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.reputation-tier {
+  font-size: 12px;
+  color: #c9a7ff;
+}
+
+.reputation-bar {
+  position: relative;
+  height: 8px;
+  margin: 8px 0;
+  border-radius: 4px;
+  background: #1d1d28;
+  overflow: hidden;
+}
+
+.reputation-bar-fill {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+.reputation-bar-fill.positive {
+  left: 50%;
+  background: #7ee08a;
+}
+
+.reputation-bar-fill.negative {
+  right: 50%;
+  background: #ff9d9d;
+}
+
+.reputation-description {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #b8b8c4;
+}
+
+.reputation-price {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: #ffd27f;
+}
+
+.reputation-close {
+  align-self: flex-end;
+  margin-top: 12px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: #4a4a58;
+  color: #fff;
+  cursor: pointer;
+}
