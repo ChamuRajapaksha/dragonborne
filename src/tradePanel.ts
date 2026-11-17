@@ -16,6 +16,8 @@ import {
   removeItemEverywhere,
   updateInventory,
 } from './inventory'
+import { buyPrice, getReputation, sellPrice, tierFor } from './factions'
+import type { ReputationTier } from './factions'
 import type { NpcDefinition } from './story'
 import type { StatKey } from './inventory'
 import { paintItemIcons } from './itemIcon'
@@ -43,7 +45,8 @@ function countOffer(itemId: string): number {
  * gold actually earned. Nothing is paid for wood that was not removed.
  */
 function sell(itemId: string, quantity: number): void {
-  const price = getTradePrice(itemId) ?? 0
+  const base = getTradePrice(itemId) ?? 0
+  const price = sellPrice(base, tierFor(getReputation('traders')))
   let removed = 0
 
   updateInventory((current) => {
@@ -68,7 +71,8 @@ function sell(itemId: string, quantity: number): void {
  * clamps at zero, so over-deducting would silently burn the shortfall.
  */
 function buy(itemId: string, quantity: number): void {
-  const price = getShopPrice(itemId) ?? 0
+  const base = getShopPrice(itemId) ?? 0
+  const price = buyPrice(base, tierFor(getReputation('traders')))
   const wanted = Math.min(quantity, maxAffordable(getGold(), price))
 
   if (wanted <= 0) {
@@ -139,15 +143,16 @@ function tradeRowHtml(view: TradeRowView): string {
 }
 
 /** Buy rows: what each ware costs and how many you could afford right now. */
-function buyRows(gold: number): string {
+function buyRows(gold: number, tier: ReputationTier): string {
   return SHOP_OFFERS.map((offer) => {
     const name = getItemById(offer.itemId)?.name ?? offer.itemId
-    const affordable = maxAffordable(gold, offer.price)
+    const price = buyPrice(offer.price, tier)
+    const affordable = maxAffordable(gold, price)
     return tradeRowHtml({
       itemId: offer.itemId,
       name,
-      deal: `Cost: ${offer.price} gold → Get: 1 ${name}`,
-      reason: affordable >= 1 ? null : `needs ${offer.price} gold (you have ${gold})`,
+      deal: `Cost: ${price} gold \u2192 Get: 1 ${name}`,
+      reason: affordable >= 1 ? null : `needs ${price} gold (you have ${gold})`,
       held: countOffer(offer.itemId),
       actions: `
             <button type="button" data-buy="${offer.itemId}" data-qty="1" ${
@@ -161,7 +166,7 @@ function buyRows(gold: number): string {
 }
 
 /** Sell rows: only goods you actually carry — an empty pack shows an empty tab. */
-function sellRows(): string {
+function sellRows(tier: ReputationTier): string {
   const carried = TRADE_OFFERS.filter((offer) => countOffer(offer.itemId) >= 1)
   if (carried.length === 0) {
     return '<p class="trade-empty">Nothing to sell yet</p>'
@@ -170,11 +175,12 @@ function sellRows(): string {
   return carried
     .map((offer) => {
       const name = getItemById(offer.itemId)?.name ?? offer.itemId
+      const price = sellPrice(offer.price, tier)
       const held = countOffer(offer.itemId)
       return tradeRowHtml({
         itemId: offer.itemId,
         name,
-        deal: `Cost: 1 ${name} → Get: ${offer.price} gold`,
+        deal: `Cost: 1 ${name} → Get: ${price} gold`,
         reason: null,
         held,
         actions: `
@@ -204,6 +210,7 @@ export function showTradePanel(npc: NpcDefinition): void {
 
   const render = () => {
     const gold = getGold()
+    const tier = tierFor(getReputation('traders'))
 
     overlay.innerHTML = `
       <div class="trade-panel">
@@ -222,7 +229,7 @@ export function showTradePanel(npc: NpcDefinition): void {
           }" data-tab="sell">Sell</button>
         </div>
         <div class="trade-body">
-          ${tab === 'buy' ? buyRows(gold) : sellRows()}
+          ${tab === 'buy' ? buyRows(gold, tier) : sellRows(tier)}
         </div>
         <div class="trade-footer">
           <button type="button" class="trade-close">Close</button>
