@@ -5,6 +5,7 @@ import {
   isQuestCompleted,
 } from './story'
 import type { ItemReward, NpcDefinition, Quest } from './story'
+import { getAllReputation, getFactionById, isReputationMet, unmetReputation } from './factions'
 import { addItem, getItemById, updateInventory } from './inventory'
 import { showToast } from './toast'
 
@@ -38,11 +39,18 @@ export function closeQuestPopup(): void {
   document.getElementById('quest-popup')?.remove()
 }
 
-function renderRequirements(q: Quest, stats: Record<string, number>): string {
-  if (!q.requiresStats) return ''
-  const unmet = Object.entries(q.requiresStats)
+function renderRequirements(
+  q: Quest,
+  stats: Record<string, number>,
+  reputation: Readonly<Record<string, number>>,
+): string {
+  const unmetStats = Object.entries(q.requiresStats ?? {})
     .filter(([stat, min]) => (stats[stat] ?? 0) < (min ?? 0))
     .map(([stat, min]) => `${stat} ${min}+`)
+  const unmetStanding = unmetReputation(q.requiresReputation ?? [], reputation).map(
+    (entry) => `${getFactionById(entry.factionId)?.name ?? entry.factionId} ${entry.required}+`,
+  )
+  const unmet = [...unmetStats, ...unmetStanding]
   if (unmet.length === 0) return ''
   return `<span class="quest-requirements">Requires: ${unmet.join(', ')}</span>`
 }
@@ -60,6 +68,7 @@ export function showQuestPopup(
 
   const render = () => {
     const quests = getQuestsForNpc(npc.id, classId)
+    const reputation = getAllReputation()
 
     overlay.innerHTML = `
       <div class="quest-panel">
@@ -70,14 +79,16 @@ export function showQuestPopup(
           ? '<p>Nothing here for someone of your class.</p>'
           : quests
               .map((q) => {
-                const unlocked = meetsQuestRequirements(q, stats)
+                const unlocked =
+                  meetsQuestRequirements(q, stats) &&
+                  isReputationMet(q.requiresReputation ?? [], reputation)
                 const completed = isQuestCompleted(q.id)
                 const lockedClass = !unlocked && !completed ? 'locked' : ''
                 return `
           <div class="quest-card ${completed ? 'completed' : ''} ${lockedClass}">
             <h3>${q.title}</h3>
             <p>${q.description}</p>
-            ${renderRequirements(q, stats)}
+            ${renderRequirements(q, stats, reputation)}
             ${
               completed
                 ? '<span class="quest-status">Completed</span>'

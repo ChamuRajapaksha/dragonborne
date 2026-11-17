@@ -1,4 +1,6 @@
 ﻿export * from './data'
 export * from './model'
 export * from './prices'
+export * from './storage'
+export * from './store'
 export * from './tiers'
