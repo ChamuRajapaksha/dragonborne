@@ -643,6 +643,7 @@ export default class WorldScene extends Phaser.Scene {
       this.character.classId,
       effectiveStats(this.character.stats, getInventory()),
       completedIds,
+      getAllReputation(),
     )
     const trackedId = getTrackedQuestId()
     const entry = resolveTrackedQuest(entries, trackedId)

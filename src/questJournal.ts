@@ -1,4 +1,5 @@
 import { getClassById } from './character'
+import { formatUnmetReputation, getAllReputation } from './factions'
 import {
   buildQuestLog,
   canTrackQuest,
@@ -39,7 +40,14 @@ function entryMarkup(entry: QuestLogEntry, trackedId: string | null): string {
   const isTracked = quest.id === trackedId
   const requirements =
     entry.status === 'locked'
-      ? `<span class="quest-requirements">Requires: ${formatUnmetStats(entry.unmetStats)}</span>`
+      ? [
+          entry.unmetStats.length > 0
+            ? `<span class="quest-requirements">Requires: ${formatUnmetStats(entry.unmetStats)}</span>`
+            : '',
+          entry.unmetReputation.length > 0
+            ? `<span class="quest-requirements">Requires: ${formatUnmetReputation(entry.unmetReputation)}</span>`
+            : '',
+        ].join('')
       : ''
   const trackButton = canTrackQuest(entry)
     ? `<button class="quest-track" data-track="${quest.id}">${isTracked ? 'Untrack' : 'Track'}</button>`
@@ -93,7 +101,7 @@ export function showQuestJournal(
   overlay.id = PANEL_ID
 
   const render = (): void => {
-    const entries = buildQuestLog(classId, stats, getCompletedQuestIds())
+    const entries = buildQuestLog(classId, stats, getCompletedQuestIds(), getAllReputation())
     const summary = questLogSummary(entries)
     const trackedId = resolveTrackedQuest(entries, getTrackedQuestId())?.quest.id ?? null
 
