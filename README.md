@@ -148,6 +148,15 @@ the Vitest suite.
     `localStorage.removeItem('dragonborne.quests.tracked')` reset your gear, gold, torch
     fuel, clock/weather, faction standing, quest progress, and the pinned quest. Clearing
     all of them is a full restart.
+17. **Reputation loop:** press **F** for the Reputation panel: five cards start at Neutral,
+    and the HUD reads `Standing: Neutral` until one faction pulls ahead. Complete *The Road
+    to Emberhold* for **Emberhold +5** (a toast confirms the change), then check the panel and
+    the HUD again. Standing changes Hollis's and Brennan's **gold** prices — friendly buys
+    cheaper and sells better, hostile is the reverse, and smith materials never move. The
+    three follow-up quests (*The Forge Oath* from Brennan, *Wardens' Patrol* from the Stranger,
+    *The Archivist's Request* from Maerwyn) read as **Locked** until their faction reaches
+    Friendly (20); the popup, journal, and NPC greetings reflect the change. Standing survives
+    reloads and portals under `dragonborne.reputation`; a new character starts Neutral again.
 
 ## Day/night, weather, and NPC schedules
 
