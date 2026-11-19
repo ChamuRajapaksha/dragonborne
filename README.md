@@ -177,6 +177,35 @@ the Vitest suite.
   key, `dragonborne.clock`, separate from world progress. Creating a new character
   resets it to Day 1, 08:00, clear.
 
+## Factions and reputation
+
+- **Five factions:** Emberhold (the watch and the village law), Thornwood Wardens (the forest
+  road), The Deep Forge (smiths and miners), The Archive (scholars and records), and Free
+  Traders (merchants and caravans). The catalog and its descriptions are data in
+  `src/factions/data.ts`; adding a faction is a data edit plus quest/NPC references.
+- **Standing:** every character starts at **0 (Neutral)** with all five factions. Values are
+  clamped to **−100 … +100** and change only when a quest is completed for the first time —
+  there is no combat source, no repeatable grind, and no class starts aligned.
+- **Tiers:** Hated (−100 … −50), Hostile (−49 … −20), Neutral (−19 … 19), Friendly
+  (20 … 49), Honored (50 … 79), and Revered (80 … 100). The thresholds are pure data in
+  `src/factions/tiers.ts`.
+- **Quests:** a quest can award standing (`reputation`) and require standing
+  (`requiresReputation`). Unmet standing reads as **Locked** in both the quest popup and the
+  Quest Journal, with a reason such as `The Deep Forge 20+ (4)`. The three follow-up lines —
+  **The Forge Oath**, **Wardens' Patrol**, and **The Archivist's Request** — require Friendly
+  standing with their faction and pay +5 back plus steel, rope, or emberglass.
+- **Prices:** Free Traders standing changes Hollis's buy/sell prices; Deep Forge standing
+  changes Brennan's **gold** prices. Friendly tiers buy cheaper and sell better, hostile tiers
+  are worse, and neutral changes nothing. Smith materials are never discounted. Buys use
+  `max(1, round(base × buy))` and sells use `max(0, round(base × sell))`.
+- **UI:** press **F** for the Reputation panel — five cards with value, tier, bar, description,
+  and a price note for the two shop factions. The HUD adds a `Standing:` line for your top
+  faction, quest completion toasts each standing change, and both shop headers show the
+  relevant faction's tier and price note.
+- **NPCs:** the smith, trader, archivist, and watch have tier-specific greetings; the Stranger
+  and the Host are tagged with factions too. NPCs without a line for the current tier fall back
+  to their base greeting.
+
 ## Status
 
 The forest → village vertical slice, the inventory plan, the chopping/wood/trading
