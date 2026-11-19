@@ -143,10 +143,11 @@ the Vitest suite.
     in the Thornwood with the intro card showing again.     `localStorage.removeItem('dragonborne.inventory')`,
     `localStorage.removeItem('dragonborne.wallet')`, `localStorage.removeItem('dragonborne.torch')`,
     `localStorage.removeItem('dragonborne.clock')`,
+    `localStorage.removeItem('dragonborne.reputation')`,
     `localStorage.removeItem('dragonborne.quests.completed')`, and
     `localStorage.removeItem('dragonborne.quests.tracked')` reset your gear, gold, torch
-    fuel, clock/weather, quest progress, and the pinned quest. Clearing all of them is a
-    full restart.
+    fuel, clock/weather, faction standing, quest progress, and the pinned quest. Clearing
+    all of them is a full restart.
 
 ## Day/night, weather, and NPC schedules
 
@@ -205,6 +206,10 @@ the Vitest suite.
 - **NPCs:** the smith, trader, archivist, and watch have tier-specific greetings; the Stranger
   and the Host are tagged with factions too. NPCs without a line for the current tier fall back
   to their base greeting.
+- **Persistence:** standing lives under its own versioned key, `dragonborne.reputation`,
+  separate from progress, inventory, gold, torch, clock, and quest saves. Reloads, portals, and
+  scene restarts keep it; a missing or malformed save reads as all-neutral; creating a new
+  character resets it.
 
 ## Status
 
@@ -235,7 +240,9 @@ completed quests all survive a reload. A world clock drives a day/night tint and
 seeded weather cycle (clear / overcast / rain / fog / storm) that persists in
 `dragonborne.clock`; weather is hidden indoors and underground. NPCs now keep posted
 hours, and **The Night Watch** appears at the Emberhold gate from 20:00–05:00 with a
-quest of its own. All placeholder visuals.
+quest of its own. Completing quests now moves faction standing: reputation gates follow-up
+work, changes trader and smith gold prices, colours NPC greetings, and shows up in the `F`
+panel and HUD. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
@@ -304,8 +311,9 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
   and the cave layout version, `dragonborne.inventory` for the inventory (versioned
   schema), `dragonborne.wallet` for gold (versioned schema), `dragonborne.torch` for
   remaining torch fuel (versioned schema), `dragonborne.clock` for the world time and
-  weather schedule (versioned schema), `dragonborne.quests.completed` for quest
-  state, and `dragonborne.quests.tracked` for the pinned quest.
+  weather schedule (versioned schema), `dragonborne.reputation` for faction standing
+  (versioned schema), `dragonborne.quests.completed` for quest state, and
+  `dragonborne.quests.tracked` for the pinned quest.
 - Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
 
