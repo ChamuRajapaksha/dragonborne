@@ -149,7 +149,7 @@ describe('questLogSummary', () => {
 
     expect(questLogSummary(log)).toEqual({
       available: 2,
-      locked: 1,
+      locked: 4,
       completed: 1,
     })
   })

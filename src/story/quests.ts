@@ -145,6 +145,39 @@ const questData = [
       { factionId: 'wardens', delta: 3 },
     ],
   },
+  {
+    id: 'forge-oath',
+    title: 'The Forge Oath',
+    description:
+      'The Deep Forge keeps its best steel for hands that have already proved steady. Swear the oath and Brennan will weigh you out the good ingots.',
+    availableToClasses: ALL_CLASSES,
+    npcId: 'village-smith',
+    requiresReputation: [{ factionId: 'forge', min: 20 }],
+    rewards: [{ itemId: 'steel-ingot', quantity: 2 }],
+    reputation: [{ factionId: 'forge', delta: 5 }],
+  },
+  {
+    id: 'wardens-patrol',
+    title: 'Wardens’ Patrol',
+    description:
+      'The Thornwood Wardens trust you with the north road now. Walk their patrol and bring back a coil of their best rope.',
+    availableToClasses: ALL_CLASSES,
+    npcId: 'forest-guide',
+    requiresReputation: [{ factionId: 'wardens', min: 20 }],
+    rewards: [{ itemId: 'coil-rope', quantity: 1 }],
+    reputation: [{ factionId: 'wardens', delta: 5 }],
+  },
+  {
+    id: 'archive-request',
+    title: 'The Archivist’s Request',
+    description:
+      'Maerwyn has finally trusted you with a sealed request from the lower stacks. Bring back the emberglass and the Archive will remember it.',
+    availableToClasses: ALL_CLASSES,
+    npcId: 'village-archivist',
+    requiresReputation: [{ factionId: 'archive', min: 20 }],
+    rewards: [{ itemId: 'emberglass', quantity: 1 }],
+    reputation: [{ factionId: 'archive', delta: 5 }],
+  },
 ] as const satisfies readonly Quest[]
 
 export const QUESTS: readonly Quest[] = questData
