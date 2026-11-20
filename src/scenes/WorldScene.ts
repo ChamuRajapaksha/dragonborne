@@ -30,7 +30,13 @@ import {
   updateInventory,
 } from '../inventory'
 import type { InventoryState } from '../inventory'
-import { characterStats, getLevel } from '../progression'
+import {
+  characterStats,
+  formatLevelProgress,
+  getLevel,
+  getXp,
+  subscribeProgression,
+} from '../progression'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById, isNpcActive } from '../story'
@@ -90,8 +96,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 250
-const HUD_CAVE_PANEL_HEIGHT = 270
+const HUD_PANEL_HEIGHT = 270
+const HUD_CAVE_PANEL_HEIGHT = 290
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
@@ -100,6 +106,7 @@ const HUD_PANEL_DEPTH = 10
 const HUD_TEXT_DEPTH = 11
 const HUD_NAME_STYLE = { color: '#ffffff', fontSize: '16px', fontStyle: 'bold' } as const
 const HUD_CLASS_STYLE = { color: '#aa3bff', fontSize: '12px' } as const
+const HUD_PROGRESSION_STYLE = { color: '#a8e6a1', fontSize: '12px' } as const
 const HUD_AREA_STYLE = { color: '#cfe6b0', fontSize: '12px' } as const
 const HUD_TIME_STYLE = { color: '#cdd7ff', fontSize: '12px' } as const
 const HUD_WEATHER_STYLE = { color: '#9fb7d4', fontSize: '12px' } as const
@@ -201,6 +208,7 @@ export default class WorldScene extends Phaser.Scene {
   private waypointHint!: Phaser.GameObjects.Text
   private hudSelectedItem!: Phaser.GameObjects.Text
   private hudGold!: Phaser.GameObjects.Text
+  private hudProgression!: Phaser.GameObjects.Text
   private hudClock!: Phaser.GameObjects.Text
   private hudWeather!: Phaser.GameObjects.Text
   private hudTorch: Phaser.GameObjects.Text | null = null
@@ -228,6 +236,7 @@ export default class WorldScene extends Phaser.Scene {
   private unsubscribeInventory: (() => void) | null = null
   private unsubscribeGold: (() => void) | null = null
   private unsubscribeReputation: (() => void) | null = null
+  private unsubscribeProgression: (() => void) | null = null
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
   private spawnPx: { x: number; y: number } | null = null
@@ -277,6 +286,7 @@ export default class WorldScene extends Phaser.Scene {
     this.unsubscribeInventory = null
     this.unsubscribeGold = null
     this.unsubscribeReputation = null
+    this.unsubscribeProgression = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
     this.dimRects = []
@@ -359,6 +369,10 @@ export default class WorldScene extends Phaser.Scene {
     })
     this.unsubscribeGold = subscribeGold((gold) => this.refreshGoldHud(gold))
     this.unsubscribeReputation = subscribeReputation((values) => this.refreshStandingHud(values))
+    this.unsubscribeProgression = subscribeProgression((state) => {
+      this.refreshProgressionHud(state.xp)
+      this.refreshTrackedQuestHud()
+    })
 
     this.maybeShowIntroCard(area)
 
@@ -370,6 +384,8 @@ export default class WorldScene extends Phaser.Scene {
       this.unsubscribeGold = null
       this.unsubscribeReputation?.()
       this.unsubscribeReputation = null
+      this.unsubscribeProgression?.()
+      this.unsubscribeProgression = null
       closeQuestJournal()
       closeReputationPanel()
       destroyHotbar()
@@ -570,6 +586,8 @@ export default class WorldScene extends Phaser.Scene {
       addRow(getClassById(this.character?.classId ?? '')?.name ?? 'Unknown', HUD_CLASS_STYLE)
     }
 
+    this.hudProgression = addRow(formatLevelProgress(getXp()), HUD_PROGRESSION_STYLE)
+
     addRow(area.name, HUD_AREA_STYLE)
     this.hudClock = addRow(this.clockHudText(), HUD_TIME_STYLE)
     this.hudWeather = addRow(this.weatherHudText(), HUD_WEATHER_STYLE)
@@ -610,6 +628,11 @@ export default class WorldScene extends Phaser.Scene {
   private refreshGoldHud(gold: number): void {
     const text = formatGold(gold)
     if (this.hudGold.text !== text) this.hudGold.setText(text)
+  }
+
+  private refreshProgressionHud(xp: number): void {
+    const text = formatLevelProgress(xp)
+    if (this.hudProgression.text !== text) this.hudProgression.setText(text)
   }
 
   private clockHudText(): string {
