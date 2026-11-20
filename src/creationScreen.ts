@@ -3,6 +3,8 @@ import type { Character } from './character'
 import { resetGold } from './economy'
 import { resetReputation } from './factions'
 import { grantStartingKit, resetInventory, updateInventory } from './inventory'
+import { resetProgression } from './progression'
+import { clearCompletedQuests, clearTrackedQuest } from './story'
 import { clearClockSave } from './world/clockStorage'
 
 export function showCreationScreen(onCreated: (character: Character) => void): void {
@@ -49,6 +51,9 @@ export function showCreationScreen(onCreated: (character: Character) => void): v
     resetInventory()
     resetGold()
     resetReputation()
+    resetProgression()
+    clearCompletedQuests()
+    clearTrackedQuest()
     clearClockSave()
     updateInventory(grantStartingKit)
     overlay.remove()

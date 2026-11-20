@@ -2,7 +2,12 @@ export type { ItemReward, Quest } from './quests'
 export { QUESTS, getQuestsForClass, getQuestsForNpc, meetsQuestRequirements } from './quests'
 export type { NpcDefinition, NpcHours, NpcService } from './npcs'
 export { NPCS, getNpcById, isNpcActive, npcGreeting } from './npcs'
-export { getCompletedQuestIds, isQuestCompleted, completeQuest } from './questProgress'
+export {
+  clearCompletedQuests,
+  completeQuest,
+  getCompletedQuestIds,
+  isQuestCompleted,
+} from './questProgress'
 export type {
   QuestLogEntry,
   QuestLogSection,

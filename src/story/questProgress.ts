@@ -28,3 +28,8 @@ export function completeQuest(questId: string): boolean {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(completed))
   return true
 }
+
+/** Clears completion flags so a new character can earn every quest's rewards again. */
+export function clearCompletedQuests(): void {
+  localStorage.removeItem(STORAGE_KEY)
+}
