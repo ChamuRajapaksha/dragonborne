@@ -44,9 +44,10 @@ the Vitest suite.
    a Mage; create a second character to compare. The Stranger in the forest gives every
    class the same first errand: *The Road to Emberhold*.
 6. Press **Complete (stub)** on a quest to mark it complete: it pays the quest's item
-   rewards into your pack (a toast confirms what arrived) and the completed state persists.
-   Quests with unmet stat requirements are listed but locked — bonuses from equipped gear
-   count toward them. Press **J** at any time to open the **Quest Journal**: every quest
+   rewards into your pack, awards its **XP** (a toast confirms both), and the completed
+   state persists. Enough XP raises your level, which grants class-specific stat gains and
+   announces itself with a level-up toast. Quests with unmet stat requirements are listed
+   but locked — bonuses from equipped gear **and your level** count toward them. Press **J** at any time to open the **Quest Journal**: every quest
    your class can see, grouped into **Available**, **Locked**, and **Completed**, each
    showing who offers it and any unmet stat requirements. Press **J** again or **Close**
    to dismiss it; movement and torch burn pause while it is open. Click **Track** on any
@@ -144,9 +145,12 @@ the Vitest suite.
     `localStorage.removeItem('dragonborne.wallet')`, `localStorage.removeItem('dragonborne.torch')`,
     `localStorage.removeItem('dragonborne.clock')`,
     `localStorage.removeItem('dragonborne.reputation')`,
+    `localStorage.removeItem('dragonborne.progression')`,
     `localStorage.removeItem('dragonborne.quests.completed')`, and
     `localStorage.removeItem('dragonborne.quests.tracked')` reset your gear, gold, torch
-    fuel, clock/weather, faction standing, quest progress, and the pinned quest. Clearing
+    fuel, clock/weather, faction standing, XP/level, quest progress, and the pinned quest.
+    Creating a new character also resets XP, completed quests, and the pin automatically.
+    Clearing
     all of them is a full restart.
 17. **Reputation loop:** press **F** for the Reputation panel: five cards start at Neutral,
     and the HUD reads `Standing: Neutral` until one faction pulls ahead. Complete *The Road
@@ -220,6 +224,23 @@ the Vitest suite.
   scene restarts keep it; a missing or malformed save reads as all-neutral; creating a new
   character resets it.
 
+## XP and leveling
+
+- **Source:** only the first completion of a quest pays XP. Each quest declares its `xp`
+  in `src/story/quests.ts` (60–150 XP); there is no combat or repeatable grind.
+- **Curve:** cumulative thresholds are `50 × level × (level − 1)`, so level 2 needs 100 XP,
+  level 3 needs 300, level 4 needs 600, and so on up to the level 10 guard. Level is derived
+  from XP and never stored separately (`src/progression/logic.ts`).
+- **Level gains:** each class declares `statGains` per level in `src/character/classes.ts`.
+  Level 1 grants nothing; every level above it adds that class's gains to base stats before
+  equipment bonuses are applied (e.g. a level 3 Warrior gets +4 strength, +2 agility).
+- **UI:** the HUD shows `Lv N · x/y XP`, the quest popup and journal show each quest's XP
+  reward, the journal shows your current level/progress, and toasts report XP and level ups.
+  Stat-gated quests read level gains as part of your effective stats.
+- **Persistence:** XP lives in its own versioned `dragonborne.progression` save. Reloads and
+  portals keep it; creating a new character resets it along with completed quests and the
+  pinned quest so every reward can be earned again.
+
 ## Status
 
 The forest → village vertical slice, the inventory plan, the chopping/wood/trading
@@ -251,7 +272,8 @@ seeded weather cycle (clear / overcast / rain / fog / storm) that persists in
 hours, and **The Night Watch** appears at the Emberhold gate from 20:00–05:00 with a
 quest of its own. Completing quests now moves faction standing: reputation gates follow-up
 work, changes trader and smith gold prices, colours NPC greetings, and shows up in the `F`
-panel and HUD. All placeholder visuals.
+panel and HUD. Completing quests also awards XP: levels raise your class stats, the HUD and
+journal track progress, and a new character starts again at level 1. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
@@ -321,8 +343,9 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
   schema), `dragonborne.wallet` for gold (versioned schema), `dragonborne.torch` for
   remaining torch fuel (versioned schema), `dragonborne.clock` for the world time and
   weather schedule (versioned schema), `dragonborne.reputation` for faction standing
-  (versioned schema), `dragonborne.quests.completed` for quest state, and
-  `dragonborne.quests.tracked` for the pinned quest.
+  (versioned schema), `dragonborne.progression` for XP (versioned schema),
+  `dragonborne.quests.completed` for quest state, and `dragonborne.quests.tracked` for the
+  pinned quest.
 - Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
 
@@ -354,6 +377,8 @@ authoring approach, art style, and any backend beyond localStorage.
 - `src/inventory/` — item types and catalog, pure inventory logic (add/move/split/equip,
   effective stats, remove-everywhere), versioned storage, and the subscribing store
   singleton
+- `src/progression/` — pure XP curve and grant math, level-derived class stat gains,
+  versioned storage, and the subscribing store singleton
 - `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, the
   trader's buy/sell price tables, and the smith's ware cost table + shortfall helpers
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress and runs the
