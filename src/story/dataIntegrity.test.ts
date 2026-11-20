@@ -25,6 +25,22 @@ describe('cross-data integrity', () => {
     }
   })
 
+  it('gives every quest a positive xp reward', () => {
+    for (const quest of QUESTS) {
+      expect(Number.isInteger(quest.xp), `${quest.id} has no integer xp`).toBe(true)
+      expect(quest.xp ?? 0).toBeGreaterThan(0)
+    }
+  })
+
+  it('lets every class reach level 2 from its own quests', () => {
+    for (const characterClass of CLASSES) {
+      const total = QUESTS.filter((quest) =>
+        quest.availableToClasses.includes(characterClass.id),
+      ).reduce((sum, quest) => sum + (quest.xp ?? 0), 0)
+      expect(total, `${characterClass.id} cannot reach level 2`).toBeGreaterThanOrEqual(100)
+    }
+  })
+
   it('resolves every faction and item reference', () => {
     for (const quest of QUESTS) {
       for (const reward of quest.reputation ?? []) {

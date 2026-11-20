@@ -11,6 +11,8 @@
   reputation?: readonly { factionId: string; delta: number }[]
   /** Standing gates, checked alongside `requiresStats`. */
   requiresReputation?: readonly { factionId: string; min: number }[]
+  /** XP granted once, on first completion. */
+  xp?: number
 }
 
 /** One entry of a quest's payout. `quantity` defaults to 1. */
@@ -24,6 +26,8 @@ const ALL_CLASSES = ['warrior', 'rogue', 'mage', 'cleric', 'ranger', 'bard']
 const questData = [
   {
     id: 'road-to-emberhold',
+    xp: 60,
+
     title: 'The Road to Emberhold',
     description:
       'The stranger will not say who cast you into the woods, only that smoke rises east along the old track. Walk it before the light goes.',
@@ -34,6 +38,8 @@ const questData = [
   },
   {
     id: 'guard-the-bridge',
+    xp: 120,
+
     title: 'Guard the Eastern Bridge',
     description:
       'A thief has been preying on wagons at the eastern bridge. Garrison the post and keep trade moving until dawn.',
@@ -51,6 +57,8 @@ const questData = [
   },
   {
     id: 'smugglers-basin',
+    xp: 120,
+
     title: 'Murky Waters of the Basin',
     description:
       'Smugglers unload under cover of fog at the harbor basin. Slip past the watch and learn where they are bound.',
@@ -68,6 +76,8 @@ const questData = [
   },
   {
     id: 'thornwood-briars',
+    xp: 120,
+
     title: 'Briars of the Thornwood',
     description:
       'The thornwood has crept onto the northern road. Carve a safe route through the briars for the travelling merchants.',
@@ -85,6 +95,8 @@ const questData = [
   },
   {
     id: 'archivists-trove',
+    xp: 140,
+
     title: 'The Archivist\u2019s Trove',
     description:
       'A sealed grimoire waits in a locked wing of the library. Unravel the ward and retrieve it before the dust settles.',
@@ -96,6 +108,8 @@ const questData = [
   },
   {
     id: 'silent-bell',
+    xp: 140,
+
     title: 'Sanctum of the Silent Bell',
     description:
       'The temple bell has not rung in a week, and pilgrims grow restless. Bless the sanctum and restore its toll.',
@@ -110,6 +124,8 @@ const questData = [
   },
   {
     id: 'bards-contest',
+    xp: 100,
+
     title: 'The Song Contest',
     description:
       'The alehouse hosts a contest of verse, and the prize is a favour from the guildmaster. Out- rhyme every rival in the square.',
@@ -121,6 +137,8 @@ const questData = [
   },
   {
     id: 'the-midnight-fair',
+    xp: 150,
+
     title: 'The Midnight Fair',
     description:
       'The kingdom gathers for the Midnight Fair. Pitch in where you are needed and keep the celebration from unraveling.',
@@ -134,6 +152,7 @@ const questData = [
   },
   {
     id: 'watch-at-the-gate',
+    xp: 130,
     title: 'Watch at the Gate',
     description:
       'The night watch is one pair of eyes short. Take the gate until dawn, keep a torch lit, and log every shape that moves on the dark road.',
@@ -147,6 +166,7 @@ const questData = [
   },
   {
     id: 'forge-oath',
+    xp: 110,
     title: 'The Forge Oath',
     description:
       'The Deep Forge keeps its best steel for hands that have already proved steady. Swear the oath and Brennan will weigh you out the good ingots.',
@@ -158,6 +178,7 @@ const questData = [
   },
   {
     id: 'wardens-patrol',
+    xp: 110,
     title: 'Wardens’ Patrol',
     description:
       'The Thornwood Wardens trust you with the north road now. Walk their patrol and bring back a coil of their best rope.',
@@ -169,6 +190,7 @@ const questData = [
   },
   {
     id: 'archive-request',
+    xp: 110,
     title: 'The Archivist’s Request',
     description:
       'Maerwyn has finally trusted you with a sealed request from the lower stacks. Bring back the emberglass and the Archive will remember it.',
