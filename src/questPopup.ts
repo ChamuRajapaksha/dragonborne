@@ -84,6 +84,11 @@ function renderRequirements(
   return `<span class="quest-requirements">Requires: ${unmet.join(', ')}</span>`
 }
 
+function renderXpReward(q: Quest): string {
+  if (!q.xp) return ''
+  return `<span class="quest-rewards">XP: ${q.xp}</span>`
+}
+
 function renderReputationRewards(q: Quest): string {
   if (!q.reputation?.length) return ''
   return `<span class="quest-rewards">Standing: ${formatReputationRewards(q.reputation)}</span>`
@@ -123,6 +128,7 @@ export function showQuestPopup(
             <h3>${q.title}</h3>
             <p>${q.description}</p>
             ${renderRequirements(q, stats, reputation)}
+            ${renderXpReward(q)}
             ${renderReputationRewards(q)}
             ${
               completed
