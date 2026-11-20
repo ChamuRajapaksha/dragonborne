@@ -22,7 +22,6 @@ import { showSmithPanel, closeSmithPanel, isSmithPanelOpen } from '../smithPanel
 import {
   addItem,
   countItem,
-  effectiveStats,
   getItemById,
   getInventory,
   remainingCapacity,
@@ -31,6 +30,7 @@ import {
   updateInventory,
 } from '../inventory'
 import type { InventoryState } from '../inventory'
+import { characterStats, getLevel } from '../progression'
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById, isNpcActive } from '../story'
@@ -641,7 +641,7 @@ export default class WorldScene extends Phaser.Scene {
     const completedIds = getCompletedQuestIds()
     const entries = buildQuestLog(
       this.character.classId,
-      effectiveStats(this.character.stats, getInventory()),
+      characterStats(this.character, getInventory(), getLevel()),
       completedIds,
       getAllReputation(),
     )
@@ -1045,7 +1045,7 @@ export default class WorldScene extends Phaser.Scene {
         showSmithPanel(
           nearestNpc,
           this.character.classId,
-          effectiveStats(this.character.stats, getInventory()),
+          characterStats(this.character, getInventory(), getLevel()),
         )
         this.popupOpen = true
         this.smithOpen = true
@@ -1055,7 +1055,7 @@ export default class WorldScene extends Phaser.Scene {
         showQuestPopup(
           nearestNpc,
           this.character.classId,
-          effectiveStats(this.character.stats, getInventory()),
+          characterStats(this.character, getInventory(), getLevel()),
         )
         this.popupOpen = true
       }
@@ -1188,7 +1188,7 @@ export default class WorldScene extends Phaser.Scene {
 
     showQuestJournal(
       this.character.classId,
-      effectiveStats(this.character.stats, getInventory()),
+      characterStats(this.character, getInventory(), getLevel()),
     )
     this.journalOpen = true
     this.popupOpen = true
