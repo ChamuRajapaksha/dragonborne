@@ -18,7 +18,7 @@ import {
 } from './factions'
 import type { ReputationReward } from './factions'
 import { addItem, getItemById, updateInventory } from './inventory'
-import { grantXp } from './progression'
+import { getLevel, grantXp } from './progression'
 import { showToast } from './toast'
 
 /**
@@ -146,7 +146,8 @@ export function showQuestPopup(
           const quest = quests.find((entry) => entry.id === questId)
           const firstCompletion = completeQuest(questId)
           if (firstCompletion) {
-            grantQuestXp(quest?.xp ?? 0)
+            const levelsGained = grantQuestXp(quest?.xp ?? 0)
+            if (levelsGained > 0) showToast(`Level up! You are now level ${getLevel()}`)
             if (quest?.rewards?.length) grantQuestRewards(quest.rewards)
             if (quest?.reputation?.length) grantQuestReputation(quest.reputation)
           }
