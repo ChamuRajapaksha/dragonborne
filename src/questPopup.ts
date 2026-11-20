@@ -18,6 +18,7 @@ import {
 } from './factions'
 import type { ReputationReward } from './factions'
 import { addItem, getItemById, updateInventory } from './inventory'
+import { grantXp } from './progression'
 import { showToast } from './toast'
 
 /**
@@ -44,6 +45,14 @@ function grantQuestRewards(rewards: readonly ItemReward[]): void {
 
   if (granted.length > 0) showToast(`Received: ${granted.join(', ')}`)
   if (shortfall > 0) showToast('Your pack is full')
+}
+
+/** Pays a quest's XP once and returns how many levels the award crossed. */
+function grantQuestXp(amount: number): number {
+  if (amount <= 0) return 0
+  const levelsGained = grantXp(amount)
+  showToast(`+${amount} XP`)
+  return levelsGained
 }
 
 /** Applies a quest's standing changes once and toasts each visible change. */
@@ -137,6 +146,7 @@ export function showQuestPopup(
           const quest = quests.find((entry) => entry.id === questId)
           const firstCompletion = completeQuest(questId)
           if (firstCompletion) {
+            grantQuestXp(quest?.xp ?? 0)
             if (quest?.rewards?.length) grantQuestRewards(quest.rewards)
             if (quest?.reputation?.length) grantQuestReputation(quest.reputation)
           }
