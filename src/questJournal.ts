@@ -1,5 +1,6 @@
 import { getClassById } from './character'
 import { formatUnmetReputation, getAllReputation } from './factions'
+import { formatLevelProgress, getXp } from './progression'
 import {
   buildQuestLog,
   canTrackQuest,
@@ -64,6 +65,7 @@ function entryMarkup(entry: QuestLogEntry, trackedId: string | null): string {
       </div>
       <p class="quest-journal-npc">Offered by ${entry.npcName}</p>
       <p>${quest.description}</p>
+      ${quest.xp ? `<span class="quest-rewards">XP: ${quest.xp}</span>` : ''}
       ${requirements}
     </div>`
 }
@@ -109,6 +111,7 @@ export function showQuestJournal(
       <div class="quest-journal-panel">
         <p class="quest-journal-kicker">${className} journal</p>
         <h2>Quest Journal</h2>
+        <p class="quest-journal-progression">${formatLevelProgress(getXp())}</p>
         <p class="quest-journal-summary">
           ${summary.available} available &middot; ${summary.locked} locked &middot; ${summary.completed} completed
         </p>
