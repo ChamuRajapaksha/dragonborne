@@ -926,13 +926,15 @@ export default class WorldScene extends Phaser.Scene {
     this.updateWeatherLayer(currentRoom)
     this.weatherLayer?.update(delta)
 
+    const flags = this.readKeyFlags()
+
     let vx = 0
     let vy = 0
 
-    if (this.cursors.left.isDown || this.wasd.A.isDown) vx -= 1
-    if (this.cursors.right.isDown || this.wasd.D.isDown) vx += 1
-    if (this.cursors.up.isDown || this.wasd.W.isDown) vy -= 1
-    if (this.cursors.down.isDown || this.wasd.S.isDown) vy += 1
+    if (flags.left) vx -= 1
+    if (flags.right) vx += 1
+    if (flags.up) vy -= 1
+    if (flags.down) vy += 1
 
     if (
       this.inventoryOpen ||
