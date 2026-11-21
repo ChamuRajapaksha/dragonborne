@@ -1,6 +1,6 @@
 import Phaser from 'phaser'
 import { DEFAULT_PROFILE, createMovementState, movementInputFromFlags, stepMovement } from '../movement'
-import type { KeyFlags, MovementProfile, MovementState } from '../movement'
+import type { KeyFlags, MovementState } from '../movement'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
@@ -90,7 +90,6 @@ import {
 } from '../world/tileset'
 
 const NEW_CHARACTER_AREA_ID = 'forest'
-const PLAYER_SPEED = 200
 const INTERACT_RANGE = 55
 const PORTAL_RANGE = 26
 const NPC_INTERACT_HINT = 'Press E'
@@ -929,8 +928,7 @@ export default class WorldScene extends Phaser.Scene {
     this.weatherLayer?.update(delta)
 
     const input = movementInputFromFlags(this.readKeyFlags())
-    const profile: MovementProfile = { ...DEFAULT_PROFILE, maxSpeed: PLAYER_SPEED }
-    this.movementState = stepMovement(this.movementState, input, profile, delta / 1000)
+    this.movementState = stepMovement(this.movementState, input, DEFAULT_PROFILE, delta / 1000)
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.updateTorch(delta)
