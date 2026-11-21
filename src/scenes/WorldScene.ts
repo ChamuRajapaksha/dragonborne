@@ -928,7 +928,13 @@ export default class WorldScene extends Phaser.Scene {
     this.weatherLayer?.update(delta)
 
     const input = movementInputFromFlags(this.readKeyFlags())
-    this.movementState = stepMovement(this.movementState, input, DEFAULT_PROFILE, delta / 1000)
+    const panelsOpen =
+      this.inventoryOpen ||
+      this.tradeOpen ||
+      this.smithOpen ||
+      this.journalOpen ||
+      this.reputationOpen
+    this.movementState = stepMovement(this.movementState, input, DEFAULT_PROFILE, delta / 1000, !panelsOpen)
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.updateTorch(delta)
