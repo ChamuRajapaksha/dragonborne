@@ -3,6 +3,7 @@ import {
   CAVE_PROFILE,
   DEFAULT_PROFILE,
   ESCORT_PROFILE,
+  resolveMovementContext,
   resolveMovementProfile,
 } from './profiles'
 
@@ -34,5 +35,19 @@ describe('movement profiles', () => {
     expect(ESCORT_PROFILE.maxSpeed).toBeLessThan(DEFAULT_PROFILE.maxSpeed)
     expect(ESCORT_PROFILE.cameraLerpX).toBeLessThan(DEFAULT_PROFILE.cameraLerpX)
     expect(ESCORT_PROFILE.cameraLerpY).toBeLessThan(DEFAULT_PROFILE.cameraLerpY)
+  })
+})
+
+describe('movement context', () => {
+  it('uses the cave context only underground without an escort', () => {
+    expect(resolveMovementContext('cave', false)).toBe('cave')
+    expect(resolveMovementContext('forest', false)).toBe('default')
+    expect(resolveMovementContext('village', false)).toBe('default')
+  })
+
+  it('lets an active escort override the area context', () => {
+    expect(resolveMovementContext('cave', true)).toBe('escort')
+    expect(resolveMovementContext('village', true)).toBe('escort')
+    expect(resolveMovementProfile(resolveMovementContext('plains', true))).toBe(ESCORT_PROFILE)
   })
 })
