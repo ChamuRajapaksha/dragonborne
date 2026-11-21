@@ -11,5 +11,6 @@ export {
   CAVE_PROFILE,
   DEFAULT_PROFILE,
   ESCORT_PROFILE,
+  resolveMovementContext,
   resolveMovementProfile,
 } from './profiles'

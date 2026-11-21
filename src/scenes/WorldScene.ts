@@ -1,5 +1,11 @@
 import Phaser from 'phaser'
-import { DEFAULT_PROFILE, createMovementState, movementInputFromFlags, stepMovement } from '../movement'
+import {
+  createMovementState,
+  movementInputFromFlags,
+  resolveMovementContext,
+  resolveMovementProfile,
+  stepMovement,
+} from '../movement'
 import type { KeyFlags, MovementState } from '../movement'
 import type { Character } from '../character'
 import { getClassById } from '../character'
@@ -934,7 +940,8 @@ export default class WorldScene extends Phaser.Scene {
       this.smithOpen ||
       this.journalOpen ||
       this.reputationOpen
-    this.movementState = stepMovement(this.movementState, input, DEFAULT_PROFILE, delta / 1000, !panelsOpen)
+    const profile = resolveMovementProfile(resolveMovementContext(this.areaId, false))
+    this.movementState = stepMovement(this.movementState, input, profile, delta / 1000, !panelsOpen)
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.updateTorch(delta)

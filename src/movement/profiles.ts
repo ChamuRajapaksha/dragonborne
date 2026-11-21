@@ -39,3 +39,8 @@ const PROFILES: Readonly<Record<string, MovementProfile>> = {
 export function resolveMovementProfile(contextId: string): MovementProfile {
   return PROFILES[contextId] ?? DEFAULT_PROFILE
 }
+
+export function resolveMovementContext(areaId: string, escortActive: boolean): string {
+  if (escortActive) return 'escort'
+  return areaId === 'cave' ? 'cave' : 'default'
+}
