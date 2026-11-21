@@ -1,4 +1,5 @@
 import Phaser from 'phaser'
+import type { KeyFlags } from '../movement'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
@@ -199,6 +200,7 @@ export default class WorldScene extends Phaser.Scene {
   private playerPoint: { x: number; y: number } = { x: 0, y: 0 }
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
+  private shiftKey: Phaser.Input.Keyboard.Key | null = null
   private interactKey!: Phaser.Input.Keyboard.Key
   private inventoryKey!: Phaser.Input.Keyboard.Key
   private journalKey!: Phaser.Input.Keyboard.Key
@@ -275,6 +277,7 @@ export default class WorldScene extends Phaser.Scene {
     this.chopProgress = new Map()
     this.mineProgress = new Map()
     this.hotbarKeys = []
+    this.shiftKey = null
     this.waypoint = null
     this.popupOpen = false
     this.introCardOpen = false
@@ -323,6 +326,7 @@ export default class WorldScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.terrain)
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as WasdKeys
+    this.shiftKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT)
     this.interactKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E)
     this.inventoryKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.I)
     this.journalKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.J)
@@ -880,6 +884,16 @@ export default class WorldScene extends Phaser.Scene {
 
     this.clockSaveElapsed = 0
     this.saveClock()
+  }
+
+  readKeyFlags(): KeyFlags {
+    return {
+      left: this.cursors.left.isDown || this.wasd.A.isDown,
+      right: this.cursors.right.isDown || this.wasd.D.isDown,
+      up: this.cursors.up.isDown || this.wasd.W.isDown,
+      down: this.cursors.down.isDown || this.wasd.S.isDown,
+      sprint: this.shiftKey?.isDown ?? false,
+    }
   }
 
   update(_time: number, delta: number): void {
