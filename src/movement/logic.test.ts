@@ -81,3 +81,55 @@ describe('movement stepping', () => {
     expect(stopMovement(createMovementState()).facing).toEqual({ x: 0, y: 1 })
   })
 })
+
+describe('movement clamping and safety', () => {
+  it('clamps total speed to the sprint multiplier', () => {
+    const sprinting = { x: 1, y: 0, sprint: true }
+    const state = run(createMovementState(), sprinting, 10)
+
+    expect(speedOf(state)).toBeCloseTo(profile.maxSpeed * profile.sprintMultiplier, 6)
+
+    const walking = stepMovement(state, input(1, 0), profile, 0.05)
+    expect(speedOf(walking)).toBe(profile.maxSpeed)
+  })
+
+  it('caps delta so a long frame cannot teleport the player', () => {
+    const longFrame = stepMovement(createMovementState(), input(1, 0), profile, 10)
+    const cappedFrame = stepMovement(createMovementState(), input(1, 0), profile, 0.05)
+    expect(longFrame).toEqual(cappedFrame)
+  })
+
+  it('reads non-finite values as zero', () => {
+    const state = stepMovement(createMovementState(), input(1, Number.NaN), profile, 0.05)
+    expect(state.vx).toBe(80)
+    expect(state.vy).toBe(0)
+
+    const brokenState = stepMovement(
+      { vx: Number.NaN, vy: Number.POSITIVE_INFINITY, facing: { x: Number.NaN, y: 0 } },
+      input(1, 0),
+      profile,
+      0.05,
+    )
+    expect(brokenState.vx).toBe(80)
+    expect(brokenState.vy).toBe(0)
+
+    const brokenProfile = stepMovement(
+      createMovementState(),
+      input(1, 0),
+      { ...profile, maxSpeed: Number.NaN, acceleration: Number.NaN },
+      0.05,
+    )
+    expect(brokenProfile.vx).toBe(0)
+    expect(brokenProfile.vy).toBe(0)
+    expect(brokenProfile.facing).toEqual({ x: 1, y: 0 })
+  })
+
+  it('stops immediately when disabled', () => {
+    const moving = run(createMovementState(), input(0, -1), 10)
+    const disabled = stepMovement(moving, input(0, -1), profile, 0.05, false)
+
+    expect(disabled.vx).toBe(0)
+    expect(disabled.vy).toBe(0)
+    expect(disabled.facing).toEqual({ x: 0, y: -1 })
+  })
+})
