@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
-import type { KeyFlags } from '../movement'
+import { DEFAULT_PROFILE, createMovementState, movementInputFromFlags, stepMovement } from '../movement'
+import type { KeyFlags, MovementProfile, MovementState } from '../movement'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
@@ -90,7 +91,6 @@ import {
 
 const NEW_CHARACTER_AREA_ID = 'forest'
 const PLAYER_SPEED = 200
-const DIAGONAL_FACTOR = 0.7071
 const INTERACT_RANGE = 55
 const PORTAL_RANGE = 26
 const NPC_INTERACT_HINT = 'Press E'
@@ -198,6 +198,7 @@ export default class WorldScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle
   private playerBody!: Phaser.Physics.Arcade.Body
   private playerPoint: { x: number; y: number } = { x: 0, y: 0 }
+  private movementState: MovementState = createMovementState()
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
   private shiftKey: Phaser.Input.Keyboard.Key | null = null
@@ -270,6 +271,7 @@ export default class WorldScene extends Phaser.Scene {
     this.areaId = resolveAreaId(data.areaId)
     this.spawnPx = data.spawnPx ?? null
     this.playerPoint = { x: 0, y: 0 }
+    this.movementState = createMovementState()
     this.npcMarkers = []
     this.portalMarkers = []
     this.itemMarkers = []
@@ -926,33 +928,10 @@ export default class WorldScene extends Phaser.Scene {
     this.updateWeatherLayer(currentRoom)
     this.weatherLayer?.update(delta)
 
-    const flags = this.readKeyFlags()
-
-    let vx = 0
-    let vy = 0
-
-    if (flags.left) vx -= 1
-    if (flags.right) vx += 1
-    if (flags.up) vy -= 1
-    if (flags.down) vy += 1
-
-    if (
-      this.inventoryOpen ||
-      this.tradeOpen ||
-      this.smithOpen ||
-      this.journalOpen ||
-      this.reputationOpen
-    ) {
-      vx = 0
-      vy = 0
-    }
-
-    if (vx !== 0 && vy !== 0) {
-      vx *= DIAGONAL_FACTOR
-      vy *= DIAGONAL_FACTOR
-    }
-
-    this.playerBody.setVelocity(vx * PLAYER_SPEED, vy * PLAYER_SPEED)
+    const input = movementInputFromFlags(this.readKeyFlags())
+    const profile: MovementProfile = { ...DEFAULT_PROFILE, maxSpeed: PLAYER_SPEED }
+    this.movementState = stepMovement(this.movementState, input, profile, delta / 1000)
+    this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.updateTorch(delta)
     this.selectHotbarSlotFromKeys()
