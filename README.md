@@ -32,7 +32,11 @@ the Vitest suite.
 1. On first load you're asked to create a character: type a name and pick a class
    (Warrior / Rogue / Mage / Cleric / Ranger / Bard). The character is saved to localStorage.
 2. You wake in **the Thornwood** on a fire ring, and a one-time intro card sets the scene.
-   Move with **WASD** or **arrow keys** — trees, rocks, and water all block you.
+   Move with **WASD** or **arrow keys** — trees, rocks, and water all block you. Hold
+   **Shift** while moving to sprint. Movement eases in and out instead of snapping on and
+   off, diagonals cover the same ground as straight lines, and your facing stays stable
+   when you let go. Open panels stop you cleanly with no leftover drift. The Crystal Cave
+   uses a slightly slower profile and a gentler camera follow.
 3. The HUD shows the current area plus a waypoint line (`Emberhold: east, 42 tiles`); walk
    east along the dirt track toward the purple portal.
 4. Step onto the portal and press **E** to travel to **Emberhold** — you arrive at the west
