@@ -6,7 +6,7 @@ import {
   resolveMovementProfile,
   stepMovement,
 } from '../movement'
-import type { KeyFlags, MovementState } from '../movement'
+import type { KeyFlags, MovementProfile, MovementState } from '../movement'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
@@ -204,6 +204,7 @@ export default class WorldScene extends Phaser.Scene {
   private playerBody!: Phaser.Physics.Arcade.Body
   private playerPoint: { x: number; y: number } = { x: 0, y: 0 }
   private movementState: MovementState = createMovementState()
+  private activeMovementProfileId = ''
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
   private wasd!: WasdKeys
   private shiftKey: Phaser.Input.Keyboard.Key | null = null
@@ -277,6 +278,7 @@ export default class WorldScene extends Phaser.Scene {
     this.spawnPx = data.spawnPx ?? null
     this.playerPoint = { x: 0, y: 0 }
     this.movementState = createMovementState()
+    this.activeMovementProfileId = ''
     this.npcMarkers = []
     this.portalMarkers = []
     this.itemMarkers = []
@@ -363,7 +365,7 @@ export default class WorldScene extends Phaser.Scene {
     this.interactHint.setVisible(false)
     this.interactHint.setDepth(3)
 
-    this.cameras.main.startFollow(this.player, true, 0.1, 0.1)
+    this.applyMovementProfile(resolveMovementProfile(resolveMovementContext(this.areaId, false)))
     this.torchFuelMs = loadTorchFuel()
     this.loadClock()
     this.caveDarkness =
@@ -893,6 +895,12 @@ export default class WorldScene extends Phaser.Scene {
     this.saveClock()
   }
 
+  applyMovementProfile(profile: MovementProfile): void {
+    if (this.activeMovementProfileId === profile.id) return
+    this.activeMovementProfileId = profile.id
+    this.cameras.main.startFollow(this.player, true, profile.cameraLerpX, profile.cameraLerpY)
+  }
+
   readKeyFlags(): KeyFlags {
     return {
       left: this.cursors.left.isDown || this.wasd.A.isDown,
@@ -941,6 +949,7 @@ export default class WorldScene extends Phaser.Scene {
       this.journalOpen ||
       this.reputationOpen
     const profile = resolveMovementProfile(resolveMovementContext(this.areaId, false))
+    this.applyMovementProfile(profile)
     this.movementState = stepMovement(this.movementState, input, profile, delta / 1000, !panelsOpen)
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
