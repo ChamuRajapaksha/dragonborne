@@ -184,6 +184,17 @@ describe('plains layout', () => {
       expect(PLAINS_MAP[portal.y]?.[portal.x]).toBe('-')
     }
   })
+
+  it('pairs each plains exit with a return portal', () => {
+    const backToPlains = {
+      forest: FOREST_PORTALS.some((portal) => portal.toAreaId === 'plains'),
+      village: VILLAGE_PORTALS.some((portal) => portal.toAreaId === 'plains'),
+    }
+
+    for (const portal of PLAINS_PORTALS) {
+      expect(backToPlains[portal.toAreaId as 'forest' | 'village']).toBe(true)
+    }
+  })
 })
 
 describe('forest main corridor', () => {

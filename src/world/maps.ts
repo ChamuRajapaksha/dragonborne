@@ -172,6 +172,13 @@ export const FOREST_PORTALS: readonly Portal[] = [
     toSpawn: { x: 6, y: 16 },
     label: 'To the Crystal Cave',
   },
+  {
+    x: 58,
+    y: 24,
+    toAreaId: 'plains',
+    toSpawn: { x: 2, y: 20 },
+    label: 'To the Amber Plains',
+  },
 ]
 
 export const VILLAGE_PORTALS: readonly Portal[] = [
@@ -181,6 +188,13 @@ export const VILLAGE_PORTALS: readonly Portal[] = [
     toAreaId: 'forest',
     toSpawn: { x: 60, y: 24 },
     label: 'To the Thornwood',
+  },
+  {
+    x: 30,
+    y: 37,
+    toAreaId: 'plains',
+    toSpawn: { x: 61, y: 20 },
+    label: 'To the Amber Plains',
   },
 ]
 
