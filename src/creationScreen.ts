@@ -1,6 +1,7 @@
 import { CLASSES, createCharacter, saveCharacter } from './character'
 import type { Character } from './character'
 import { resetGold } from './economy'
+import { resetEscorts } from './escort/store'
 import { resetReputation } from './factions'
 import { grantStartingKit, resetInventory, updateInventory } from './inventory'
 import { resetProgression } from './progression'
@@ -52,6 +53,7 @@ export function showCreationScreen(onCreated: (character: Character) => void): v
     resetGold()
     resetReputation()
     resetProgression()
+    resetEscorts()
     clearCompletedQuests()
     clearTrackedQuest()
     clearClockSave()
