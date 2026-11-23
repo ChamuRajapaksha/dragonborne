@@ -184,6 +184,31 @@ export const VILLAGE_PORTALS: readonly Portal[] = [
   },
 ]
 
+export const PLAINS_NPCS: readonly AreaNpcPlacement[] = [
+  { npcId: 'plains-waystone-keeper', x: 40, y: 17 },
+]
+
+export const PLAINS_PORTALS: readonly Portal[] = [
+  {
+    x: 2,
+    y: 20,
+    toAreaId: 'forest',
+    toSpawn: { x: 58, y: 24 },
+    label: 'To the Thornwood',
+  },
+  {
+    x: 61,
+    y: 20,
+    toAreaId: 'village',
+    toSpawn: { x: 29, y: 83 },
+    label: 'To Emberhold',
+  },
+]
+
+export const PLAINS_ITEMS: readonly AreaItemPlacement[] = []
+
+export const PLAINS_CHESTS: readonly AreaChestPlacement[] = []
+
 export const FOREST_ITEMS: readonly AreaItemPlacement[] = []
 
 export const FOREST_CHESTS: readonly AreaChestPlacement[] = [
