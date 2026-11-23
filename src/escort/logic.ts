@@ -136,3 +136,30 @@ export function stepFollower(
     y: y + velocity.vy * delta * ratio,
   }
 }
+
+export function canCrossPortalWithEscort(
+  progress: EscortProgress,
+  def: EscortDefinition,
+  player: { x: number; y: number },
+): boolean {
+  if (!progress || !def) return true
+  if (!Number.isFinite(player?.x) || !Number.isFinite(player?.y)) return false
+
+  const radius = Math.max(0, finite(def.stopRadius)) + 24
+  return Math.hypot(player.x - finite(progress.x), player.y - finite(progress.y)) <= radius
+}
+
+export function relocateEscortAfterPortal(
+  progress: EscortProgress,
+  toAreaId: string,
+  toSpawnPx: { x: number; y: number },
+): EscortProgress {
+  if (!progress) return progress
+
+  return {
+    ...progress,
+    areaId: toAreaId ?? '',
+    x: finite(toSpawnPx?.x),
+    y: finite(toSpawnPx?.y),
+  }
+}
