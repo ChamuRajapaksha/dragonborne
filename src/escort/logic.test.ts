@@ -4,9 +4,11 @@ import {
   advanceEscort,
   canStartEscort,
   currentStop,
+  followSpeedForDistance,
   isEscortComplete,
   isStopReached,
   startEscort,
+  stepFollower,
 } from './logic'
 import type { EscortDefinition } from './types'
 
@@ -154,5 +156,81 @@ describe('advanceEscort', () => {
     expect(result.arrived).toBeNull()
     expect(result.complete).toBe(false)
     expect(result.progress).toBe(progress)
+  })
+})
+
+describe('followSpeedForDistance', () => {
+  it('uses the base speed up to the leash radius', () => {
+    expect(followSpeedForDistance(def, 0)).toBe(def.npcSpeed)
+    expect(followSpeedForDistance(def, def.leashRadius)).toBe(def.npcSpeed)
+    expect(followSpeedForDistance(def, Number.NaN)).toBe(def.npcSpeed)
+  })
+
+  it('applies the catch-up boost beyond the leash radius', () => {
+    expect(followSpeedForDistance(def, def.leashRadius + 1)).toBeCloseTo(def.npcSpeed * 1.6, 6)
+  })
+})
+
+describe('stepFollower', () => {
+  const progress = startEscort(def, { areaId: 'village', x: 100, y: 100 })
+
+  it('holds position inside the follow radius', () => {
+    const next = stepFollower(progress, def, { x: 150, y: 100 }, 0.05)
+
+    expect(next).toEqual(progress)
+    expect(next).not.toBe(progress)
+  })
+
+  it('moves toward the player at the configured speed without mutating progress', () => {
+    const next = stepFollower(progress, def, { x: 300, y: 100 }, 0.02)
+
+    expect(next.x).toBeCloseTo(103.3, 6)
+    expect(next.y).toBe(100)
+    expect(next.areaId).toBe(progress.areaId)
+    expect(next.stopIndex).toBe(progress.stopIndex)
+    expect(progress.x).toBe(100)
+  })
+
+  it('normalizes diagonal steering', () => {
+    const next = stepFollower(progress, def, { x: 400, y: 400 }, 0.02)
+
+    expect(Math.hypot(next.x - progress.x, next.y - progress.y)).toBeCloseTo(165 * 0.02, 6)
+    expect(next.x - progress.x).toBeCloseTo(next.y - progress.y, 6)
+  })
+
+  it('speeds up when the player is beyond the leash', () => {
+    const near = stepFollower(progress, def, { x: 570, y: 100 }, 0.05)
+    const far = stepFollower(progress, def, { x: 700, y: 100 }, 0.05)
+
+    expect(far.x - progress.x).toBeCloseTo(def.npcSpeed * 1.6 * 0.05, 6)
+    expect(far.x - progress.x).toBeGreaterThan(near.x - progress.x)
+  })
+
+  it('stops at the follow radius instead of overshooting', () => {
+    const next = stepFollower(progress, def, { x: 173, y: 100 }, 0.05)
+
+    expect(next.x).toBeCloseTo(101, 6)
+    expect(next.y).toBe(100)
+  })
+
+  it('caps long frames and handles non-finite values', () => {
+    const capped = stepFollower(progress, def, { x: 900, y: 100 }, 0.05)
+    expect(stepFollower(progress, def, { x: 900, y: 100 }, 10)).toEqual(capped)
+
+    const broken = stepFollower(
+      { ...progress, x: Number.NaN, y: Number.POSITIVE_INFINITY },
+      def,
+      { x: Number.NaN, y: 100 },
+      0.05,
+    )
+    expect(Number.isFinite(broken.x)).toBe(true)
+    expect(Number.isFinite(broken.y)).toBe(true)
+    expect(broken.y).toBeGreaterThan(0)
+  })
+
+  it('does not move when the follower has no speed', () => {
+    const next = stepFollower(progress, { ...def, npcSpeed: 0 }, { x: 900, y: 100 }, 0.05)
+
+    expect(next).toEqual(progress)
   })
 })
