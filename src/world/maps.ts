@@ -9,6 +9,8 @@ export interface TilePoint {
   y: number
 }
 
+export const AREA_IDS: readonly string[] = ['forest', 'village', 'cave', 'plains']
+
 export interface Portal {
   x: number
   y: number

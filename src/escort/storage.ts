@@ -1,4 +1,4 @@
-import { AREAS } from '../world/areas'
+import { AREA_IDS } from '../world/maps'
 import type { EscortProgress } from './types'
 
 const STORAGE_KEY = 'dragonborne.escort'
@@ -22,7 +22,7 @@ function readProgress(value: unknown): EscortProgress | null {
   if (typeof stopIndex !== 'number' || !Number.isInteger(stopIndex) || stopIndex < 0) return null
 
   const areaId = value.areaId
-  if (typeof areaId !== 'string' || !(areaId in AREAS)) return null
+  if (typeof areaId !== 'string' || !AREA_IDS.includes(areaId)) return null
 
   const x = value.x
   const y = value.y
