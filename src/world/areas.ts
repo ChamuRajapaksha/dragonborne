@@ -17,6 +17,12 @@ import {
   FOREST_NPCS,
   FOREST_PORTALS,
   FOREST_SPAWN,
+  PLAINS_CHESTS,
+  PLAINS_ITEMS,
+  PLAINS_MAP,
+  PLAINS_NPCS,
+  PLAINS_PORTALS,
+  PLAINS_SPAWN,
   VILLAGE_CHESTS,
   VILLAGE_ITEMS,
   VILLAGE_MAP,
@@ -133,6 +139,27 @@ export const FOREST: AreaDefinition = {
   },
 }
 
+export const PLAINS: AreaDefinition = {
+  id: 'plains',
+  name: 'The Amber Plains',
+  backgroundColor: 0x8a7438,
+  map: PLAINS_MAP,
+  defaultSpawn: PLAINS_SPAWN,
+  npcs: PLAINS_NPCS,
+  portals: PLAINS_PORTALS,
+  items: PLAINS_ITEMS,
+  chests: PLAINS_CHESTS,
+  waypointAreaId: 'forest',
+  intro: {
+    title: 'The Amber Plains',
+    body: [
+      'The trees thin at last, and the road runs out into a sea of pale grass under a low, bright sky.',
+      'A waystone stands at the crossroads, its old markings turned toward every road in the kingdom.',
+      'Sella keeps the stone and knows which paths the traders and the Archive have need of.',
+    ],
+  },
+}
+
 export const CAVE: AreaDefinition = {
   id: 'cave',
   name: 'The Crystal Cave',
@@ -159,6 +186,7 @@ export const AREAS: Readonly<Record<string, AreaDefinition>> = {
   forest: FOREST,
   village: VILLAGE,
   cave: CAVE,
+  plains: PLAINS,
 }
 
 export function getAreaById(areaId: string): AreaDefinition {
