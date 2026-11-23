@@ -11,6 +11,14 @@ import {
   FOREST_NPCS,
   FOREST_PORTALS,
   FOREST_SPAWN,
+  PLAINS_CHESTS,
+  PLAINS_HEIGHT,
+  PLAINS_ITEMS,
+  PLAINS_MAP,
+  PLAINS_NPCS,
+  PLAINS_PORTALS,
+  PLAINS_SPAWN,
+  PLAINS_WIDTH,
   VILLAGE_CHESTS,
   VILLAGE_ITEMS,
   VILLAGE_MAP,
@@ -60,8 +68,16 @@ const CAVE_PLACEMENTS = {
   chests: CAVE_CHESTS,
 }
 
+const PLAINS_PLACEMENTS = {
+  spawn: PLAINS_SPAWN,
+  npcs: PLAINS_NPCS,
+  portals: PLAINS_PORTALS,
+  items: PLAINS_ITEMS,
+  chests: PLAINS_CHESTS,
+}
+
 function areaMapsFor(forest: readonly string[]): Record<string, readonly string[]> {
-  return { forest, village: VILLAGE_MAP, cave: CAVE_ROWS }
+  return { forest, village: VILLAGE_MAP, cave: CAVE_ROWS, plains: PLAINS_MAP }
 }
 
 const FOREST_MAIN_CORRIDOR = {
@@ -92,6 +108,12 @@ describe('area map shapes', () => {
   it('keeps the cave skeleton the same shape as its generated output', () => {
     expect(CAVE_SKELETON).toHaveLength(CAVE_HEIGHT)
     for (const row of CAVE_SKELETON) expect(row).toHaveLength(CAVE_WIDTH)
+  })
+
+  it('keeps the plains a uniform shape of known characters', () => {
+    expect(findMapViolations(PLAINS_MAP)).toEqual([])
+    expect(PLAINS_MAP).toHaveLength(PLAINS_HEIGHT)
+    for (const row of PLAINS_MAP) expect(row).toHaveLength(PLAINS_WIDTH)
   })
 })
 
@@ -143,6 +165,23 @@ describe('area placements', () => {
         findMapViolations(CAVE_ROWS, CAVE_PLACEMENTS, { areaMaps }),
         `cave with forest seed ${seed}`,
       ).toEqual([])
+      expect(
+        findMapViolations(PLAINS_MAP, PLAINS_PLACEMENTS, { areaMaps }),
+        `plains with forest seed ${seed}`,
+      ).toEqual([])
+    }
+  })
+})
+
+describe('plains layout', () => {
+  it('lets the player cover every walkable tile from the spawn', () => {
+    expect(unreachedTiles(PLAINS_MAP, PLAINS_SPAWN)).toEqual([])
+  })
+
+  it('places both exits on the main road', () => {
+    expect(PLAINS_PORTALS.map((portal) => portal.toAreaId).sort()).toEqual(['forest', 'village'])
+    for (const portal of PLAINS_PORTALS) {
+      expect(PLAINS_MAP[portal.y]?.[portal.x]).toBe('-')
     }
   })
 })
