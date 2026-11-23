@@ -2,15 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { TILE_SIZE } from '../world/tileset'
 import {
   advanceEscort,
+  canCrossPortalWithEscort,
   canStartEscort,
   currentStop,
   followSpeedForDistance,
   isEscortComplete,
   isStopReached,
+  relocateEscortAfterPortal,
   startEscort,
   stepFollower,
 } from './logic'
-import type { EscortDefinition } from './types'
+import type { EscortDefinition, EscortProgress } from './types'
 
 const def: EscortDefinition = {
   id: 'test-escort',
@@ -232,5 +234,44 @@ describe('stepFollower', () => {
     const next = stepFollower(progress, { ...def, npcSpeed: 0 }, { x: 900, y: 100 }, 0.05)
 
     expect(next).toEqual(progress)
+  })
+})
+
+describe('canCrossPortalWithEscort', () => {
+  const progress = startEscort(def, { areaId: 'village', x: 300, y: 300 })
+
+  it('allows crossing when the player stays near the escort', () => {
+    expect(canCrossPortalWithEscort(progress, def, { x: 364, y: 300 })).toBe(true)
+  })
+
+  it('blocks crossing when the escort lags behind', () => {
+    expect(canCrossPortalWithEscort(progress, def, { x: 365, y: 300 })).toBe(false)
+  })
+
+  it('allows crossing without an escort and rejects non-finite player coordinates', () => {
+    expect(canCrossPortalWithEscort(null as unknown as EscortProgress, def, { x: 0, y: 0 })).toBe(true)
+    expect(canCrossPortalWithEscort(progress, def, { x: Number.NaN, y: 300 })).toBe(false)
+  })
+})
+
+describe('relocateEscortAfterPortal', () => {
+  it('keeps identity and stop progress while moving to the new area', () => {
+    const progress = { ...startEscort(def, { areaId: 'village', x: 300, y: 300 }), stopIndex: 1 }
+    const next = relocateEscortAfterPortal(progress, 'plains', { x: 128, y: 160 })
+
+    expect(next).toEqual({ ...progress, areaId: 'plains', x: 128, y: 160 })
+    expect(progress.areaId).toBe('village')
+  })
+
+  it('sanitizes missing or non-finite spawn coordinates', () => {
+    const progress = startEscort(def, { areaId: 'village', x: 0, y: 0 })
+
+    expect(relocateEscortAfterPortal(progress, 'forest', { x: Number.NaN, y: Number.POSITIVE_INFINITY })).toEqual({
+      ...progress,
+      areaId: 'forest',
+      x: 0,
+      y: 0,
+    })
+    expect(relocateEscortAfterPortal(null as unknown as EscortProgress, 'forest', { x: 1, y: 2 })).toBeNull()
   })
 })
