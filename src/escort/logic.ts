@@ -1,8 +1,27 @@
+import { stepMovement } from '../movement'
+import type { MovementProfile } from '../movement'
 import { TILE_SIZE } from '../world/tileset'
 import type { EscortDefinition, EscortProgress, EscortStop } from './types'
 
+const MAX_FOLLOW_DELTA_SECONDS = 0.05
+const CATCH_UP_MULTIPLIER = 1.6
+const FOLLOWER_ACCELERATION_FACTOR = 20
+const FOLLOWER_DECELERATION_FACTOR = 20
+
 function finite(value: number | null | undefined): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : 0
+}
+
+function followerProfile(speed: number): MovementProfile {
+  return {
+    id: 'follower',
+    maxSpeed: speed,
+    acceleration: speed * FOLLOWER_ACCELERATION_FACTOR,
+    deceleration: speed * FOLLOWER_DECELERATION_FACTOR,
+    sprintMultiplier: 1,
+    cameraLerpX: 0,
+    cameraLerpY: 0,
+  }
 }
 
 export function canStartEscort(
@@ -68,4 +87,52 @@ export function advanceEscort(
     return { progress: next, arrived: stop, complete: isEscortComplete(next, def) }
   }
   return { progress, arrived: null, complete: isEscortComplete(progress, def) }
+}
+
+export function followSpeedForDistance(def: EscortDefinition, distance: number): number {
+  const speed = Math.max(0, finite(def?.npcSpeed))
+  const leash = Math.max(0, finite(def?.leashRadius))
+  return finite(distance) > leash ? speed * CATCH_UP_MULTIPLIER : speed
+}
+
+export function stepFollower(
+  progress: EscortProgress,
+  def: EscortDefinition,
+  player: { x: number; y: number },
+  deltaSeconds: number,
+): EscortProgress {
+  if (!progress) return progress
+
+  const x = finite(progress.x)
+  const y = finite(progress.y)
+  const dx = finite(player?.x) - x
+  const dy = finite(player?.y) - y
+  const distance = Math.hypot(dx, dy)
+  const radius = Math.max(0, finite(def?.followRadius))
+  const delta = Math.max(0, Math.min(MAX_FOLLOW_DELTA_SECONDS, finite(deltaSeconds)))
+
+  if (distance <= radius || delta === 0) return { ...progress, x, y }
+
+  const speed = followSpeedForDistance(def, distance)
+  if (speed <= 0) return { ...progress, x, y }
+
+  const directionX = dx / distance
+  const directionY = dy / distance
+  const velocity = stepMovement(
+    {
+      vx: directionX * speed,
+      vy: directionY * speed,
+      facing: { x: directionX, y: directionY },
+    },
+    { x: directionX, y: directionY, sprint: false },
+    followerProfile(speed),
+    delta,
+  )
+  const ratio = Math.min(speed * delta, distance - radius) / (speed * delta)
+
+  return {
+    ...progress,
+    x: x + velocity.vx * delta * ratio,
+    y: y + velocity.vy * delta * ratio,
+  }
 }
