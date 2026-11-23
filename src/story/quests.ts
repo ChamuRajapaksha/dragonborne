@@ -13,6 +13,8 @@
   requiresReputation?: readonly { factionId: string; min: number }[]
   /** XP granted once, on first completion. */
   xp?: number
+  /** Id of an escort definition in src/escort/definitions.ts. */
+  escortId?: string
 }
 
 /** One entry of a quest's payout. `quantity` defaults to 1. */
@@ -199,6 +201,40 @@ const questData = [
     requiresReputation: [{ factionId: 'archive', min: 20 }],
     rewards: [{ itemId: 'emberglass', quantity: 1 }],
     reputation: [{ factionId: 'archive', delta: 5 }],
+  },
+  {
+    id: 'escort-the-archivist',
+    xp: 160,
+    escortId: 'archivists-escort',
+    title: 'Escort the Archivist',
+    description:
+      'Maerwyn has a folio that must be read under the open sky of the Amber Plains. Walk with her to the crossing and up to the ridge before the light fails.',
+    availableToClasses: ['mage', 'cleric', 'bard'],
+    npcId: 'village-archivist',
+    rewards: [{ itemId: 'emberglass' }],
+    reputation: [{ factionId: 'archive', delta: 10 }],
+  },
+  {
+    id: 'road-to-the-plains',
+    xp: 120,
+    escortId: 'plains-road-escort',
+    title: 'Road to the Plains',
+    description:
+      'Odile has promised the Free Traders a word at the plains waystone. See her safely out of the village gate and across the open road.',
+    availableToClasses: ['warrior', 'ranger', 'rogue'],
+    npcId: 'village-host',
+    rewards: [{ itemId: 'coil-rope' }],
+    reputation: [{ factionId: 'traders', delta: 8 }],
+  },
+  {
+    id: 'plains-waystone',
+    xp: 90,
+    title: 'The Plains Waystone',
+    description:
+      'Sella keeps the old stones of the crossroads. Hear what she has to say at the waystone and the Archive will mark the visit down.',
+    availableToClasses: ALL_CLASSES,
+    npcId: 'plains-waystone-keeper',
+    reputation: [{ factionId: 'archive', delta: 4 }],
   },
 ] as const satisfies readonly Quest[]
 
