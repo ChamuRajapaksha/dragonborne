@@ -124,6 +124,15 @@ export const NPCS: readonly NpcDefinition[] = [
         '"The gate is yours to pass," the watch says, stepping aside before you reach for your papers.',
     },
   },
+  {
+    id: 'plains-waystone-keeper',
+    name: 'Sella',
+    role: 'Waystone Keeper',
+    service: 'quest',
+    greeting:
+      'The waystone points down every road in the kingdom, but it cannot walk them. Tell me where you are bound and I will tell you who waits there.',
+    factionId: 'traders',
+  },
 ]
 
 export function getNpcById(npcId: string): NpcDefinition | undefined {
