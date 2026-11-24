@@ -1,10 +1,37 @@
 import { describe, expect, it } from 'vitest'
 import { CLASSES } from '../character/classes'
+import { ESCORTS, getEscortDefinition, getEscortForQuest } from '../escort/definitions'
 import { FACTION_IDS, isFactionId } from '../factions'
 import { TIERS } from '../factions/tiers'
 import { getItemById } from '../inventory/catalog'
+import { generateCaveMap } from '../world/caveGen'
+import { generateForestMap } from '../world/forestGen'
+import { findMapViolations } from '../world/mapRules'
+import {
+  AREA_IDS,
+  CAVE_SPAWN,
+  FOREST_SPAWN,
+  PLAINS_MAP,
+  PLAINS_SPAWN,
+  VILLAGE_MAP,
+  VILLAGE_SPAWN,
+} from '../world/maps'
 import { NPCS } from './npcs'
 import { QUESTS } from './quests'
+
+const TEST_SEED = 4242
+const AREA_TEST_MAPS: Readonly<Record<string, readonly string[]>> = {
+  forest: generateForestMap(TEST_SEED),
+  village: VILLAGE_MAP,
+  cave: generateCaveMap(TEST_SEED),
+  plains: PLAINS_MAP,
+}
+const AREA_TEST_SPAWNS: Readonly<Record<string, { x: number; y: number }>> = {
+  forest: FOREST_SPAWN,
+  village: VILLAGE_SPAWN,
+  cave: CAVE_SPAWN,
+  plains: PLAINS_SPAWN,
+}
 
 describe('cross-data integrity', () => {
   it('keeps quest and NPC ids unique', () => {
@@ -95,6 +122,70 @@ describe('cross-data integrity', () => {
         expect(required.has(reward.factionId), `${quest.id} rewards an ungated faction`).toBe(
           true,
         )
+      }
+    }
+  })
+})
+
+describe('escort data integrity', () => {
+  const definitions = Object.values(ESCORTS)
+
+  it('gives every escort a unique id and usable rules', () => {
+    expect(new Set(definitions.map((def) => def.id)).size).toBe(definitions.length)
+    expect(definitions.length).toBeGreaterThan(0)
+
+    for (const def of definitions) {
+      expect(def.questId.length).toBeGreaterThan(0)
+      expect(def.npcId.length).toBeGreaterThan(0)
+      expect(def.followRadius).toBeGreaterThan(0)
+      expect(def.stopRadius).toBeGreaterThan(0)
+      expect(def.leashRadius).toBeGreaterThan(def.followRadius)
+      expect(def.npcSpeed).toBeGreaterThan(0)
+      expect(def.stops.length).toBeGreaterThanOrEqual(2)
+      for (const stop of def.stops) {
+        expect(stop.label.length, `${def.id} has an unlabeled stop`).toBeGreaterThan(0)
+        expect(
+          stop.arrivalLine.length,
+          `${def.id} stop ${stop.label} has no arrival line`,
+        ).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('matches every escort to its quest and npc', () => {
+    const questById = new Map(QUESTS.map((quest) => [quest.id, quest]))
+    const npcIds = new Set(NPCS.map((npc) => npc.id))
+
+    for (const def of definitions) {
+      const quest = questById.get(def.questId)
+      expect(quest, `${def.id} points at an unknown quest`).toBeDefined()
+      expect(quest?.escortId, `${def.id} is not claimed by ${def.questId}`).toBe(def.id)
+      expect(quest?.npcId, `${def.id} and ${def.questId} disagree on the NPC`).toBe(def.npcId)
+      expect(npcIds.has(def.npcId), `${def.id} points at an unknown NPC`).toBe(true)
+    }
+
+    for (const quest of QUESTS) {
+      if (!quest.escortId) continue
+      expect(getEscortDefinition(quest.escortId), `${quest.id} has no escort`).toBeDefined()
+      expect(getEscortForQuest(quest.id)?.id).toBe(quest.escortId)
+    }
+  })
+
+  it('places every escort stop on a walkable, reachable tile', () => {
+    for (const def of definitions) {
+      for (const stop of def.stops) {
+        expect(AREA_IDS.includes(stop.areaId), `${def.id} stop ${stop.label} has no area`).toBe(true)
+        const rows = AREA_TEST_MAPS[stop.areaId]
+        expect(rows, `${def.id} stop ${stop.label} has no map`).toBeDefined()
+        if (!rows) continue
+
+        const violations = findMapViolations(rows, {
+          spawn: AREA_TEST_SPAWNS[stop.areaId] ?? { x: 1, y: 1 },
+          npcs: [{ npcId: def.npcId, x: stop.x, y: stop.y }],
+          portals: [],
+          items: [],
+        })
+        expect(violations, `${def.id} stop ${stop.label}`).toEqual([])
       }
     }
   })
