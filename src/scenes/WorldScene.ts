@@ -962,7 +962,8 @@ export default class WorldScene extends Phaser.Scene {
       this.smithOpen ||
       this.journalOpen ||
       this.reputationOpen
-    const profile = resolveMovementProfile(resolveMovementContext(this.areaId, false))
+    const escortActive = this.activeEscort !== null
+    const profile = resolveMovementProfile(resolveMovementContext(this.areaId, escortActive))
     this.applyMovementProfile(profile)
     this.movementState = stepMovement(this.movementState, input, profile, delta / 1000, !panelsOpen)
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
