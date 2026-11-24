@@ -7,7 +7,7 @@ import {
   stepMovement,
 } from '../movement'
 import type { KeyFlags, MovementProfile, MovementState } from '../movement'
-import { getActiveEscort, getEscortDefinition, stepFollower } from '../escort'
+import { advanceEscort, getActiveEscort, getEscortDefinition, stepFollower } from '../escort'
 import type { EscortProgress } from '../escort'
 import type { Character } from '../character'
 import { getClassById } from '../character'
@@ -969,6 +969,7 @@ export default class WorldScene extends Phaser.Scene {
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.updateEscortFollower(delta)
+    this.checkEscortArrival()
     this.updateTorch(delta)
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
@@ -1349,6 +1350,18 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     return nearest
+  }
+
+  private checkEscortArrival(): void {
+    const escort = this.activeEscort
+    if (!escort) return
+
+    const definition = getEscortDefinition(escort.escortId)
+    if (!definition) return
+
+    const result = advanceEscort(escort, definition, this.playerPoint)
+    this.activeEscort = result.progress
+    if (result.arrived) showToast(result.arrived.arrivalLine)
   }
 
   private findEscortMarker(escort: EscortProgress): AreaNpcMarker | null {
