@@ -7,7 +7,7 @@ import {
   stepMovement,
 } from '../movement'
 import type { KeyFlags, MovementProfile, MovementState } from '../movement'
-import { getActiveEscort } from '../escort'
+import { getActiveEscort, getEscortDefinition, stepFollower } from '../escort'
 import type { EscortProgress } from '../escort'
 import type { Character } from '../character'
 import { getClassById } from '../character'
@@ -967,6 +967,7 @@ export default class WorldScene extends Phaser.Scene {
     this.movementState = stepMovement(this.movementState, input, profile, delta / 1000, !panelsOpen)
     this.playerBody.setVelocity(this.movementState.vx, this.movementState.vy)
     this.playerPoint = { x: this.player.x, y: this.player.y }
+    this.updateEscortFollower(delta)
     this.updateTorch(delta)
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
@@ -1347,6 +1348,29 @@ export default class WorldScene extends Phaser.Scene {
     }
 
     return nearest
+  }
+
+  private findEscortMarker(escort: EscortProgress): AreaNpcMarker | null {
+    if (escort.areaId !== this.areaId) return null
+    return this.npcMarkers.find((marker) => marker.npcId === escort.npcId) ?? null
+  }
+
+  private updateEscortFollower(delta: number): void {
+    const escort = this.activeEscort
+    if (!escort) return
+
+    const definition = getEscortDefinition(escort.escortId)
+    const marker = this.findEscortMarker(escort)
+    if (!definition || !marker) return
+
+    const next = stepFollower(escort, definition, this.playerPoint, delta / 1000)
+    this.activeEscort = next
+
+    marker.body.reset(next.x, next.y)
+    marker.object.setPosition(next.x, next.y)
+    marker.label.setPosition(next.x, next.y + 14)
+    marker.x = next.x
+    marker.y = next.y
   }
 
   private findNearestNpc(): AreaNpcMarker | null {
