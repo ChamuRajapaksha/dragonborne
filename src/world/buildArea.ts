@@ -31,6 +31,9 @@ export interface AreaNpcMarker {
   label: Phaser.GameObjects.Text
 }
 
+/** Pixel positions keyed by NPC id; used to restore an escorted NPC mid-area. */
+export type NpcPlacementOverrides = Readonly<Record<string, { x: number; y: number }>>
+
 export interface AreaPortalMarker {
   toAreaId: string
   toAreaName: string
@@ -125,6 +128,7 @@ export function buildMarkers(
   scene: Phaser.Scene,
   area: AreaDefinition,
   terrain?: Phaser.Tilemaps.TilemapLayerBase,
+  overrides?: NpcPlacementOverrides,
 ): AreaNpcMarker[] {
   return area.npcs.flatMap((placement) => {
     const npc = getNpcById(placement.npcId)
@@ -134,7 +138,8 @@ export function buildMarkers(
       )
     }
 
-    const { x, y } = tileToWorld(placement)
+    const override = overrides?.[placement.npcId]
+    const { x, y } = override ? { x: override.x, y: override.y } : tileToWorld(placement)
 
     const object = scene.add
       .rectangle(x, y, 28, 28, 0xccbb55)

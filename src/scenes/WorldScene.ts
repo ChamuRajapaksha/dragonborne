@@ -7,6 +7,8 @@ import {
   stepMovement,
 } from '../movement'
 import type { KeyFlags, MovementProfile, MovementState } from '../movement'
+import { getActiveEscort } from '../escort'
+import type { EscortProgress } from '../escort'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
@@ -225,6 +227,7 @@ export default class WorldScene extends Phaser.Scene {
   private hudStanding!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
+  private activeEscort: EscortProgress | null = null
   private portalMarkers: AreaPortalMarker[] = []
   /** Items lying in the area, kept live so pickups can remove them. */
   private itemMarkers: AreaItemMarker[] = []
@@ -280,6 +283,7 @@ export default class WorldScene extends Phaser.Scene {
     this.movementState = createMovementState()
     this.activeMovementProfileId = ''
     this.npcMarkers = []
+    this.activeEscort = null
     this.portalMarkers = []
     this.itemMarkers = []
     this.chestMarkers = []
@@ -353,7 +357,17 @@ export default class WorldScene extends Phaser.Scene {
       Phaser.Input.Keyboard.KeyCodes.NINE,
     ].map((code) => this.input.keyboard!.addKey(code))
 
-    this.npcMarkers = buildMarkers(this, area, this.terrain)
+    this.activeEscort = getActiveEscort()
+    const escortOverride =
+      this.activeEscort?.areaId === area.id
+        ? {
+            [this.activeEscort.npcId]: {
+              x: this.activeEscort.x,
+              y: this.activeEscort.y,
+            },
+          }
+        : undefined
+    this.npcMarkers = buildMarkers(this, area, this.terrain, escortOverride)
     this.portalMarkers = buildPortals(this, area)
     this.itemMarkers = buildItems(this, area)
     this.chestMarkers = buildChests(this, area)
