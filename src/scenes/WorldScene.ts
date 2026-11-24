@@ -353,7 +353,7 @@ export default class WorldScene extends Phaser.Scene {
       Phaser.Input.Keyboard.KeyCodes.NINE,
     ].map((code) => this.input.keyboard!.addKey(code))
 
-    this.npcMarkers = buildMarkers(this, area)
+    this.npcMarkers = buildMarkers(this, area, this.terrain)
     this.portalMarkers = buildPortals(this, area)
     this.itemMarkers = buildItems(this, area)
     this.chestMarkers = buildChests(this, area)

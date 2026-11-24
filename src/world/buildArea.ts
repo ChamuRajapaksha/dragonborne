@@ -25,6 +25,8 @@ export interface AreaNpcMarker {
   y: number
   /** The rendered placeholder, kept so schedule changes can hide/show it. */
   object: Phaser.GameObjects.Rectangle
+  /** Arcade body, so an escorted NPC can be steered without leaving terrain. */
+  body: Phaser.Physics.Arcade.Body
   /** The rendered name label, kept so schedule changes can hide/show it. */
   label: Phaser.GameObjects.Text
 }
@@ -122,6 +124,7 @@ export function buildTerrain(
 export function buildMarkers(
   scene: Phaser.Scene,
   area: AreaDefinition,
+  terrain?: Phaser.Tilemaps.TilemapLayerBase,
 ): AreaNpcMarker[] {
   return area.npcs.flatMap((placement) => {
     const npc = getNpcById(placement.npcId)
@@ -138,12 +141,18 @@ export function buildMarkers(
       .setStrokeStyle(2, 0x221c0f)
       .setDepth(1)
 
+    scene.physics.add.existing(object)
+    const body = object.body as Phaser.Physics.Arcade.Body
+    body.setSize(28, 28)
+    body.setCollideWorldBounds(true)
+    if (terrain) scene.physics.add.collider(object, terrain)
+
     const label = scene.add
       .text(x, y + 14, npc.name, { color: '#ffd27f', fontSize: '12px' })
       .setOrigin(0.5, 0)
       .setDepth(2)
 
-    return [{ npcId: npc.id, name: npc.name, x, y, object, label }]
+    return [{ npcId: npc.id, name: npc.name, x, y, object, label, body }]
   })
 }
 
