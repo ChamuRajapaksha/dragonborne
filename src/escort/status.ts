@@ -1,4 +1,5 @@
-import { currentStop, isEscortComplete } from './logic'
+import { getEscortDefinition } from './definitions'
+import { canStartEscort, currentStop, isEscortComplete } from './logic'
 import type { EscortDefinition, EscortProgress } from './types'
 
 function stopCount(def: EscortDefinition): number {
@@ -10,6 +11,32 @@ function stopCounter(progress: EscortProgress, def: EscortDefinition): string {
   const raw = Number.isFinite(progress?.stopIndex) ? progress.stopIndex : 0
   const index = Math.min(Math.max(Math.floor(raw) + 1, 1), total)
   return `${index}/${total}`
+}
+
+export function canAskEscortToFollow(
+  questId: string,
+  escortId: string | undefined,
+  active: EscortProgress | null,
+  completedQuestIds: readonly string[],
+  unlocked: boolean,
+): boolean {
+  if (!escortId || !unlocked) return false
+  const def = getEscortDefinition(escortId)
+  if (!def || def.questId !== questId) return false
+  return canStartEscort(def, active, completedQuestIds)
+}
+
+export function canCompleteEscortQuest(
+  questId: string,
+  escortId: string | undefined,
+  active: EscortProgress | null,
+  completedQuestIds: readonly string[],
+): boolean {
+  if (!escortId) return !completedQuestIds.includes(questId)
+  if (completedQuestIds.includes(questId)) return false
+  const def = getEscortDefinition(escortId)
+  if (!def || def.questId !== questId) return false
+  return active?.escortId === def.id && isEscortComplete(active, def)
 }
 
 export function escortHudLine(

@@ -17,7 +17,12 @@ export {
   startEscort,
   stepFollower,
 } from './logic'
-export { escortHudLine, escortStatusLine } from './status'
+export {
+  canAskEscortToFollow,
+  canCompleteEscortQuest,
+  escortHudLine,
+  escortStatusLine,
+} from './status'
 export { clearEscort, loadEscort, saveEscort } from './storage'
 export {
   getActiveEscort,

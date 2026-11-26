@@ -9,11 +9,12 @@ import {
 } from './story'
 import type { ItemReward, NpcDefinition, Quest } from './story'
 import {
+  canAskEscortToFollow,
+  canCompleteEscortQuest,
   canStartEscort,
   escortStatusLine,
   getActiveEscort,
   getEscortDefinition,
-  isEscortComplete,
   setActiveEscort,
   startEscort,
 } from './escort'
@@ -111,10 +112,9 @@ function renderFollowButton(
   hasLocation: boolean,
 ): string {
   if (!q.escortId || !unlocked || completed || !hasLocation) return ''
-  const definition = getEscortDefinition(q.escortId)
-  if (!definition) return ''
-  const active = getActiveEscort()
-  if (active?.escortId === definition.id && isEscortComplete(active, definition)) return ''
+  if (!canAskEscortToFollow(q.id, q.escortId, getActiveEscort(), getCompletedQuestIds(), unlocked)) {
+    return ''
+  }
   return `<button data-follow="${q.id}">Ask to follow</button>`
 }
 
@@ -158,6 +158,12 @@ export function showQuestPopup(
                   isReputationMet(q.requiresReputation ?? [], reputation)
                 const completed = isQuestCompleted(q.id)
                 const lockedClass = !unlocked && !completed ? 'locked' : ''
+                const canComplete = canCompleteEscortQuest(
+                  q.id,
+                  q.escortId,
+                  getActiveEscort(),
+                  getCompletedQuestIds(),
+                )
                 return `
           <div class="quest-card ${completed ? 'completed' : ''} ${lockedClass}">
             <h3>${q.title}</h3>
@@ -171,7 +177,7 @@ export function showQuestPopup(
               completed
                 ? '<span class="quest-status">Completed</span>'
                 : unlocked
-                  ? `<button data-complete="${q.id}">Complete (stub)</button>`
+                  ? `<button data-complete="${q.id}" ${canComplete ? '' : 'disabled'}>Complete (stub)</button>`
                   : '<span class="quest-status locked">Locked</span>'
             }
           </div>`
@@ -187,6 +193,17 @@ export function showQuestPopup(
         button.addEventListener('click', () => {
           const questId = button.dataset.complete!
           const quest = quests.find((entry) => entry.id === questId)
+          if (
+            !canCompleteEscortQuest(
+              questId,
+              quest?.escortId,
+              getActiveEscort(),
+              getCompletedQuestIds(),
+            )
+          ) {
+            showToast('Reach the final stop before completing this quest')
+            return
+          }
           const firstCompletion = completeQuest(questId)
           if (firstCompletion) {
             const levelsGained = grantQuestXp(quest?.xp ?? 0)
