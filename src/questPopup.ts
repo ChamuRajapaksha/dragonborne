@@ -15,6 +15,7 @@ import {
   escortStatusLine,
   getActiveEscort,
   getEscortDefinition,
+  resetEscorts,
   setActiveEscort,
   startEscort,
 } from './escort'
@@ -210,6 +211,9 @@ export function showQuestPopup(
             if (levelsGained > 0) showToast(`Level up! You are now level ${getLevel()}`)
             if (quest?.rewards?.length) grantQuestRewards(quest.rewards)
             if (quest?.reputation?.length) grantQuestReputation(quest.reputation)
+            if (quest?.escortId && getActiveEscort()?.escortId === quest.escortId) {
+              resetEscorts()
+            }
           }
           render()
         })
