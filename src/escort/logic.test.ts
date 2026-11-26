@@ -275,3 +275,39 @@ describe('relocateEscortAfterPortal', () => {
     expect(relocateEscortAfterPortal(null as unknown as EscortProgress, 'forest', { x: 1, y: 2 })).toBeNull()
   })
 })
+
+describe('escort transition sequence', () => {
+  const route: EscortDefinition = {
+    ...def,
+    stops: [
+      { areaId: 'village', x: 10, y: 10, label: 'Gate', arrivalLine: 'Gate reached' },
+      { areaId: 'forest', x: 20, y: 20, label: 'Crossing', arrivalLine: 'Crossing reached' },
+    ],
+  }
+
+  it('carries the follower through both stops and a portal without skipping progress', () => {
+    expect(canStartEscort(route, null, ['unrelated'])).toBe(true)
+    let progress = startEscort(route, { areaId: 'village', x: 160, y: 160 })
+
+    const first = advanceEscort(progress, route, { x: 160, y: 160 })
+    expect(first.arrived).toBe(route.stops[0])
+    expect(first.complete).toBe(false)
+    progress = first.progress
+
+    const atPortal = { x: 500, y: 160 }
+    expect(canCrossPortalWithEscort(progress, route, atPortal)).toBe(false)
+    for (let frame = 0; frame < 40; frame += 1) {
+      progress = stepFollower(progress, route, atPortal, 0.05)
+    }
+    expect(canCrossPortalWithEscort(progress, route, atPortal)).toBe(false)
+    expect(canCrossPortalWithEscort(progress, route, { x: atPortal.x - 16, y: atPortal.y })).toBe(true)
+
+    progress = relocateEscortAfterPortal(progress, 'forest', { x: 320, y: 320 })
+    expect(progress).toMatchObject({ areaId: 'forest', stopIndex: 1, x: 320, y: 320 })
+
+    const final = advanceEscort(progress, route, { x: 320, y: 320 })
+    expect(final.arrived).toBe(route.stops[1])
+    expect(final.complete).toBe(true)
+    expect(isEscortComplete(final.progress, route)).toBe(true)
+  })
+})
