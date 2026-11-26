@@ -35,8 +35,9 @@ the Vitest suite.
    Move with **WASD** or **arrow keys** — trees, rocks, and water all block you. Hold
    **Shift** while moving to sprint. Movement eases in and out instead of snapping on and
    off, diagonals cover the same ground as straight lines, and your facing stays stable
-   when you let go. Open panels stop you cleanly with no leftover drift. The Crystal Cave
-   uses a slightly slower profile and a gentler camera follow.
+    when you let go. Open panels stop you cleanly with no leftover drift. The Crystal Cave
+    uses a slightly slower profile; leading an NPC switches to a gentler escort profile and
+    a softer camera follow.
 3. The HUD shows the current area plus a waypoint line (`Emberhold: east, 42 tiles`); walk
    east along the dirt track toward the purple portal.
 4. Step onto the portal and press **E** to travel to **Emberhold** — you arrive at the west
@@ -151,9 +152,11 @@ the Vitest suite.
     `localStorage.removeItem('dragonborne.reputation')`,
     `localStorage.removeItem('dragonborne.progression')`,
     `localStorage.removeItem('dragonborne.quests.completed')`, and
-    `localStorage.removeItem('dragonborne.quests.tracked')` reset your gear, gold, torch
-    fuel, clock/weather, faction standing, XP/level, quest progress, and the pinned quest.
-    Creating a new character also resets XP, completed quests, and the pin automatically.
+    `localStorage.removeItem('dragonborne.quests.tracked')`, and
+    `localStorage.removeItem('dragonborne.escort')` reset your gear, gold, torch
+    fuel, clock/weather, faction standing, XP/level, quest progress, the pinned quest, and
+    any active escort. Creating a new character also resets XP, completed quests, the pin,
+    and escort state automatically.
     Clearing
     all of them is a full restart.
 17. **Reputation loop:** press **F** for the Reputation panel: five cards start at Neutral,
@@ -245,6 +248,33 @@ the Vitest suite.
   portals keep it; creating a new character resets it along with completed quests and the
   pinned quest so every reward can be earned again.
 
+## Movement and escort quests
+
+- **Movement model:** input is normalized (no faster diagonals), velocity eases in with
+  acceleration and eases out with deceleration, **Shift** multiplies top speed while moving,
+  and the last nonzero direction remains your facing when you stop. Every frame is clamped
+  so a tab switch cannot teleport you. The three data-driven profiles in `src/movement/profiles.ts`
+  are `default`, `cave` (slower), and `escort` (slower with a softer camera); unknown contexts
+  fall back to `default`. The player keeps the same Arcade body and terrain collider.
+- **The Amber Plains:** a fourth area linked by portals from the Thornwood's east path and
+  Emberhold's south road. **Sella**, the waystone keeper at the crossroads, offers *The Plains
+  Waystone* to every class. New areas and escort routes are data additions, not scene code.
+- **Escort quests:** *Escort the Archivist* (Maerwyn; Mage/Cleric/Bard) and *Road to the
+  Plains* (Odile; Warrior/Ranger/Rogue) are class-gated like other quests. Talk to the NPC,
+  choose **Ask to follow**, then visit each named stop in order: the archive, the crossing,
+  the ridge (or the village gate and the plains waystone). The HUD, quest popup, and journal
+  show the current stop with an `n/total` counter, and toasts announce arrivals.
+- **Completion and travel:** **Complete (stub)** stays disabled until the final stop; it then
+  pays the normal XP, item, and standing rewards and clears the escort. Only one NPC can be
+  led at a time. Using a portal while the follower lags behind is refused with a readable
+  toast; once close enough, the NPC is carried through with you.
+- **Persistence:** escort area, pixel position, and stop index live in the versioned
+  `dragonborne.escort` key, saved when a stop is reached and before a portal transition.
+  Reloading restores the follower; creating a new character clears it.
+- **Known limitation:** the follower seeks straight toward the player and collides with
+  terrain, but has **no pathfinding**. It can get stuck behind a wall or a grove — walk back
+  around the obstacle and let it catch up.
+
 ## Status
 
 The forest → village vertical slice, the inventory plan, the chopping/wood/trading
@@ -277,7 +307,10 @@ hours, and **The Night Watch** appears at the Emberhold gate from 20:00–05:00 
 quest of its own. Completing quests now moves faction standing: reputation gates follow-up
 work, changes trader and smith gold prices, colours NPC greetings, and shows up in the `F`
 panel and HUD. Completing quests also awards XP: levels raise your class stats, the HUD and
-journal track progress, and a new character starts again at level 1. All placeholder visuals.
+journal track progress, and a new character starts again at level 1. Player movement now eases in and out with
+Shift sprint and per-context profiles, and a fourth area — **The Amber Plains** — is open by
+portal from the forest and village, where class-gated escort quests let you lead Maerwyn or
+Odile across its stops before completing the quest. All placeholder visuals.
 
 Design decisions, locked scope, and the step-by-step build plan are documented in
 [`docs/plan.md`](docs/plan.md). The plans that produced the current game — the 22-commit
@@ -289,11 +322,12 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
 ## Current scope notes
 
 - Placeholder art only (shapes/rectangles) — no final art in this phase.
-- Three areas (`forest`, `village`, `cave`), rendered as collidable tilemaps and linked by
-  portals: the forest and village are 64 × 48, the Crystal Cave **96 × 64**. The village
-  stays hand-authored ASCII in `src/world/maps.ts`; the forest and cave are **grown from
-  seeds** in `src/world/forestGen.ts` and `src/world/caveGen.ts` (seeds persisted in world
-  progress — same save, same layouts). All are pure data (no engine imports) and are
+- Four areas (`forest`, `village`, `cave`, `plains`), rendered as collidable tilemaps and
+  linked by portals: the forest and village are 64 × 48, the plains is 64 × 40, and the
+  Crystal Cave is **96 × 64**. The village and plains stay hand-authored ASCII in
+  `src/world/maps.ts`; the forest and cave
+  are **grown from seeds** in `src/world/forestGen.ts` and `src/world/caveGen.ts` (seeds
+  persisted in world progress — same save, same layouts). All are pure data (no engine imports) and are
   checked by unit tests (`src/world/mapRules.ts` + `areas.test.ts`): uniform shape,
   walkable placements, spawn reachability to every placement and trunk/ore neighbour, an
   obstruction-free main corridor (rows 23–25), minimum choppable-trunk and ore-node
@@ -348,8 +382,14 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
   remaining torch fuel (versioned schema), `dragonborne.clock` for the world time and
   weather schedule (versioned schema), `dragonborne.reputation` for faction standing
   (versioned schema), `dragonborne.progression` for XP (versioned schema),
-  `dragonborne.quests.completed` for quest state, and `dragonborne.quests.tracked` for the
-  pinned quest.
+  `dragonborne.quests.completed` for quest state, `dragonborne.quests.tracked` for the
+  pinned quest, and `dragonborne.escort` for the active follower's area, position, and stop
+  index (versioned schema).
+- Movement and escort quests are data-driven: `src/movement/profiles.ts` holds the movement
+  profiles and `src/escort/definitions.ts` holds the routes; `Quest.escortId` links a quest to
+  a route, and all steering, arrival, portal, and completion rules are pure functions in
+  `src/escort/logic.ts` and `src/escort/status.ts`. **Still out of scope:** pathfinding for
+  stuck followers, a second simultaneous escort, and new keybindings.
 - Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
 
@@ -368,7 +408,7 @@ authoring approach, art style, and any backend beyond localStorage.
   (`questTracking.ts`, `questTrackingModel.ts`), and data-driven NPC on-duty hours
   (`activeHours` + `isNpcActive` in `npcs.ts`)
 - `src/world/` — `tileset.ts` (tile legend + generated tile sheet), `maps.ts` (pure ASCII
-  village map and NPC/portal/chest placements), `mapRules.ts` (pure map and chest
+  village and plains maps with NPC/portal/chest placements), `mapRules.ts` (pure map and chest
   validation rules), `rooms.ts` + `roomRules.ts` (village room bounds/doors and their pure
   checks), `ore.ts` (ore node definitions: hits, yield, item id), `forestGen.ts` (seeded
   procedural forest with 2×2 connectivity), `caveGen.ts` (seeded 96 × 64 cave with
@@ -383,6 +423,10 @@ authoring approach, art style, and any backend beyond localStorage.
   singleton
 - `src/progression/` — pure XP curve and grant math, level-derived class stat gains,
   versioned storage, and the subscribing store singleton
+- `src/movement/` — input, state, and profile types, pure key-flag normalization and velocity
+  stepping, and per-context movement profiles
+- `src/escort/` — escort definition/progress types, pure start/arrival/follower/portal rules,
+  route data, status view model, versioned storage, and the subscribing store singleton
 - `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, the
   trader's buy/sell price tables, and the smith's ware cost table + shortfall helpers
 - `src/scenes/` — `BootScene` (routes into the game, resumes saved progress and runs the
