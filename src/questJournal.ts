@@ -1,4 +1,5 @@
 import { getClassById } from './character'
+import { escortStatusLine, getActiveEscort, getEscortDefinition } from './escort'
 import { formatUnmetReputation, getAllReputation } from './factions'
 import { formatLevelProgress, getXp } from './progression'
 import {
@@ -65,6 +66,7 @@ function entryMarkup(entry: QuestLogEntry, trackedId: string | null): string {
       </div>
       <p class="quest-journal-npc">Offered by ${entry.npcName}</p>
       <p>${quest.description}</p>
+      ${entry.escortStatus ? `<span class="escort-status">${entry.escortStatus}</span>` : ''}
       ${quest.xp ? `<span class="quest-rewards">XP: ${quest.xp}</span>` : ''}
       ${requirements}
     </div>`
@@ -103,7 +105,15 @@ export function showQuestJournal(
   overlay.id = PANEL_ID
 
   const render = (): void => {
-    const entries = buildQuestLog(classId, stats, getCompletedQuestIds(), getAllReputation())
+    const activeEscort = getActiveEscort()
+    const entries = buildQuestLog(classId, stats, getCompletedQuestIds(), getAllReputation()).map(
+      (entry) => {
+        if (!entry.quest.escortId) return entry
+        const definition = getEscortDefinition(entry.quest.escortId)
+        if (!definition || activeEscort?.escortId !== definition.id) return entry
+        return { ...entry, escortStatus: escortStatusLine(activeEscort, definition) }
+      },
+    )
     const summary = questLogSummary(entries)
     const trackedId = resolveTrackedQuest(entries, getTrackedQuestId())?.quest.id ?? null
 

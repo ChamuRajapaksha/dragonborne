@@ -19,6 +19,7 @@ export interface QuestLogEntry {
   npcName: string
   unmetStats: readonly UnmetStat[]
   unmetReputation: readonly UnmetReputation[]
+  escortStatus?: string
 }
 
 export interface QuestLogSection {
