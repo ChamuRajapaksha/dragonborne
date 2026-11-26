@@ -6,6 +6,7 @@ import {
   npcGreeting,
 } from './story'
 import type { ItemReward, NpcDefinition, Quest } from './story'
+import { escortStatusLine, getActiveEscort, getEscortDefinition } from './escort'
 import {
   applyReputation,
   formatReputationAward,
@@ -84,6 +85,15 @@ function renderRequirements(
   return `<span class="quest-requirements">Requires: ${unmet.join(', ')}</span>`
 }
 
+function renderEscortStatus(q: Quest): string {
+  if (!q.escortId) return ''
+  const definition = getEscortDefinition(q.escortId)
+  const active = getActiveEscort()
+  if (!definition || active?.escortId !== definition.id) return ''
+  const status = escortStatusLine(active, definition)
+  return status ? `<span class="escort-status">${status}</span>` : ''
+}
+
 function renderXpReward(q: Quest): string {
   if (!q.xp) return ''
   return `<span class="quest-rewards">XP: ${q.xp}</span>`
@@ -127,6 +137,7 @@ export function showQuestPopup(
           <div class="quest-card ${completed ? 'completed' : ''} ${lockedClass}">
             <h3>${q.title}</h3>
             <p>${q.description}</p>
+            ${renderEscortStatus(q)}
             ${renderRequirements(q, stats, reputation)}
             ${renderXpReward(q)}
             ${renderReputationRewards(q)}
