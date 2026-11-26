@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { escortHudLine, escortStatusLine } from './status'
+import { QUESTS } from '../story/quests'
+import { ESCORTS } from './definitions'
+import {
+  canAskEscortToFollow,
+  canCompleteEscortQuest,
+  escortAlreadyLeadingLine,
+  escortArrivalLine,
+  escortHudLine,
+  escortPortalWaitLine,
+  escortStatusLine,
+} from './status'
 import type { EscortDefinition } from './types'
 
 const def: EscortDefinition = {
@@ -63,5 +73,56 @@ describe('escortStatusLine', () => {
     expect(escortStatusLine(null, def)).toBe('')
     expect(escortStatusLine(progress(0), null)).toBe('')
     expect(escortStatusLine(progress(0), { ...def, stops: [] })).toBe('')
+  })
+})
+
+describe('escort toast lines', () => {
+  it('forwards arrival lines and formats refusals', () => {
+    expect(escortArrivalLine(def.stops[0])).toBe('Archive reached')
+    expect(escortPortalWaitLine('Maerwyn')).toBe('Wait for Maerwyn before using the portal')
+    expect(escortAlreadyLeadingLine('Odile')).toBe('You are already leading Odile')
+  })
+})
+
+describe('escort popup gating', () => {
+  it('asks only for unlocked, incomplete quests with no other escort', () => {
+    expect(canAskEscortToFollow(def.questId, def.id, null, [], true)).toBe(true)
+    expect(canAskEscortToFollow(def.questId, def.id, null, [], false)).toBe(false)
+    expect(canAskEscortToFollow(def.questId, def.id, null, [def.questId], true)).toBe(false)
+    expect(canAskEscortToFollow(def.questId, def.id, progress(0), [], true)).toBe(false)
+    expect(canAskEscortToFollow('other-quest', def.id, null, [], true)).toBe(false)
+    expect(canAskEscortToFollow(def.questId, 'missing-escort', null, [], true)).toBe(false)
+    expect(canAskEscortToFollow('plain-quest', undefined, null, [], true)).toBe(false)
+  })
+
+  it('completes non-escort quests exactly as before', () => {
+    expect(canCompleteEscortQuest('plain-quest', undefined, null, [])).toBe(true)
+    expect(canCompleteEscortQuest('plain-quest', undefined, null, ['plain-quest'])).toBe(false)
+  })
+
+  it('completes an escort quest only with its own follower at the final stop', () => {
+    expect(canCompleteEscortQuest(def.questId, def.id, null, [])).toBe(false)
+    expect(canCompleteEscortQuest(def.questId, def.id, progress(0), [])).toBe(false)
+    expect(canCompleteEscortQuest(def.questId, def.id, progress(def.stops.length), [])).toBe(true)
+    expect(canCompleteEscortQuest(def.questId, def.id, progress(def.stops.length), [def.questId])).toBe(false)
+    expect(canCompleteEscortQuest('other-quest', def.id, progress(def.stops.length), [])).toBe(false)
+    expect(canCompleteEscortQuest(def.questId, 'missing-escort', progress(3), [])).toBe(false)
+  })
+
+  it('gates every real escort definition against its quest data', () => {
+    for (const definition of Object.values(ESCORTS)) {
+      const quest = QUESTS.find((entry) => entry.id === definition.questId)
+      expect(quest?.escortId).toBe(definition.id)
+      expect(canAskEscortToFollow(definition.questId, quest?.escortId, null, [], true)).toBe(true)
+
+      const atStart = { ...progress(0), escortId: definition.id, npcId: definition.npcId }
+      const atEnd = {
+        ...progress(definition.stops.length),
+        escortId: definition.id,
+        npcId: definition.npcId,
+      }
+      expect(canCompleteEscortQuest(definition.questId, definition.id, atStart, [])).toBe(false)
+      expect(canCompleteEscortQuest(definition.questId, definition.id, atEnd, [])).toBe(true)
+    }
   })
 })
