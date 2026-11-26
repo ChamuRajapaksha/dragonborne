@@ -20,7 +20,10 @@ export {
 export {
   canAskEscortToFollow,
   canCompleteEscortQuest,
+  escortAlreadyLeadingLine,
+  escortArrivalLine,
   escortHudLine,
+  escortPortalWaitLine,
   escortStatusLine,
 } from './status'
 export { clearEscort, loadEscort, saveEscort } from './storage'

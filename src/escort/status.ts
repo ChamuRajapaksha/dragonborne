@@ -13,6 +13,18 @@ function stopCounter(progress: EscortProgress, def: EscortDefinition): string {
   return `${index}/${total}`
 }
 
+export function escortArrivalLine(stop: { arrivalLine: string }): string {
+  return stop.arrivalLine
+}
+
+export function escortPortalWaitLine(npcName: string): string {
+  return `Wait for ${npcName} before using the portal`
+}
+
+export function escortAlreadyLeadingLine(npcName: string): string {
+  return `You are already leading ${npcName}`
+}
+
 export function canAskEscortToFollow(
   questId: string,
   escortId: string | undefined,

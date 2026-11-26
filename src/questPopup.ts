@@ -12,6 +12,7 @@ import {
   canAskEscortToFollow,
   canCompleteEscortQuest,
   canStartEscort,
+  escortAlreadyLeadingLine,
   escortStatusLine,
   getActiveEscort,
   getEscortDefinition,
@@ -225,8 +226,11 @@ export function showQuestPopup(
         const quest = quests.find((entry) => entry.id === questId)
         const definition = quest?.escortId ? getEscortDefinition(quest.escortId) : null
         if (!quest || !definition || !location) return
-        if (!canStartEscort(definition, getActiveEscort(), getCompletedQuestIds())) {
-          showToast('You can only lead one companion at a time')
+        const active = getActiveEscort()
+        if (!canStartEscort(definition, active, getCompletedQuestIds())) {
+          const current = active ? getEscortDefinition(active.escortId) : null
+          const name = current ? getNpcById(current.npcId)?.name ?? current.npcId : 'someone'
+          showToast(escortAlreadyLeadingLine(name))
           return
         }
         setActiveEscort(startEscort(definition, location))

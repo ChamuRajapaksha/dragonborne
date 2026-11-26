@@ -10,7 +10,9 @@ import type { KeyFlags, MovementProfile, MovementState } from '../movement'
 import {
   advanceEscort,
   canCrossPortalWithEscort,
+  escortArrivalLine,
   escortHudLine,
+  escortPortalWaitLine,
   getActiveEscort,
   getEscortDefinition,
   relocateEscortAfterPortal,
@@ -1360,7 +1362,7 @@ export default class WorldScene extends Phaser.Scene {
       const definition = getEscortDefinition(escort.escortId)
       if (definition && !canCrossPortalWithEscort(escort, definition, this.playerPoint)) {
         const name = getNpcById(definition.npcId)?.name ?? definition.npcId
-        showToast(`Wait for ${name} before using the portal`)
+        showToast(escortPortalWaitLine(name))
         return
       }
     }
@@ -1412,7 +1414,7 @@ export default class WorldScene extends Phaser.Scene {
     this.activeEscort = result.progress
     if (result.arrived) {
       setActiveEscort(result.progress)
-      showToast(result.arrived.arrivalLine)
+      showToast(escortArrivalLine(result.arrived))
     }
   }
 
