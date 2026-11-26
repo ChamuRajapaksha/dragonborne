@@ -1,4 +1,6 @@
 import {
+  getCompletedQuestIds,
+  getNpcById,
   getQuestsForNpc,
   meetsQuestRequirements,
   completeQuest,
@@ -6,7 +8,15 @@ import {
   npcGreeting,
 } from './story'
 import type { ItemReward, NpcDefinition, Quest } from './story'
-import { escortStatusLine, getActiveEscort, getEscortDefinition } from './escort'
+import {
+  canStartEscort,
+  escortStatusLine,
+  getActiveEscort,
+  getEscortDefinition,
+  isEscortComplete,
+  setActiveEscort,
+  startEscort,
+} from './escort'
 import {
   applyReputation,
   formatReputationAward,
@@ -94,6 +104,20 @@ function renderEscortStatus(q: Quest): string {
   return status ? `<span class="escort-status">${status}</span>` : ''
 }
 
+function renderFollowButton(
+  q: Quest,
+  unlocked: boolean,
+  completed: boolean,
+  hasLocation: boolean,
+): string {
+  if (!q.escortId || !unlocked || completed || !hasLocation) return ''
+  const definition = getEscortDefinition(q.escortId)
+  if (!definition) return ''
+  const active = getActiveEscort()
+  if (active?.escortId === definition.id && isEscortComplete(active, definition)) return ''
+  return `<button data-follow="${q.id}">Ask to follow</button>`
+}
+
 function renderXpReward(q: Quest): string {
   if (!q.xp) return ''
   return `<span class="quest-rewards">XP: ${q.xp}</span>`
@@ -108,6 +132,7 @@ export function showQuestPopup(
   npc: NpcDefinition,
   classId: string,
   stats: Record<string, number>,
+  location?: { areaId: string; x: number; y: number },
 ): void {
   closeQuestPopup()
 
@@ -138,6 +163,7 @@ export function showQuestPopup(
             <h3>${q.title}</h3>
             <p>${q.description}</p>
             ${renderEscortStatus(q)}
+            ${renderFollowButton(q, unlocked, completed, Boolean(location))}
             ${renderRequirements(q, stats, reputation)}
             ${renderXpReward(q)}
             ${renderReputationRewards(q)}
@@ -171,6 +197,22 @@ export function showQuestPopup(
           render()
         })
       })
+
+    overlay.querySelectorAll<HTMLButtonElement>('[data-follow]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const questId = button.dataset.follow!
+        const quest = quests.find((entry) => entry.id === questId)
+        const definition = quest?.escortId ? getEscortDefinition(quest.escortId) : null
+        if (!quest || !definition || !location) return
+        if (!canStartEscort(definition, getActiveEscort(), getCompletedQuestIds())) {
+          showToast('You can only lead one companion at a time')
+          return
+        }
+        setActiveEscort(startEscort(definition, location))
+        showToast(`${getNpcById(quest.npcId)?.name ?? definition.npcId} is following you`)
+        render()
+      })
+    })
 
     overlay.querySelector('#quest-close')!.addEventListener('click', () => {
       overlay.remove()

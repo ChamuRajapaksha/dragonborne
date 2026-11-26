@@ -15,6 +15,7 @@ import {
   relocateEscortAfterPortal,
   setActiveEscort,
   stepFollower,
+  subscribeEscorts,
 } from '../escort'
 import type { EscortProgress } from '../escort'
 import type { Character } from '../character'
@@ -257,6 +258,7 @@ export default class WorldScene extends Phaser.Scene {
   private unsubscribeGold: (() => void) | null = null
   private unsubscribeReputation: (() => void) | null = null
   private unsubscribeProgression: (() => void) | null = null
+  private unsubscribeEscorts: (() => void) | null = null
   private character: Character | undefined = undefined
   private areaId = NEW_CHARACTER_AREA_ID
   private spawnPx: { x: number; y: number } | null = null
@@ -311,6 +313,7 @@ export default class WorldScene extends Phaser.Scene {
     this.unsubscribeGold = null
     this.unsubscribeReputation = null
     this.unsubscribeProgression = null
+    this.unsubscribeEscorts = null
     this.idleSeconds = 0
     this.savedPoint = { x: UNSAVED_POINT, y: UNSAVED_POINT }
     this.dimRects = []
@@ -408,6 +411,9 @@ export default class WorldScene extends Phaser.Scene {
       this.refreshProgressionHud(state.xp)
       this.refreshTrackedQuestHud()
     })
+    this.unsubscribeEscorts = subscribeEscorts((active) => {
+      this.activeEscort = active
+    })
 
     this.maybeShowIntroCard(area)
 
@@ -421,6 +427,8 @@ export default class WorldScene extends Phaser.Scene {
       this.unsubscribeReputation = null
       this.unsubscribeProgression?.()
       this.unsubscribeProgression = null
+      this.unsubscribeEscorts?.()
+      this.unsubscribeEscorts = null
       closeQuestJournal()
       closeReputationPanel()
       destroyHotbar()
@@ -1119,6 +1127,7 @@ export default class WorldScene extends Phaser.Scene {
           nearestNpc,
           this.character.classId,
           characterStats(this.character, getInventory(), getLevel()),
+          { areaId: this.areaId, ...this.playerPoint },
         )
         this.popupOpen = true
       }
