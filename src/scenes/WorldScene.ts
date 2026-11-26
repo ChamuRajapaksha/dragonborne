@@ -9,6 +9,7 @@ import {
 import type { KeyFlags, MovementProfile, MovementState } from '../movement'
 import {
   advanceEscort,
+  canCrossPortalWithEscort,
   getActiveEscort,
   getEscortDefinition,
   setActiveEscort,
@@ -1328,6 +1329,16 @@ export default class WorldScene extends Phaser.Scene {
   }
 
   private usePortal(portal: AreaPortalMarker): void {
+    const escort = this.activeEscort
+    if (escort) {
+      const definition = getEscortDefinition(escort.escortId)
+      if (definition && !canCrossPortalWithEscort(escort, definition, this.playerPoint)) {
+        const name = getNpcById(definition.npcId)?.name ?? definition.npcId
+        showToast(`Wait for ${name} before using the portal`)
+        return
+      }
+    }
+
     this.saveCurrentProgress()
     saveTorchFuel(this.torchFuelMs)
     this.saveClock()
