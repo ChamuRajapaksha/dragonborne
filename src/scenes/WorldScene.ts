@@ -7,7 +7,13 @@ import {
   stepMovement,
 } from '../movement'
 import type { KeyFlags, MovementProfile, MovementState } from '../movement'
-import { advanceEscort, getActiveEscort, getEscortDefinition, stepFollower } from '../escort'
+import {
+  advanceEscort,
+  getActiveEscort,
+  getEscortDefinition,
+  setActiveEscort,
+  stepFollower,
+} from '../escort'
 import type { EscortProgress } from '../escort'
 import type { Character } from '../character'
 import { getClassById } from '../character'
@@ -1361,7 +1367,10 @@ export default class WorldScene extends Phaser.Scene {
 
     const result = advanceEscort(escort, definition, this.playerPoint)
     this.activeEscort = result.progress
-    if (result.arrived) showToast(result.arrived.arrivalLine)
+    if (result.arrived) {
+      setActiveEscort(result.progress)
+      showToast(result.arrived.arrivalLine)
+    }
   }
 
   private findEscortMarker(escort: EscortProgress): AreaNpcMarker | null {
