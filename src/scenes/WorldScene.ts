@@ -12,6 +12,7 @@ import {
   canCrossPortalWithEscort,
   getActiveEscort,
   getEscortDefinition,
+  relocateEscortAfterPortal,
   setActiveEscort,
   stepFollower,
 } from '../escort'
@@ -1337,6 +1338,12 @@ export default class WorldScene extends Phaser.Scene {
         showToast(`Wait for ${name} before using the portal`)
         return
       }
+    }
+
+    if (escort) {
+      const relocated = relocateEscortAfterPortal(escort, portal.toAreaId, portal.toSpawnPx)
+      setActiveEscort(relocated)
+      this.activeEscort = relocated
     }
 
     this.saveCurrentProgress()
