@@ -10,6 +10,7 @@ import type { KeyFlags, MovementProfile, MovementState } from '../movement'
 import {
   advanceEscort,
   canCrossPortalWithEscort,
+  escortHudLine,
   getActiveEscort,
   getEscortDefinition,
   relocateEscortAfterPortal,
@@ -113,8 +114,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 270
-const HUD_CAVE_PANEL_HEIGHT = 290
+const HUD_PANEL_HEIGHT = 290
+const HUD_CAVE_PANEL_HEIGHT = 310
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
@@ -133,6 +134,7 @@ const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const HUD_JOURNAL_STYLE = { color: '#8a8a96', fontSize: '12px' } as const
 const HUD_TRACKED_STYLE = { color: '#c9a7ff', fontSize: '12px' } as const
 const HUD_STANDING_STYLE = { color: '#9fb7d4', fontSize: '12px' } as const
+const HUD_ESCORT_STYLE = { color: '#b7e4ff', fontSize: '12px' } as const
 const HUD_TORCH_STYLE = { color: '#ffb347', fontSize: '12px' } as const
 const TORCH_ITEM_ID = 'torch'
 const AXE_ITEM_ID = 'axe'
@@ -234,6 +236,7 @@ export default class WorldScene extends Phaser.Scene {
   private hudTorch: Phaser.GameObjects.Text | null = null
   private hudTrackedQuest!: Phaser.GameObjects.Text
   private hudStanding!: Phaser.GameObjects.Text
+  private hudEscort!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
   private npcMarkers: AreaNpcMarker[] = []
   private activeEscort: EscortProgress | null = null
@@ -413,6 +416,7 @@ export default class WorldScene extends Phaser.Scene {
     })
     this.unsubscribeEscorts = subscribeEscorts((active) => {
       this.activeEscort = active
+      this.refreshEscortHud()
     })
 
     this.maybeShowIntroCard(area)
@@ -652,6 +656,9 @@ export default class WorldScene extends Phaser.Scene {
     this.hudStanding = addRow('', HUD_STANDING_STYLE)
     this.refreshStandingHud(getAllReputation())
 
+    this.hudEscort = addRow('', HUD_ESCORT_STYLE)
+    this.refreshEscortHud()
+
     if (area.id === 'cave') {
       this.hudTorch = addRow(this.torchHudText(), HUD_TORCH_STYLE)
     }
@@ -736,6 +743,14 @@ export default class WorldScene extends Phaser.Scene {
       ? `Standing: ${formatStanding(top.factionId, top.value)}`
       : 'Standing: Neutral'
     if (this.hudStanding.text !== text) this.hudStanding.setText(text)
+  }
+
+  private refreshEscortHud(): void {
+    const escort = this.activeEscort
+    const definition = escort ? getEscortDefinition(escort.escortId) : null
+    const npcName = definition ? getNpcById(definition.npcId)?.name : undefined
+    const text = escortHudLine(escort, definition, npcName)
+    if (this.hudEscort.text !== text) this.hudEscort.setText(text)
   }
 
   private resolveWaypoint(area: AreaDefinition): Waypoint | null {
@@ -986,6 +1001,7 @@ export default class WorldScene extends Phaser.Scene {
     this.playerPoint = { x: this.player.x, y: this.player.y }
     this.updateEscortFollower(delta)
     this.checkEscortArrival()
+    if (escortActive) this.refreshEscortHud()
     this.updateTorch(delta)
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
