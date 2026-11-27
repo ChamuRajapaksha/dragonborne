@@ -9,11 +9,15 @@ import { generateForestMap } from '../world/forestGen'
 import { findMapViolations } from '../world/mapRules'
 import {
   AREA_IDS,
+  CAVE_PORTALS,
   CAVE_SPAWN,
+  FOREST_PORTALS,
   FOREST_SPAWN,
   PLAINS_MAP,
+  PLAINS_PORTALS,
   PLAINS_SPAWN,
   VILLAGE_MAP,
+  VILLAGE_PORTALS,
   VILLAGE_SPAWN,
 } from '../world/maps'
 import { NPCS } from './npcs'
@@ -186,6 +190,34 @@ describe('escort data integrity', () => {
           items: [],
         })
         expect(violations, `${def.id} stop ${stop.label}`).toEqual([])
+      }
+    }
+  })
+
+  it('connects every escort route by real portal links', () => {
+    const portalsByArea: Readonly<Record<string, readonly { toAreaId: string }[]>> = {
+      cave: CAVE_PORTALS,
+      forest: FOREST_PORTALS,
+      plains: PLAINS_PORTALS,
+      village: VILLAGE_PORTALS,
+    }
+
+    for (const def of definitions) {
+      const visited = new Set<string>([def.stops[0].areaId])
+      const queue = [def.stops[0].areaId]
+
+      while (queue.length > 0) {
+        const areaId = queue.shift()!
+        for (const portal of portalsByArea[areaId] ?? []) {
+          if (AREA_IDS.includes(portal.toAreaId) && !visited.has(portal.toAreaId)) {
+            visited.add(portal.toAreaId)
+            queue.push(portal.toAreaId)
+          }
+        }
+      }
+
+      for (const stop of def.stops) {
+        expect(visited.has(stop.areaId), `${def.id} cannot reach ${stop.areaId}`).toBe(true)
       }
     }
   })

@@ -6,7 +6,8 @@ import {
   stepMovement,
   stopMovement,
 } from './logic'
-import type { MovementInput, MovementProfile } from './types'
+import { CAVE_PROFILE, DEFAULT_PROFILE, ESCORT_PROFILE, resolveMovementProfile } from './profiles'
+import type { MovementInput, MovementProfile, MovementState } from './types'
 
 const profile: MovementProfile = {
   id: 'test',
@@ -131,5 +132,52 @@ describe('movement clamping and safety', () => {
     expect(disabled.vx).toBe(0)
     expect(disabled.vy).toBe(0)
     expect(disabled.facing).toEqual({ x: 0, y: -1 })
+  })
+})
+
+describe('movement invariants across real profiles', () => {
+  const realProfiles = [
+    DEFAULT_PROFILE,
+    CAVE_PROFILE,
+    ESCORT_PROFILE,
+    resolveMovementProfile('unknown'),
+  ]
+  const inputs: MovementInput[] = [
+    input(Number.NaN, Number.POSITIVE_INFINITY),
+    { x: Number.NEGATIVE_INFINITY, y: Number.NaN, sprint: true },
+    { x: 1000, y: -1000, sprint: true },
+    null as unknown as MovementInput,
+  ]
+  const states: MovementState[] = [
+    createMovementState(),
+    {
+      vx: Number.NaN,
+      vy: Number.POSITIVE_INFINITY,
+      facing: { x: Number.NaN, y: Number.NEGATIVE_INFINITY },
+    },
+    null as unknown as MovementState,
+  ]
+  const deltas = [Number.NaN, Number.POSITIVE_INFINITY, -1, 0, 10]
+
+  it('never emits NaN, unbounded speed, or a zero facing vector', () => {
+    for (const currentProfile of realProfiles) {
+      const limit = currentProfile.maxSpeed * currentProfile.sprintMultiplier
+      for (const state of states) {
+        for (const direction of inputs) {
+          for (const delta of deltas) {
+            for (const enabled of [true, false]) {
+              const next = stepMovement(state, direction, currentProfile, delta, enabled)
+
+              expect(Number.isFinite(next.vx)).toBe(true)
+              expect(Number.isFinite(next.vy)).toBe(true)
+              expect(speedOf(next)).toBeLessThanOrEqual(limit + 1e-9)
+              expect(Number.isFinite(next.facing.x)).toBe(true)
+              expect(Number.isFinite(next.facing.y)).toBe(true)
+              expect(Math.hypot(next.facing.x, next.facing.y)).toBeGreaterThan(0)
+            }
+          }
+        }
+      }
+    }
   })
 })

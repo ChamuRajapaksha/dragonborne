@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TILE_SIZE } from '../world/tileset'
+import { ESCORTS } from './definitions'
 import {
   advanceEscort,
   canCrossPortalWithEscort,
@@ -309,5 +310,37 @@ describe('escort transition sequence', () => {
     expect(final.arrived).toBe(route.stops[1])
     expect(final.complete).toBe(true)
     expect(isEscortComplete(final.progress, route)).toBe(true)
+  })
+})
+
+describe('escort invariants across real definitions', () => {
+  it('keeps follower coordinates finite with malformed frames', () => {
+    for (const definition of Object.values(ESCORTS)) {
+      const progress = startEscort(definition, {
+        areaId: definition.stops[0].areaId,
+        x: Number.NaN,
+        y: Number.POSITIVE_INFINITY,
+      })
+      const player = { x: Number.NEGATIVE_INFINITY, y: Number.NaN }
+
+      for (const delta of [Number.NaN, -1, 0, 10]) {
+        const next = stepFollower(progress, definition, player, delta)
+        expect(Number.isFinite(next.x), `${definition.id} x`).toBe(true)
+        expect(Number.isFinite(next.y), `${definition.id} y`).toBe(true)
+        expect(next.areaId).toBe(progress.areaId)
+        expect(next.stopIndex).toBe(progress.stopIndex)
+        expect(progress.x).toBe(0)
+      }
+    }
+  })
+
+  it('never advances or crosses a portal on non-finite player coordinates', () => {
+    for (const definition of Object.values(ESCORTS)) {
+      const progress = startEscort(definition, { areaId: definition.stops[0].areaId, x: 160, y: 160 })
+      const broken = { x: Number.NaN, y: Number.NEGATIVE_INFINITY }
+
+      expect(advanceEscort(progress, definition, broken).progress).toBe(progress)
+      expect(canCrossPortalWithEscort(progress, definition, broken)).toBe(false)
+    }
   })
 })
