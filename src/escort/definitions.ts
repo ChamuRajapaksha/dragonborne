@@ -6,8 +6,8 @@ export const ESCORTS: Readonly<Record<string, EscortDefinition>> = {
     id: 'archivists-escort',
     questId: 'escort-the-archivist',
     npcId: 'village-archivist',
-    followRadius: 72,
-    stopRadius: 40,
+    followRadius: 64,
+    stopRadius: 48,
     leashRadius: 480,
     npcSpeed: 165,
     stops: [
@@ -41,8 +41,8 @@ export const ESCORTS: Readonly<Record<string, EscortDefinition>> = {
     id: 'plains-road-escort',
     questId: 'road-to-the-plains',
     npcId: 'village-host',
-    followRadius: 72,
-    stopRadius: 40,
+    followRadius: 64,
+    stopRadius: 48,
     leashRadius: 480,
     npcSpeed: 165,
     stops: [
