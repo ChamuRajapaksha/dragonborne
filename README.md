@@ -168,6 +168,23 @@ the Vitest suite.
     *The Archivist's Request* from Maerwyn) read as **Locked** until their faction reaches
     Friendly (20); the popup, journal, and NPC greetings reflect the change. Standing survives
     reloads and portals under `dragonborne.reputation`; a new character starts Neutral again.
+18. **Escort walkthrough:** create a Mage, Cleric, or Bard and wait until Maerwyn is on duty
+    (09:00–17:00), or a Warrior, Ranger, or Rogue for Odile (16:00–02:00). Press **E** at her
+    in Emberhold and choose **Ask to follow** on *Escort the Archivist* or *Road to the Plains*.
+    The HUD gains `Escorting Maerwyn → The Archive (1/3)` (or Odile and `The Gate (1/2)`), and
+    she walks behind you. Visit the stops in order — Maerwyn: the archive in the village, the
+    crossing in the Thornwood, then the ridge in the plains; Odile: the village gate, then the
+    plains waystone. Each arrival toasts and advances the counter in the HUD, popup, and
+    journal. Reach the next area through its portal (the village's west road to the forest and
+    the forest's east road to the plains for Maerwyn; the village's south road straight to the
+    plains for Odile). If you sprint ahead, wait at the portal: leaving the follower behind
+    toasts `Wait for Maerwyn before using the portal` and refuses the crossing; once she is
+    close, she comes through with you. Reload mid-route and her area, position, and stop index
+    return from `dragonborne.escort`. At the final stop, talk to her again: **Complete (stub)**
+    is now enabled and pays the XP, item, and standing rewards once, then clears the HUD line.
+    Only one companion can be led at a time, and the follower has no pathfinding — if she
+    snags on scenery, walk back around it and let her catch up. Sella at the plains crossroads
+    offers *The Plains Waystone* to every class.
 
 ## Day/night, weather, and NPC schedules
 
