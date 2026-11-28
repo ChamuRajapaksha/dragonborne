@@ -21,6 +21,7 @@ import {
   subscribeEscorts,
 } from '../escort'
 import type { EscortProgress } from '../escort'
+import { formatCompassReading, questCompassLine, questCompassPoint } from '../compass'
 import type { Character } from '../character'
 import { getClassById } from '../character'
 import { formatGold, getGold, subscribeGold } from '../economy'
@@ -62,6 +63,7 @@ import {
 import { destroyHotbar, mountHotbar, renderHotbar } from '../hotbar'
 import { showToast } from '../toast'
 import { getNpcById, isNpcActive } from '../story'
+import type { QuestLogEntry } from '../story'
 import {
   buildQuestLog,
   getCompletedQuestIds,
@@ -116,8 +118,8 @@ const NPC_INTERACT_HINT = 'Press E'
 const IDLE_SAVE_SECONDS = 1.5
 const UNSAVED_POINT = Number.NaN
 const HUD_PANEL_WIDTH = 300
-const HUD_PANEL_HEIGHT = 290
-const HUD_CAVE_PANEL_HEIGHT = 310
+const HUD_PANEL_HEIGHT = 310
+const HUD_CAVE_PANEL_HEIGHT = 330
 const TORCH_FUEL_SAVE_INTERVAL_MS = 1000
 const CLOCK_SAVE_INTERVAL_MS = 1000
 const HUD_BACKGROUND_COLOR = 0x000000
@@ -135,6 +137,7 @@ const HUD_HINT_STYLE = { color: '#ffd27f', fontSize: '12px' } as const
 const HUD_SELECTED_STYLE = { color: '#e5e5ea', fontSize: '12px' } as const
 const HUD_JOURNAL_STYLE = { color: '#8a8a96', fontSize: '12px' } as const
 const HUD_TRACKED_STYLE = { color: '#c9a7ff', fontSize: '12px' } as const
+const HUD_QUEST_COMPASS_STYLE = { color: '#f0c8ff', fontSize: '12px' } as const
 const HUD_STANDING_STYLE = { color: '#9fb7d4', fontSize: '12px' } as const
 const HUD_ESCORT_STYLE = { color: '#b7e4ff', fontSize: '12px' } as const
 const HUD_TORCH_STYLE = { color: '#ffb347', fontSize: '12px' } as const
@@ -144,26 +147,9 @@ const PICKAXE_ITEM_ID = 'pickaxe'
 const SAPLING_ITEM_ID = 'sapling'
 const WOOD_ITEM_ID = 'wood'
 const WOOD_YIELD = 3
-const COMPASS_POINTS = [
-  'east',
-  'south-east',
-  'south',
-  'south-west',
-  'west',
-  'north-west',
-  'north',
-  'north-east',
-] as const
-const COMPASS_SEGMENTS = COMPASS_POINTS.length
 
 function introFlagKey(areaId: string): string {
   return `intro:${areaId}`
-}
-
-function compassDirection(dx: number, dy: number): string {
-  const octant = Math.round(Math.atan2(dy, dx) / (Math.PI / (COMPASS_SEGMENTS / 2)))
-  const index = ((octant % COMPASS_SEGMENTS) + COMPASS_SEGMENTS) % COMPASS_SEGMENTS
-  return COMPASS_POINTS[index] ?? 'east'
 }
 
 interface Waypoint {
@@ -237,6 +223,8 @@ export default class WorldScene extends Phaser.Scene {
   private hudWeather!: Phaser.GameObjects.Text
   private hudTorch: Phaser.GameObjects.Text | null = null
   private hudTrackedQuest!: Phaser.GameObjects.Text
+  private hudQuestCompass!: Phaser.GameObjects.Text
+  private trackedQuest: QuestLogEntry | null = null
   private hudStanding!: Phaser.GameObjects.Text
   private hudEscort!: Phaser.GameObjects.Text
   private waypoint: Waypoint | null = null
@@ -307,6 +295,7 @@ export default class WorldScene extends Phaser.Scene {
     this.hotbarKeys = []
     this.shiftKey = null
     this.waypoint = null
+    this.trackedQuest = null
     this.popupOpen = false
     this.introCardOpen = false
     this.inventoryOpen = false
@@ -652,6 +641,7 @@ export default class WorldScene extends Phaser.Scene {
     addRow('J: quest journal', HUD_JOURNAL_STYLE)
     addRow('F: reputation', HUD_JOURNAL_STYLE)
 
+    this.hudQuestCompass = addRow('', HUD_QUEST_COMPASS_STYLE)
     this.hudTrackedQuest = addRow('', HUD_TRACKED_STYLE)
     this.refreshTrackedQuestHud()
 
@@ -709,7 +699,9 @@ export default class WorldScene extends Phaser.Scene {
   /** The journal's pinned quest, resolved against the character's current stats. */
   private refreshTrackedQuestHud(): void {
     if (!this.character) {
+      this.trackedQuest = null
       this.hudTrackedQuest.setVisible(false)
+      this.hudQuestCompass.setVisible(false)
       return
     }
 
@@ -722,6 +714,7 @@ export default class WorldScene extends Phaser.Scene {
     )
     const trackedId = getTrackedQuestId()
     const entry = resolveTrackedQuest(entries, trackedId)
+    this.trackedQuest = entry
 
     // A finished or vanished quest must not stay pinned. Completion is worth a
     // toast; an unknown id simply drops.
@@ -736,6 +729,22 @@ export default class WorldScene extends Phaser.Scene {
     const line = trackedQuestHudLine(entry)
     if (this.hudTrackedQuest.text !== line) this.hudTrackedQuest.setText(line)
     this.hudTrackedQuest.setVisible(line.length > 0)
+    this.refreshQuestCompass()
+  }
+
+  private refreshQuestCompass(): void {
+    const entry = this.trackedQuest
+    const point = entry
+      ? questCompassPoint(
+          entry.quest,
+          this.areaId,
+          entry.npcName,
+          this.npcMarkers.find((marker) => marker.npcId === entry.quest.npcId) ?? null,
+        )
+      : null
+    const line = questCompassLine(point, this.playerPoint)
+    if (this.hudQuestCompass.text !== line) this.hudQuestCompass.setText(line)
+    this.hudQuestCompass.setVisible(line.length > 0)
   }
 
   /** Top standing from the live reputation store, or Neutral for a fresh save. */
@@ -772,16 +781,7 @@ export default class WorldScene extends Phaser.Scene {
       return
     }
 
-    const dx = waypoint.x - this.playerPoint.x
-    const dy = waypoint.y - this.playerPoint.y
-    const tiles = Math.round(
-      Phaser.Math.Distance.Between(this.playerPoint.x, this.playerPoint.y, waypoint.x, waypoint.y) /
-        TILE_SIZE,
-    )
-    const text =
-      tiles <= 1
-        ? `${waypoint.label} is right here`
-        : `${waypoint.label}: ${compassDirection(dx, dy)}, ${tiles} tiles`
+    const text = formatCompassReading(waypoint, this.playerPoint)
 
     if (this.waypointHint.text !== text) this.waypointHint.setText(text)
     this.waypointHint.setVisible(true)
@@ -1008,6 +1008,7 @@ export default class WorldScene extends Phaser.Scene {
     this.selectHotbarSlotFromKeys()
     this.trackIdleSave(delta)
     this.refreshWaypointHint()
+    this.refreshQuestCompass()
     this.updateNpcSchedule()
 
     const portal = this.findPortalUnderfoot()
