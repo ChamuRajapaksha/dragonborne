@@ -7,6 +7,7 @@ import type {
   TilePoint,
 } from './maps'
 import {
+  AREA_NAMES,
   CAVE_CHESTS,
   CAVE_ITEMS,
   CAVE_NPCS,
@@ -107,7 +108,7 @@ export interface AreaDefinition {
 
 export const VILLAGE: AreaDefinition = {
   id: 'village',
-  name: 'Emberhold',
+  name: AREA_NAMES.village,
   backgroundColor: 0x2c3e2c,
   map: VILLAGE_MAP,
   defaultSpawn: VILLAGE_SPAWN,
@@ -120,7 +121,7 @@ export const VILLAGE: AreaDefinition = {
 
 export const FOREST: AreaDefinition = {
   id: 'forest',
-  name: 'The Thornwood',
+  name: AREA_NAMES.forest,
   backgroundColor: 0x1d2b1d,
   map: FOREST_SKELETON,
   defaultSpawn: FOREST_SPAWN,
@@ -141,7 +142,7 @@ export const FOREST: AreaDefinition = {
 
 export const PLAINS: AreaDefinition = {
   id: 'plains',
-  name: 'The Amber Plains',
+  name: AREA_NAMES.plains,
   backgroundColor: 0x8a7438,
   map: PLAINS_MAP,
   defaultSpawn: PLAINS_SPAWN,
@@ -162,7 +163,7 @@ export const PLAINS: AreaDefinition = {
 
 export const CAVE: AreaDefinition = {
   id: 'cave',
-  name: 'The Crystal Cave',
+  name: AREA_NAMES.cave,
   backgroundColor: 0x12161c,
   map: CAVE_SKELETON,
   defaultSpawn: CAVE_SPAWN,

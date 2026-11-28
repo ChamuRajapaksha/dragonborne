@@ -11,6 +11,13 @@ export interface TilePoint {
 
 export const AREA_IDS: readonly string[] = ['forest', 'village', 'cave', 'plains']
 
+export const AREA_NAMES: Readonly<Record<string, string>> = {
+  forest: 'The Thornwood',
+  village: 'Emberhold',
+  cave: 'The Crystal Cave',
+  plains: 'The Amber Plains',
+}
+
 export interface Portal {
   x: number
   y: number
