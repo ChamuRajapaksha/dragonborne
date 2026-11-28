@@ -57,8 +57,11 @@ the Vitest suite.
    showing who offers it and any unmet stat requirements. Press **J** again or **Close**
    to dismiss it; movement and torch burn pause while it is open. Click **Track** on any
    non-completed quest to pin it: the HUD keeps one `Tracked:` line (marked `(locked)`
-   while stats are short), and the pin persists in `dragonborne.quests.tracked`. Click
-   **Untrack** or finish the quest to clear it.
+   while stats are short), and the pin persists in `dragonborne.quests.tracked`. A compass
+   row points to the quest giver — `Maerwyn: north, 21 tiles` in the same area (using a
+   walking follower's live position), or `Sella → The Amber Plains: east, 8 tiles` toward
+   the next portal when the giver is elsewhere. Click **Untrack** or finish the quest to
+   clear both lines.
 7. Your **hotbar** runs along the bottom of the screen; press **1**–**9** to select a slot
    and the HUD names the selected item. Press **I** to open the pack. The pack panel is the
    movement surface — it holds the same 9-slot hotbar row plus the 27 pack slots, and gear
@@ -407,6 +410,10 @@ mining / Crystal Cave plan — live locally (and untracked, like `.agents/` itse
   a route, and all steering, arrival, portal, and completion rules are pure functions in
   `src/escort/logic.ts` and `src/escort/status.ts`. **Still out of scope:** pathfinding for
   stuck followers, a second simultaneous escort, and new keybindings.
+- The quest compass is data-driven too: `src/compass/targets.ts` resolves quest givers to
+  area placements and finds the next portal on a shortest route, while `src/compass/logic.ts`
+  and `src/compass/status.ts` are pure direction/distance/HUD formatting. It reads the pin and
+  world data only — no new localStorage key.
 - Explicitly out of scope: multiplayer, combat, crafting/building, and branching
   narrative content.
 
@@ -442,6 +449,8 @@ authoring approach, art style, and any backend beyond localStorage.
   versioned storage, and the subscribing store singleton
 - `src/movement/` — input, state, and profile types, pure key-flag normalization and velocity
   stepping, and per-context movement profiles
+- `src/compass/` — pure direction/distance math, data-driven quest giver targets and portal
+  routes, and the tracked-quest compass view model (no storage)
 - `src/escort/` — escort definition/progress types, pure start/arrival/follower/portal rules,
   route data, status view model, versioned storage, and the subscribing store singleton
 - `src/economy/` — gold wallet pure helpers, versioned storage, subscribing store, the
